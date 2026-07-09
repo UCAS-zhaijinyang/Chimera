@@ -20,6 +20,31 @@ env_path = config.env_path
 load_dotenv()
 
 
+def _parse_schedule_json(output_schedule: str):
+    """Parse schedule JSON from LLM output, tolerating wrappers/extra text."""
+    text = (output_schedule or "").strip()
+    if "```json" in text:
+        text = text.replace("```json", "").replace("```", "").strip()
+    elif text.startswith("```"):
+        text = text.strip("`").strip()
+        if text.startswith("json"):
+            text = text[4:].strip()
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Prefer the first JSON array/object substring.
+        for opener, closer in (("[", "]"), ("{", "}")):
+            start = text.find(opener)
+            end = text.rfind(closer)
+            if start != -1 and end != -1 and end > start:
+                try:
+                    return json.loads(text[start : end + 1])
+                except json.JSONDecodeError:
+                    pass
+        raise
+
+
 def update_daily_schedule_with_gpt(
     previous_schedule,
     member_profile,
@@ -42,7 +67,7 @@ def update_daily_schedule_with_gpt(
                             Your personality MBTI is {member_profile['mbti']}, Your personality is {member_profile['personality']} and your age is {member_profile['age']}.
                             You are the {member_profile['role']} in a {config.company_type}.
                             The goal of your company is {config.goal}\n\n{summary_context}
-                            The working hours for your company are 08:00 - 18:00 (with lunch time from 12:00-14:00), while you can arrange your work based on your personal preferences.
+                            The working hours for your company are {config.work_start} - {config.work_end} (no dedicated lunch break in this short workday), while you can arrange your work based on your personal preferences.
                             **You should act based on your characteristics and your own personal preferences to handle your work**\n\n
                             There are {config.employee_number} members in your company, and the detailed role distribution can be found as follows: {id_role_map}.\n\n
                             You can contact your colleagues if you require external support or data/information from them, or have anything to discuss. Since all contact will be managed through email communication, such activity just needs to specify @ (do not specify their names but just specify the id).
@@ -52,9 +77,9 @@ def update_daily_schedule_with_gpt(
                             **Note that you just need to reply the python JSON schedule, do not reply any other content**.
                             **DO NOT CHANGE TO SCHEDULE before the current time! and try your best to keep all the existing schedule by modifying them**\n\n
                             **Note you should consider your working time based on your personal preferences (whether to work after the working hours or not)**\n\n
-                            ** You are HIGHLY recommended to NOT work after 18:00, but if you have to, please consider you personality in arranging your schedule. If you think you are off work, then you do not need to reply or arrange new tasks afterwards in your schedule**\n\n
+                            ** You are HIGHLY recommended to NOT work after {config.work_end}, but if you have to, please consider you personality in arranging your schedule. If you think you are off work, then you do not need to reply or arrange new tasks afterwards in your schedule**\n\n
                             **You should organize your activity timetable into a JSON format for the whole week with the necessary keys including \\\"Time\\\" and \\\"Activity\\\"**\n\n
-                            The example format can be found as follows: \n{{\n[\{{\n      \"Time\": \"08:00\",\n      \"Activity\": \"Log in to the OA system, check emails, and review the week's goals\"\n    }},\n    {{\n      \"Time\": \"09:00\",\n      \"Activity\": \"Meet with @Designer to align on requirements and confirm tool selection\"\n    }}]\n}}\n\n
+                            The example format can be found as follows: \n{{\n[\{{\n      \"Time\": \"{config.work_start}\",\n      \"Activity\": \"Log in to the OA system, check emails, and review the week's goals\"\n    }},\n    {{\n      \"Time\": \"11:00\",\n      \"Activity\": \"Meet with @Designer to align on requirements and confirm tool selection\"\n    }}]\n}}\n\n
                             The response should be in the JSON format, with very detailed information regarding on what time, specifically what you've done. **Do not add an event at the current time!**"""
     user_prompt = f"""Your previous schedule is {previous_schedule}.
                             Currently time it is {current_time}.
@@ -94,7 +119,7 @@ def update_daily_schedule_with_gpt_attack(
                             The goal of your company is {config.goal}\n\n{summary_context}
                             You are the employee of the company, **but also you are the ATTACKER**.
                             The goal of your attack is to {attack_info['what']}. The attack behavior includes {attack_info['how']}. You should consider the attack behavior as your own work.\n\n
-                            The working hours for your company are 08:00 - 18:00 (with lunch time from 12:00-14:00), while you can arrange your work based on your personal preferences.
+                            The working hours for your company are {config.work_start} - {config.work_end} (no dedicated lunch break in this short workday), while you can arrange your work based on your personal preferences.
                             **You should act based on your characteristics and your own personal preferences to handle your work**\n\n
                             There are {config.employee_number} members in your company, and the detailed role distribution can be found as follows: {id_role_map}.\n\n
                             You can contact your colleagues if you require external support or data/information from them, or have anything to discuss. Since all contact will be managed through email communication, such activity just needs to specify @ (do not specify their names but just specify the id).
@@ -104,10 +129,10 @@ def update_daily_schedule_with_gpt_attack(
                             **Note that you just need to reply the python JSON schedule, do not reply any other content**.
                             **DO NOT CHANGE TO SCHEDULE before the current time! and try your best to keep all the existing schedule by modifying them. Do not modify your attack schedules**\n\n
                             **Note you should consider your working time based on your personal preferences (whether to work after the working hours or not)**\n\n
-                            ** You are HIGHLY recommended to NOT work after 18:00, but if you have to, please consider you personality in arranging your schedule. If you think you are off work, then you do not need to reply or arrange new tasks afterwards in your schedule**\n\n
+                            ** You are HIGHLY recommended to NOT work after {config.work_end}, but if you have to, please consider you personality in arranging your schedule. If you think you are off work, then you do not need to reply or arrange new tasks afterwards in your schedule**\n\n
                             **You should organize your activity timetable into a JSON format for the whole week with the necessary keys including \\\"Time\\\" and \\\"Activity\\\"**\n\n
                             For the scheduled activities which involves with the attack/threat behaviors, **You must include another key titled "Attack"**
-                            The example format can be found as follows: \n{{\n[\{{\n      \"Time\": \"08:00\",\n      \"Activity\": \"Log in to the OA system, check emails, and review the week's goals\"\n    }},\n    {{\n      \"Time\": \"09:00\",\n   \"Attack\": \"True\",\n      \"Activity\": \"contact @Designer to ask about the classified design note of the company.\"\n    }}]\n}}\n\n
+                            The example format can be found as follows: \n{{\n[\{{\n      \"Time\": \"{config.work_start}\",\n      \"Activity\": \"Log in to the OA system, check emails, and review the week's goals\"\n    }},\n    {{\n      \"Time\": \"11:00\",\n   \"Attack\": \"True\",\n      \"Activity\": \"contact @Designer to ask about the classified design note of the company.\"\n    }}]\n}}\n\n
                             The response should be in the JSON format, with very detailed information regarding on what time, specifically what you've done. **Do not add an event at the current time!**"""
     user_prompt = f"""Your previous schedule is {previous_schedule}. You attack information is {attack_info}. Currently time it is {current_time}. \n
                             Your previous email conversation with your colleagues {incom_email_data['from']} can be found as follows:
@@ -137,14 +162,8 @@ def update_daily_schedule(
             id_role_map,
             previous_summary,
         )
-        # # Parse the response to extract the updated schedule
-        if "```json" in output_schedule:
-            output_schedule = (
-                output_schedule.replace("```json", "").replace("```", "").strip()
-            )
-
         try:
-            new_schedule = json.loads(output_schedule)
+            new_schedule = _parse_schedule_json(output_schedule)
             break
         except Exception as e:
             print("[WARN] Error parsing JSON:", e, "Retrying...")
@@ -190,14 +209,8 @@ def update_daily_schedule_attack(
                 previous_summary,
             )
 
-        # # Parse the response to extract the updated schedule
-        if "```json" in output_schedule:
-            output_schedule = (
-                output_schedule.replace("```json", "").replace("```", "").strip()
-            )
-
         try:
-            new_schedule = json.loads(output_schedule)
+            new_schedule = _parse_schedule_json(output_schedule)
             break
         except Exception as e:
             print("[WARN] Error parsing JSON:", e, "Retrying...")

@@ -98,18 +98,32 @@ class Logger:
 
 # Add Randomess
 def purturbation_schedule(schedule):
-    # check whether the schedule is a dict, if so then schedule is the first key of the dict
-    if type(schedule) is dict:
-        # get the first element of the dict
-        schedule = list(schedule.values())[0]
+    # Normalize LLM schedule shapes into a list of task dicts.
+    # Common bad cases:
+    # 1) {"tasks": [ {...}, ... ]} wrapper dict
+    # 2) a single task dict {"Time": "...", "Activity": "..."}
+    #    (must NOT take values()[0], or we iterate a time string)
+    if isinstance(schedule, dict):
+        if "Time" in schedule and ("Activity" in schedule or "activity" in schedule):
+            schedule = [schedule]
+        else:
+            first_value = next(iter(schedule.values()), None)
+            if isinstance(first_value, list):
+                schedule = first_value
+            elif isinstance(first_value, dict):
+                schedule = list(schedule.values())
+            else:
+                raise ValueError(f"Unsupported schedule dict format: {schedule}")
+
+    if not isinstance(schedule, list):
+        raise ValueError(f"Schedule must be a list of tasks, got: {type(schedule)}")
 
     for task in schedule:
-        # for debugging
-        if type(task) is not dict:
-            print(f"[ERROR] Invalid task format: type: {type(task)}")
-            print(task)
-            print(schedule)
-        time_str = task["Time"].strip()
+        if not isinstance(task, dict):
+            raise ValueError(f"Invalid task format: type={type(task)} task={task}")
+        if "Time" not in task:
+            raise ValueError(f"Task missing Time field: {task}")
+        time_str = str(task["Time"]).strip()
         parts = time_str.split(":")
         if len(parts) == 2:
             fmt = "%H:%M"
@@ -118,7 +132,7 @@ def purturbation_schedule(schedule):
         else:
             raise ValueError(f"Invalid time format: {time_str}")
         # Parse the time string into a datetime object
-        task_time = datetime.strptime(task["Time"], fmt)
+        task_time = datetime.strptime(time_str, fmt)
         purturbation_time = timedelta(
             minutes=random.randint(-10, 10), seconds=random.randint(-30, 30)
         )
@@ -373,30 +387,38 @@ class Member:
             # update the schedule
             old_schedule = self.schedule
             old_schedule_index = self.schedule_index
-            self.schedule = purturbation_schedule(updated_schedule)
-            # check current time to location schedule_index
-            task_check = False
-            for i, task in enumerate(self.schedule):
-                task_time = datetime.strptime(task["Time"], "%H:%M:%S")
-                if task_time > current_time:
-                    self.schedule_index = i
-                    task_check = True
-                    break
-            if not task_check:
+            try:
+                self.schedule = purturbation_schedule(updated_schedule)
+            except Exception as e:
                 print(
-                    f"Updated {self.id} schedule is all before the current time, so do not update."
+                    f"[WARN] {self.id} schedule update rejected due to invalid format: {e}"
                 )
-                print(f"Updated schedule: {self.schedule}")
-                print(f"Old schedule: {old_schedule}")
-                print(f"Current time: {current_time.strftime('%H:%M:%S')}")
-                # if so, do not update the schedule
                 self.schedule = old_schedule
                 self.schedule_index = old_schedule_index
-            if self.schedule_index >= len(self.schedule):
-                self.schedule_index = len(self.schedule) - 1
-            self.next_task_time = datetime.strptime(
-                self.schedule[self.schedule_index]["Time"], "%H:%M:%S"
-            )
+            else:
+                # check current time to location schedule_index
+                task_check = False
+                for i, task in enumerate(self.schedule):
+                    task_time = datetime.strptime(task["Time"], "%H:%M:%S")
+                    if task_time > current_time:
+                        self.schedule_index = i
+                        task_check = True
+                        break
+                if not task_check:
+                    print(
+                        f"Updated {self.id} schedule is all before the current time, so do not update."
+                    )
+                    print(f"Updated schedule: {self.schedule}")
+                    print(f"Old schedule: {old_schedule}")
+                    print(f"Current time: {current_time.strftime('%H:%M:%S')}")
+                    # if so, do not update the schedule
+                    self.schedule = old_schedule
+                    self.schedule_index = old_schedule_index
+                if self.schedule_index >= len(self.schedule):
+                    self.schedule_index = len(self.schedule) - 1
+                self.next_task_time = datetime.strptime(
+                    self.schedule[self.schedule_index]["Time"], "%H:%M:%S"
+                )
         else:
             print(
                 f"[INFO] {self.id} did not update the schedule at {current_time.strftime('%H:%M:%S')}."
@@ -449,8 +471,8 @@ class Member:
                 process = Process(
                     target=run_task_in_process,
                     args=(
-                        week,
-                        date,
+                        self.week,
+                        self.date,
                         activity,
                         self.id,
                         self.logging_dir,
@@ -544,7 +566,7 @@ class Member:
     def run(self, start_time):
         # Simulate one day
         current_time = start_time
-        end_time = datetime.strptime("23:59:00", "%H:%M:%S")
+        end_time = datetime.strptime(config.sim_day_end, "%H:%M:%S")
         first_task_time = datetime.strptime(self.schedule[0]["Time"], "%H:%M:%S")
 
         while current_time <= end_time:
@@ -797,7 +819,8 @@ if __name__ == "__main__":
     ]
 
     # Get the start time
-    start_time = datetime.strptime("23:59:00", "%H:%M:%S")
+    # Seed with sim_day_end so the earliest schedule time wins as the day start.
+    start_time = datetime.strptime(config.sim_day_end, "%H:%M:%S")
     base_date = start_time.date()
     for member in members:
         if member.no_more_task:
@@ -806,7 +829,8 @@ if __name__ == "__main__":
             start_time = datetime.strptime(member.schedule[0]["Time"], "%H:%M:%S")
 
     print(
-        f"[INFO] Start time for week {week} - {date} is {start_time.strftime('%H:%M:%S')}."
+        f"[INFO] Start time for week {week} - {date} is {start_time.strftime('%H:%M:%S')} "
+        f"(sim day ends at {config.sim_day_end})."
     )
 
     # thread for each member

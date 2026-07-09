@@ -20,20 +20,26 @@ Chimera is a multi-agent LLM-driven simulation framework that automatically gene
 
 ## Table of Contents
 
-- [Repository Structure](#repository-structure)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the Simulation](#running-the-simulation)
-  - [Phase 1: Agent Society Construction](#phase-1-agent-society-construction)
-  - [Phase 2: Normal Behavior Simulation](#phase-2-normal-behavior-simulation)
-  - [Phase 3: Attack Simulation](#phase-3-attack-simulation)
-- [Log Collection](#log-collection)
-- [Attack Scenario Format](#attack-scenario-format)
-- [Supported LLM Backends](#supported-llm-backends)
-- [Cleanup](#cleanup)
-- [Citation](#citation)
-- [Community Contributions](#community-contributions)
+- [Chimera: Harnessing Multi-Agent LLMs for Automatic Insider Threat Simulation](#chimera-harnessing-multi-agent-llms-for-automatic-insider-threat-simulation)
+  - [Overview](#overview)
+  - [Table of Contents](#table-of-contents)
+  - [Repository Structure](#repository-structure)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+    - [1. Launch Docker Container](#1-launch-docker-container)
+    - [2. Install System Dependencies](#2-install-system-dependencies)
+    - [3. Set Up Python Environment](#3-set-up-python-environment)
+    - [4. Install Modified OWL and Camel Frameworks](#4-install-modified-owl-and-camel-frameworks)
+  - [Configuration](#configuration)
+  - [Running the Simulation](#running-the-simulation)
+    - [Phase 1: Agent Society Construction](#phase-1-agent-society-construction)
+    - [Phase 2: Normal Behavior Simulation](#phase-2-normal-behavior-simulation)
+    - [Phase 3: Attack Simulation](#phase-3-attack-simulation)
+  - [Log Collection](#log-collection)
+  - [Attack Scenario Format](#attack-scenario-format)
+  - [Supported LLM Backends](#supported-llm-backends)
+  - [Citation](#citation)
+  - [Community Contributions](#community-contributions)
 
 ---
 
@@ -178,6 +184,9 @@ All simulation parameters are controlled via `src/config.py`. Key settings to ad
 | `employee_number` | Number of simulated employees | `5` |
 | `period` | Simulation duration in weeks | `2` |
 | `base_date` | Start date of the simulation | `"2025-05-02"` |
+| `work_start` | Simulated workday start (schedule generation prompts) | `"10:00"` |
+| `work_end` | Simulated workday end (schedule generation prompts) | `"14:00"` |
+| `sim_day_end` | Hard stop for the Phase-2 day simulation loop | `"15:00:00"` |
 | `foundation_corp` | LLM provider (`openai`, `google`, `deepseek`, `xai`) | `"openai"` |
 | `foundation_model` | Model name for the chosen provider | `"gpt-4o-mini"` |
 | `loaf_rate` | Fraction of agents that loaf (browse aimlessly) per interval | `0.3` |
@@ -217,9 +226,14 @@ python src/profile_generation.py
 python src/meeting_for_weekly_goal_auto.py
 ```
 
-**Step 4 - Decompose meeting output into daily schedules:**
+**Step 4 - Decompose meeting output into weekly schedules:**
 ```bash
 python src/post_meeting_summary_auto.py
+```
+
+**Step 5 - Expand weekly schedules into per-day plans** (writes `init_schedule/`; required before Phase 2):
+```bash
+python src/daily_plan_generation_auto.py
 ```
 
 ### Phase 2: Normal Behavior Simulation

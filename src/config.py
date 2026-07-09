@@ -12,9 +12,13 @@
 # limitations under the License.
 # ========= Copyright 2023-2026 @ CAMEL-AI.org. All Rights Reserved. =========
 # system config
+import os
+
+from dotenv import load_dotenv
 
 base_dir = "/data/Chimera"  ###### 1 #######
 env_path = f"{base_dir}/.env"
+load_dotenv(env_path)
 
 # scenario name
 scenario_name = "chimera_scenario_1"
@@ -30,7 +34,7 @@ company_type = "Medical Institution (Small Community Hospital)"  ###### 3 ######
 # profile output directory
 profile_output_dir = f"{base_dir}/{scenario_name}/generated_members"
 # attack directory
-attack_dir = "/data/attacks"
+attack_dir = f"{base_dir}/attacks"
 # attack log directory
 attack_schedule_dir = f"{base_dir}/{scenario_name}/attack_schedule"
 
@@ -55,6 +59,12 @@ employee_number = 5  # IMPORTANT: to change the number of employees
 
 # date for starters
 base_date = "2025-05-02"
+
+# Simulated workday hours used when generating / updating schedules.
+work_start = "10:00"
+work_end = "14:00"
+# Hard stop for the Phase-2 day simulation loop (HH:MM:SS).
+sim_day_end = "15:00:00"
 
 # maximum number of attempts for query LLM for structured output
 max_attempt = 5
@@ -86,7 +96,7 @@ foundation_model = "gpt-4o-mini"
 # ### deepseek
 # foundation_corp = "deepseek"
 # foundation_model = "deepseek-chat"
-# api_key = "XXX"
+# api_key = os.environ.get("DEEPSEEK_API_KEY", "")
 
 # ### grok
 # foundation_corp = "xai"
