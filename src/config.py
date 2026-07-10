@@ -70,6 +70,12 @@ sim_day_end = "15:00:00"
 max_attempt = 5
 # maximum query loop
 round_limit = 5
+# Cap internal tool-calling iterations inside a single ChatAgent.step/astep.
+# Prevents unbounded while-True tool loops when context truncation forces retries.
+max_tool_iterations = 20
+# Wall-clock timeout for a single Phase-2 OWL task subprocess (seconds).
+# Timed-out / unfinished workers are killed by the process registry.
+task_process_timeout = 600
 
 # loaf parameters
 loaf_rate = 0.3

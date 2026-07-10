@@ -99,8 +99,16 @@ def construct_society(question: str) -> RolePlaying:
         ]
 
     # Configure agent roles and parameters
-    user_agent_kwargs = {"model": models["user"]}
-    assistant_agent_kwargs = {"model": models["assistant"], "tools": tools}
+    max_tool_iterations = getattr(config, "max_tool_iterations", 20)
+    user_agent_kwargs = {
+        "model": models["user"],
+        "max_tool_iterations": max_tool_iterations,
+    }
+    assistant_agent_kwargs = {
+        "model": models["assistant"],
+        "tools": tools,
+        "max_tool_iterations": max_tool_iterations,
+    }
 
     # Configure task parameters
     task_kwargs = {

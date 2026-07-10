@@ -31,6 +31,13 @@ from member_email import get_email_members, get_email_content, reply_email_conte
 from daily_plan_update import update_daily_schedule_attack
 from attack_schedule import select_attack_date
 from foundation_model import run_llm
+from activity_utils import is_email_send_activity
+from process_registry import (
+    init_registry,
+    poll_registry,
+    reap_all_tracked,
+    start_tracked,
+)
 
 nest_asyncio.apply()
 
@@ -471,7 +478,7 @@ class Member:
                 self.login(datetime.now(), current_time, attack_activity)
                 self.can_logout = True
 
-            if "@" in activity:
+            if is_email_send_activity(activity):
                 t = Thread(
                     target=self.send_email,
                     args=(
@@ -501,7 +508,10 @@ class Member:
                         self.temp_dir,
                     ),
                 )
-                process.start()
+                start_tracked(
+                    process,
+                    label=f"{self.id}/loaf/{self.execution_task_id}",
+                )
 
             else:
                 task_temperature = 0.7 if attack_activity else 0
@@ -518,7 +528,10 @@ class Member:
                         task_temperature,
                     ),
                 )
-                process.start()
+                start_tracked(
+                    process,
+                    label=f"{self.id}/task/{self.execution_task_id}",
+                )
                 # process.join()
 
             self.can_logout = True
@@ -643,6 +656,9 @@ class Member:
                     attack_activity = True
                 self.execute_task(activity, current_time, attack_activity)
 
+            # Reap finished OWL workers and kill any that exceeded timeout.
+            poll_registry()
+
             # before update time, check if there is any email then schedule the next reply
             if not self.no_more_task and self.waiting_communication != []:
                 if not self.reply_lock:
@@ -683,6 +699,9 @@ class Member:
         # Generate daily summary as long-term memory for the next day
         if self.start_to_work:
             self.generate_daily_summary()
+
+        # Final poll so this member's timed-out workers are cleaned promptly.
+        poll_registry()
 
     def login(self, real_time, sim_time, attack_activity=False):
         self.login_state = True
@@ -870,6 +889,9 @@ if __name__ == "__main__":
     sys.stdout = Logger(daemon_log_path)
     sys.stderr = sys.stdout
 
+    # Track async OWL task workers; kill on timeout and reap at day end.
+    init_registry(config.task_process_timeout)
+
     # create each agentx
     members = [
         Member(
@@ -913,6 +935,10 @@ if __name__ == "__main__":
 
     for thread in threads:
         thread.join()
+
+    # Kill / join any OWL workers still running after the day simulation ends.
+    print("[INFO][Attack] Reaping remaining task processes...")
+    reap_all_tracked()
 
     print(
         f"[INFO][Attack] All members have completed their tasks for week {attack_week} - date {attack_date}."

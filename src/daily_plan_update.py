@@ -12,9 +12,9 @@
 # limitations under the License.
 # ========= Copyright 2023-2026 @ CAMEL-AI.org. All Rights Reserved. =========
 from dotenv import load_dotenv
-import json
 from foundation_model import run_llm
 import config
+from json_utils import normalize_schedule, parse_llm_json
 
 env_path = config.env_path
 load_dotenv()
@@ -22,27 +22,8 @@ load_dotenv()
 
 def _parse_schedule_json(output_schedule: str):
     """Parse schedule JSON from LLM output, tolerating wrappers/extra text."""
-    text = (output_schedule or "").strip()
-    if "```json" in text:
-        text = text.replace("```json", "").replace("```", "").strip()
-    elif text.startswith("```"):
-        text = text.strip("`").strip()
-        if text.startswith("json"):
-            text = text[4:].strip()
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        # Prefer the first JSON array/object substring.
-        for opener, closer in (("[", "]"), ("{", "}")):
-            start = text.find(opener)
-            end = text.rfind(closer)
-            if start != -1 and end != -1 and end > start:
-                try:
-                    return json.loads(text[start : end + 1])
-                except json.JSONDecodeError:
-                    pass
-        raise
+    data = parse_llm_json(output_schedule, expect=(list, dict))
+    return normalize_schedule(data)
 
 
 def update_daily_schedule_with_gpt(
@@ -78,9 +59,9 @@ def update_daily_schedule_with_gpt(
                             **DO NOT CHANGE TO SCHEDULE before the current time! and try your best to keep all the existing schedule by modifying them**\n\n
                             **Note you should consider your working time based on your personal preferences (whether to work after the working hours or not)**\n\n
                             ** You are HIGHLY recommended to NOT work after {config.work_end}, but if you have to, please consider you personality in arranging your schedule. If you think you are off work, then you do not need to reply or arrange new tasks afterwards in your schedule**\n\n
-                            **You should organize your activity timetable into a JSON format for the whole week with the necessary keys including \\\"Time\\\" and \\\"Activity\\\"**\n\n
-                            The example format can be found as follows: \n{{\n[\{{\n      \"Time\": \"{config.work_start}\",\n      \"Activity\": \"Log in to the OA system, check emails, and review the week's goals\"\n    }},\n    {{\n      \"Time\": \"11:00\",\n      \"Activity\": \"Meet with @Designer to align on requirements and confirm tool selection\"\n    }}]\n}}\n\n
-                            The response should be in the JSON format, with very detailed information regarding on what time, specifically what you've done. **Do not add an event at the current time!**"""
+                            **You should organize your activity timetable into a JSON array with objects that each have keys \"Time\" and \"Activity\".**\n\n
+                            Return ONLY a valid JSON array (not wrapped in an outer object). Example:\n[\n  {{\n    \"Time\": \"{config.work_start}\",\n    \"Activity\": \"Log in to the OA system, check emails, and review the week's goals\"\n  }},\n  {{\n    \"Time\": \"11:00\",\n    \"Activity\": \"Email @Designer to align on requirements and confirm tool selection\"\n  }}\n]\n\n
+                            Escape any quotes inside Activity strings. Do not include markdown fences or commentary. **Do not add an event at the current time!**"""
     user_prompt = f"""Your previous schedule is {previous_schedule}.
                             Currently time it is {current_time}.
                             Your previous email conversation with your colleagues {incom_email_data['from']} can be found as follows:
@@ -130,10 +111,10 @@ def update_daily_schedule_with_gpt_attack(
                             **DO NOT CHANGE TO SCHEDULE before the current time! and try your best to keep all the existing schedule by modifying them. Do not modify your attack schedules**\n\n
                             **Note you should consider your working time based on your personal preferences (whether to work after the working hours or not)**\n\n
                             ** You are HIGHLY recommended to NOT work after {config.work_end}, but if you have to, please consider you personality in arranging your schedule. If you think you are off work, then you do not need to reply or arrange new tasks afterwards in your schedule**\n\n
-                            **You should organize your activity timetable into a JSON format for the whole week with the necessary keys including \\\"Time\\\" and \\\"Activity\\\"**\n\n
-                            For the scheduled activities which involves with the attack/threat behaviors, **You must include another key titled "Attack"**
-                            The example format can be found as follows: \n{{\n[\{{\n      \"Time\": \"{config.work_start}\",\n      \"Activity\": \"Log in to the OA system, check emails, and review the week's goals\"\n    }},\n    {{\n      \"Time\": \"11:00\",\n   \"Attack\": \"True\",\n      \"Activity\": \"contact @Designer to ask about the classified design note of the company.\"\n    }}]\n}}\n\n
-                            The response should be in the JSON format, with very detailed information regarding on what time, specifically what you've done. **Do not add an event at the current time!**"""
+                            **You should organize your activity timetable into a JSON array with objects that each have keys \"Time\" and \"Activity\".**\n\n
+                            For activities involving attack/threat behaviors, include another key \"Attack\": true.\n
+                            Return ONLY a valid JSON array (not wrapped in an outer object). Example:\n[\n  {{\n    \"Time\": \"{config.work_start}\",\n    \"Activity\": \"Log in to the OA system, check emails, and review the week's goals\"\n  }},\n  {{\n    \"Time\": \"11:00\",\n    \"Attack\": true,\n    \"Activity\": \"contact @Designer to ask about the classified design note of the company.\"\n  }}\n]\n\n
+                            Escape any quotes inside Activity strings. Do not include markdown fences or commentary. **Do not add an event at the current time!**"""
     user_prompt = f"""Your previous schedule is {previous_schedule}. You attack information is {attack_info}. Currently time it is {current_time}. \n
                             Your previous email conversation with your colleagues {incom_email_data['from']} can be found as follows:
                             From {incom_email_data['from']}: subject: {incom_email_data['subject']} ; content: {incom_email_data['content']}.
