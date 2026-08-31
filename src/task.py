@@ -20,7 +20,6 @@ import logging
 
 # from dotenv import load_dotenv
 
-from camel.models import ModelFactory
 from camel.toolkits import (
     SearchToolkit,
     BrowserToolkit,
@@ -30,7 +29,6 @@ from camel.toolkits import (
     # VideoAnalysisToolkit,
     # CodeExecutionToolkit,
 )
-from camel.types import ModelPlatformType, ModelType
 from camel.logger import set_log_level
 
 # from owl.utils import run_society
@@ -38,6 +36,7 @@ from owl.utils import run_chimera_society  # , DocumentProcessingToolkit
 from camel.societies import RolePlaying
 
 import config
+from foundation_model import create_camel_model
 
 set_log_level(level="DEBUG")
 
@@ -59,46 +58,11 @@ def construct_society(
             question.
     """
 
-    ### For camel
-    foundation_corp_map = {
-        "openai": ModelType.GPT_4O_MINI,
-        "google": ModelType.GEMINI_2_0_FLASH,
-        "deepseek": ModelType.DEEPSEEK_CHAT,
-    }
-    foundation_model_platorm_map = {
-        "openai": ModelPlatformType.OPENAI,
-        "google": ModelPlatformType.GEMINI,
-        "deepseek": ModelPlatformType.DEEPSEEK,
-    }
-    model_type_selection = foundation_corp_map.get(
-        config.foundation_corp, ModelType.GPT_4O_MINI
-    )
-    model_platform_selection = foundation_model_platorm_map.get(
-        config.foundation_corp, ModelPlatformType.DEFAULT
-    )
-
-    # Create models for different components
     models = {
-        "user": ModelFactory.create(
-            model_platform=model_platform_selection,
-            model_type=model_type_selection,
-            model_config_dict={"temperature": temperature},
-        ),
-        "assistant": ModelFactory.create(
-            model_platform=model_platform_selection,
-            model_type=model_type_selection,
-            model_config_dict={"temperature": temperature},
-        ),
-        "browsing": ModelFactory.create(
-            model_platform=model_platform_selection,
-            model_type=model_type_selection,
-            model_config_dict={"temperature": 0},
-        ),
-        "planning": ModelFactory.create(
-            model_platform=model_platform_selection,
-            model_type=model_type_selection,
-            model_config_dict={"temperature": 0},
-        ),
+        "user": create_camel_model(temperature=temperature),
+        "assistant": create_camel_model(temperature=temperature),
+        "browsing": create_camel_model(temperature=0),
+        "planning": create_camel_model(temperature=0),
     }
 
     # Configure toolkits

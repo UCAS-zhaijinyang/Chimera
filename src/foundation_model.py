@@ -23,6 +23,69 @@ env_path = config.env_path
 load_dotenv()
 
 
+def _openai_compatible_kwargs():
+    return {
+        "api_key": config.api_key or "EMPTY",
+        "base_url": config.llm_base_url,
+    }
+
+
+def _qwen3_no_think_extra_body():
+    """Disable Qwen3 thinking so structured JSON outputs stay parseable."""
+    model = (config.foundation_model or "").lower()
+    if "qwen3" not in model:
+        return None
+    return {
+        "enable_thinking": False,
+        "chat_template_kwargs": {"enable_thinking": False},
+    }
+
+
+def camel_model_backend_kwargs():
+    """Shared kwargs for camel.models.ModelFactory.create."""
+    from camel.types import ModelPlatformType, ModelType
+
+    corp_to_type = {
+        "openai": ModelType.GPT_4O_MINI,
+        "google": ModelType.GEMINI_2_0_FLASH,
+        "deepseek": ModelType.DEEPSEEK_CHAT,
+        "openai_compatible": config.foundation_model,
+    }
+    corp_to_platform = {
+        "openai": ModelPlatformType.OPENAI,
+        "google": ModelPlatformType.GEMINI,
+        "deepseek": ModelPlatformType.DEEPSEEK,
+        "openai_compatible": ModelPlatformType.OPENAI_COMPATIBLE_MODEL,
+    }
+    kwargs = {
+        "model_platform": corp_to_platform.get(
+            config.foundation_corp, ModelPlatformType.DEFAULT
+        ),
+        "model_type": corp_to_type.get(
+            config.foundation_corp, ModelType.GPT_4O_MINI
+        ),
+    }
+    if config.foundation_corp == "openai_compatible":
+        kwargs["url"] = config.llm_base_url
+        kwargs["api_key"] = config.api_key or "EMPTY"
+    return kwargs
+
+
+def create_camel_model(temperature=None):
+    from camel.models import ModelFactory
+
+    kwargs = camel_model_backend_kwargs()
+    model_config_dict = {}
+    if temperature is not None:
+        model_config_dict["temperature"] = temperature
+    extra_body = _qwen3_no_think_extra_body()
+    if extra_body:
+        model_config_dict["extra_body"] = extra_body
+    if model_config_dict:
+        kwargs["model_config_dict"] = model_config_dict
+    return ModelFactory.create(**kwargs)
+
+
 def run_llm(system_prompt, user_prompt, temperature=0):
     if config.foundation_corp == "openai":
         client = OpenAI()
@@ -82,8 +145,28 @@ def run_llm(system_prompt, user_prompt, temperature=0):
         )
         llm_output = response.choices[0].message.content
 
+    elif config.foundation_corp == "openai_compatible":
+        client = OpenAI(**_openai_compatible_kwargs())
+        create_kwargs = dict(
+            model=config.foundation_model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=temperature,
+            top_p=0.9,
+            max_tokens=16384,
+            stream=False,
+        )
+        extra_body = _qwen3_no_think_extra_body()
+        if extra_body:
+            create_kwargs["extra_body"] = extra_body
+        response = client.chat.completions.create(**create_kwargs)
+        llm_output = response.choices[0].message.content
+
     else:
         raise ValueError(
-            "Invalid foundation_corp. Please choose from 'openai', 'google', 'deepseek', or 'xai'."
+            "Invalid foundation_corp. Please choose from 'openai', 'google', "
+            "'deepseek', 'xai', or 'openai_compatible'."
         )
     return llm_output

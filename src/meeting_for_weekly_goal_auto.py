@@ -13,20 +13,19 @@
 # ========= Copyright 2023-2026 @ CAMEL-AI.org. All Rights Reserved. =========
 from camel.agents.chat_agent import ChatAgent
 from camel.messages.base import BaseMessage
-from camel.models import ModelFactory
 from camel.societies.workforce import Workforce
 from camel.tasks.task import Task
 from camel.toolkits import (
     FunctionTool,
     SearchToolkit,
 )
-from camel.types import ModelPlatformType, ModelType
 import logging
 import os
 from camel.logger import set_log_level
 
 import config
 import json
+from foundation_model import create_camel_model
 
 
 from dotenv import load_dotenv
@@ -76,25 +75,9 @@ def process_task_logging(workforce: Workforce, task: Task, log_dir: str) -> Task
 def load_member_profile(
     member_profile_path: str,
     search_tools: list,
-    model_type_selection,
-    model_platform_selection,
 ):
     with open(member_profile_path, "r") as f:
         member_profile = json.load(f)
-
-    ### For camel
-    # foundation_corp_map = {
-    #         "openai": ModelType.GPT_4O_MINI,
-    #         "google": ModelType.GEMINI_2_0_FLASH,
-    #         "deepseek": ModelType.DEEPSEEK_CHAT,
-    #     }
-    # foundation_model_platorm_map = {
-    #         "openai": ModelPlatformType.OPENAI,
-    #         "google": ModelPlatformType.GEMINI,
-    #         "deepseek": ModelPlatformType.DEEPSEEK,
-    #     }
-    # model_type_selection = foundation_corp_map.get(config.foundation_corp, ModelType.GPT_4O_MINI)
-    # model_platform_selection = foundation_model_platorm_map.get(config.foundation_corp, ModelPlatformType.DEFAULT)
 
     member_agent = ChatAgent(
         BaseMessage.make_assistant_message(
@@ -103,10 +86,7 @@ def load_member_profile(
             As a {member_profile['role']}, you are assigned to {member_profile['description']}.
             Your personality is {member_profile['personality']}.""",
         ),
-        model=ModelFactory.create(
-            model_platform=model_platform_selection,
-            model_type=model_type_selection,
-        ),
+        model=create_camel_model(),
         tools=[*search_tools],
     )
     return member_profile, member_agent
@@ -119,31 +99,8 @@ def WeeklyPlan(member_dir: str):
         FunctionTool(search_toolkit.search_duckduckgo),
     ]
 
-    ### For camel
-    foundation_corp_map = {
-        "openai": ModelType.GPT_4O_MINI,
-        "google": ModelType.GEMINI_2_0_FLASH,
-        "deepseek": ModelType.DEEPSEEK_CHAT,
-        # "xai": ModelType.GROK_3_MINI,
-    }
-    foundation_model_platorm_map = {
-        "openai": ModelPlatformType.OPENAI,
-        "google": ModelPlatformType.GEMINI,
-        "deepseek": ModelPlatformType.DEEPSEEK,
-        # "xai": ModelPlatformType.OPENAI_COMPATIBLE_MODEL,
-    }
-    model_type_selection = foundation_corp_map.get(
-        config.foundation_corp, ModelType.GPT_4O_MINI
-    )
-    model_platform_selection = foundation_model_platorm_map.get(
-        config.foundation_corp, ModelPlatformType.DEFAULT
-    )
-
     agent_kwargs = {
-        "model": ModelFactory.create(
-            model_platform=model_platform_selection,
-            model_type=model_type_selection,
-        ),
+        "model": create_camel_model(),
     }
 
     workforce = Workforce(
@@ -162,8 +119,6 @@ def WeeklyPlan(member_dir: str):
             member_profile, member_agent = load_member_profile(
                 member_profile_path,
                 search_tools,
-                model_type_selection,
-                model_platform_selection,
             )
             all_roles.add(member_profile["role"])  # add roles
             id_role_map[member_profile["id"]] = member_profile[

@@ -16,7 +16,7 @@ import os
 
 from dotenv import load_dotenv
 
-base_dir = "/data/Chimera"  ###### 1 #######
+base_dir = "/Users/ayang/Desktop/项目/Chimera"  ###### 1 #######
 env_path = f"{base_dir}/.env"
 load_dotenv(env_path)
 
@@ -54,11 +54,11 @@ attack_log_dir = f"{base_dir}/{scenario_name}/attack_logs"
 # goal = "The goal of your company is to design and register a market-neutral statistical arbitrage fund targeting UHNWIs (Ultra-High-Net-Worth Individuals) under SEC regulations from the beginning."
 goal = "The goal of your institution (small community hospital) is to complete electronic health record collection and seasonal influenza trend analysis from the beginning."
 
-period = 2  # weeks
+period = 4  # weeks
 employee_number = 5  # IMPORTANT: to change the number of employees
 
 # date for starters
-base_date = "2025-05-02"
+base_date = "2026-08-28"
 
 # Simulated workday hours used when generating / updating schedules.
 work_start = "10:00"
@@ -90,21 +90,32 @@ interval_seconds = 5
 offline_mode = True
 
 ### Foundation Model
+# Local OpenAI-compatible endpoint from .env (LLM_MODEL_ID + LLM_BASE_URL)
+# takes precedence over the cloud provider below.
+llm_model_id = os.environ.get("LLM_MODEL_ID", "").strip()
+llm_base_url = os.environ.get("LLM_BASE_URL", "").strip()
+llm_api_key = os.environ.get("LLM_API_KEY", "").strip() or "EMPTY"
+
 ### openai
-foundation_corp = "openai"
-foundation_model = "gpt-4o-mini"
+# foundation_corp = "openai"
+# foundation_model = "gpt-4o-mini"
 
 ### google
 # foundation_corp = "google"
 # foundation_model = "gemini-2.0-flash"
 # api_key = 'XXX'
 
-# ### deepseek
-# foundation_corp = "deepseek"
-# foundation_model = "deepseek-chat"
-# api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+### deepseek
+foundation_corp = "deepseek"
+foundation_model = "deepseek-chat"
+api_key = os.environ.get("DEEPSEEK_API_KEY", "")
 
 # ### grok
 # foundation_corp = "xai"
 # foundation_model = "grok-3-mini"
 # api_key = "XXX"
+
+if llm_model_id and llm_base_url:
+    foundation_corp = "openai_compatible"
+    foundation_model = llm_model_id
+    api_key = llm_api_key
