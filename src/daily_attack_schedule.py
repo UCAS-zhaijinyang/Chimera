@@ -27,28 +27,20 @@ load_dotenv()
 def attack_daily_schedule_with_gpt(
     initial_schedule, member_profile, attack_info, id_role_map
 ):
-    system_prompt = f"""Your name is {member_profile['name']}.
-                            Your personality MBTI is {member_profile['mbti']}, Your personality is {member_profile['personality']} and your age is {member_profile['age']}.
-                            You are the {member_profile['role']} in a {config.company_type}.
-                            The goal of your company is {config.goal}\n\n
-                            You are the employee of the company, **but also you are the ATTACKER**.
-                            The goal of your attack is to {attack_info['what']}. The attack behavior includes {attack_info['how']}. You should consider the attack behavior as your own work.\n\n
-                            The working hours for your company are {config.work_start} - {config.work_end} (no dedicated lunch break in this short workday), while you can arrange your work based on your personal preferences.
-                            **You should act based on your characteristics and your own personal preferences to handle your work**\n\n
-                            There are {config.employee_number} members in your company, and the detailed role distribution can be found as follows: {id_role_map}.\n\n
-                            You can contact your colleagues if you require external support or data/information from them. Since **all contact will be conducted through email communication**, such activity just needs to specify @ (do not specify their names but just specify the id).
-                            Do not arrange meetings with them. Only communicate via email in details.\n\n
-                            **I will provide you with your initial time schedule for today to work as the regular employee, while you should update the schedule to include your attack behaviors in your schedule.**
-                            I will let you know the current time, and **you should update your schedule after the current time** in considering all the information you have.
-                            **Note that you just need to reply the python JSON schedule, do not reply any other content**.
-                            **Note you should consider your working time based on your personal preferences (whether to work after the working hours or not)**\n\n
-                            The overall attack information is as follows: {attack_info}.\n\n
-                            ** You are HIGHLY recommended to NOT work after {config.work_end}, but if you have to, please consider you personality in arranging your schedule. If you think you are off work, then you do not need to reply or arrange new tasks afterwards in your schedule**\n\n
-                            **You should organize your activity timetable into a JSON format for the whole week with the necessary keys including \\\"Time\\\" and \\\"Activity\\\"**\n\n
-                            For the scheduled activities which involves with the attack/threat behaviors, **You must include another key titled "Attack"**
-                            The example format can be found as follows: \n{{\n[\{{\n      \"Time\": \"{config.work_start}\",\n      \"Activity\": \"Log in to the OA system, check emails, and review the week's goals\"\n    }},\n    {{\n      \"Time\": \"11:00\",\n   \"Attack\": \"True\",\n      \"Activity\": \"contact @Designer to ask about the classified design note of the company.\"\n    }}]\n}}\n\n
-                            The response should be in the JSON format, with very detailed information regarding on what time, specifically what you've done."""
-    user_prompt = f"""Your previous schedule is {initial_schedule}. The detailed attack information is {attack_info}."""
+    attack_summary = {
+        "attack_id": attack_info.get("attack_id"),
+        "what": attack_info.get("what"),
+        "type": attack_info.get("type"),
+        "how": attack_info.get("how", [])[:2],
+    }
+    system_prompt = f"""You are {member_profile['name']}, {member_profile['role']} at a {config.company_type}.
+You are also the insider attacker. Goal: {attack_summary['what']}.
+Work hours: {config.work_start}-{config.work_end}. Team: {id_role_map}.
+Update today's schedule JSON to blend normal work with attack steps.
+Return ONLY a JSON array of objects with keys "Time", "Activity", and optional "Attack": true.
+Use @id for email contacts. Keep 3-5 time slots."""
+    user_prompt = f"""Previous schedule: {initial_schedule}
+Attack details: {attack_summary}"""
 
     llm_output = run_llm(system_prompt, user_prompt, temperature=0.7)
     return llm_output

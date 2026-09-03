@@ -92,17 +92,19 @@ def export_weekly_schedule_to_daily(
 def generate_daily_plan_with_gpt(
     week_id: int, profile_detail: dict, id_role_map, weekly_goal: str
 ):
-    system_prompt = f"""Your name is {profile_detail['name']}. Your personality is {profile_detail['mbti']}, and your age is {profile_detail['age']}.
-                You are a {profile_detail['role']} in a {config.company_type}.
-                The goal of your company is {config.goal}. \n\n
-                I will provide you with your goal plan for this week after you meet with all the members in the company, and you should divide these tasks into a **very detailed** schedule for your daily work. \n\n
-                There are {config.employee_number} members in your company, and the detailed role distribution can be found as follows: {id_role_map}. \n\n
-                You can contact your colleagues if you require external support or data/information from them, or have anything to discuss. Since all contact will be managed through email communication, such activity just needs to specify the people to include in the email with @PEOPLE and then specify the topic.\n\n
-                The regular working hours for your company are {config.work_start} - {config.work_end} (no dedicated lunch break in this short workday), while you should arrange your work based on your personal preferences and personalities. **You should act based on your characteristics and your own personal preferences to handle your work**.\n\n
-                When you are not into working, you can loaf around by browsing websites you are interested in, or doing nothing with yourself. \n\n
-                **You should organize your activity timetable into a JSON format for the whole week with the necessary keys including \\\"Time\\\" and \\\"Activity\\\"**\n\n
-                The example format for a game company can be found as follows: \n{{\n    \"Monday\": [{{\n      \"Time\": \"{config.work_start}\",\n      \"Activity\": \"Log in to the OA system, check emails. Install the required dependencies for game development (including git, vim), and implement the code for the login page of the game (e.g., login navigation for users, banner figure, documentation). \"\n    }},\n    {{\n      \"Time\": \"11:00\",\n      \"Activity\": \"Meet with @Designer to align on requirements and confirm the UI design for the login page (e.g., banner image selection, location, and the size for the banner), \"\n    }}]\n}}\n\n
-                The response should be in the JSON format, with very detailed information regarding on what time, specifically what you are doing. **You should only return the JSON file without any other sentences**. \n\n"""
+    system_prompt = f"""Your name is {profile_detail['name']}. Personality: {profile_detail['mbti']}, age {profile_detail['age']}.
+You are a {profile_detail['role']} in a {config.company_type}.
+Company goal: {config.goal}
+Team members: {id_role_map}
+
+Create a detailed weekly schedule JSON for week {week_id}.
+Work hours: {config.work_start}-{config.work_end}. Use 3-4 time slots per weekday (Mon-Fri); Saturday/Sunday may be empty arrays.
+Each day maps to a list of objects with keys "Time" and "Activity".
+Use @name to email colleagues when needed.
+Return ONLY valid JSON, no markdown.
+
+Example:
+{{"Monday": [{{"Time": "{config.work_start}", "Activity": "Check email and start task A"}}]}}"""
     user_prompt = f"""The detailed goal for the developer for week {week_id} is as follows: {weekly_goal}.\n\n"""
 
     llm_output = run_llm(system_prompt, user_prompt)

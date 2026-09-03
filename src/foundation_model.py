@@ -30,6 +30,10 @@ def _openai_compatible_kwargs():
     }
 
 
+def _run_llm_max_tokens():
+    return config.llm_max_tokens
+
+
 def _qwen3_no_think_extra_body():
     """Disable Qwen3 thinking so structured JSON outputs stay parseable."""
     model = (config.foundation_model or "").lower()
@@ -71,13 +75,32 @@ def camel_model_backend_kwargs():
     return kwargs
 
 
+def create_meeting_camel_model():
+    from camel.models import ModelFactory
+
+    kwargs = camel_model_backend_kwargs()
+    model_config_dict = {
+        "max_tokens": config.llm_agent_max_tokens,
+        "tool_choice": "none",
+    }
+    extra_body = _qwen3_no_think_extra_body()
+    if extra_body:
+        model_config_dict["extra_body"] = extra_body
+    kwargs["model_config_dict"] = model_config_dict
+    return ModelFactory.create(**kwargs)
+
+
 def create_camel_model(temperature=None):
     from camel.models import ModelFactory
 
     kwargs = camel_model_backend_kwargs()
-    model_config_dict = {}
+    model_config_dict = {"max_tokens": config.llm_agent_max_tokens}
     if temperature is not None:
         model_config_dict["temperature"] = temperature
+    if config.foundation_corp == "openai_compatible" and getattr(
+        config, "local_llm_disable_tools", False
+    ):
+        model_config_dict["tool_choice"] = "none"
     extra_body = _qwen3_no_think_extra_body()
     if extra_body:
         model_config_dict["extra_body"] = extra_body
@@ -97,7 +120,7 @@ def run_llm(system_prompt, user_prompt, temperature=0):
             ],
             temperature=temperature,
             top_p=0.9,
-            max_tokens=16384,
+            max_tokens=_run_llm_max_tokens(),
         )
         llm_output = response.choices[0].message.content
 
@@ -110,7 +133,7 @@ def run_llm(system_prompt, user_prompt, temperature=0):
                 system_instruction=system_prompt,
                 temperature=temperature,
                 top_p=0.9,
-                max_output_tokens=16384,
+                max_output_tokens=_run_llm_max_tokens(),
             ),
         )
         llm_output = response.text
@@ -125,7 +148,7 @@ def run_llm(system_prompt, user_prompt, temperature=0):
             ],
             temperature=temperature,
             top_p=0.9,
-            max_tokens=16384,
+            max_tokens=_run_llm_max_tokens(),
             stream=False,
         )
         llm_output = response.choices[0].message.content
@@ -140,7 +163,7 @@ def run_llm(system_prompt, user_prompt, temperature=0):
             ],
             temperature=temperature,
             top_p=0.9,
-            max_tokens=16384,
+            max_tokens=_run_llm_max_tokens(),
             stream=False,
         )
         llm_output = response.choices[0].message.content
@@ -155,7 +178,7 @@ def run_llm(system_prompt, user_prompt, temperature=0):
             ],
             temperature=temperature,
             top_p=0.9,
-            max_tokens=16384,
+            max_tokens=_run_llm_max_tokens(),
             stream=False,
         )
         extra_body = _qwen3_no_think_extra_body()

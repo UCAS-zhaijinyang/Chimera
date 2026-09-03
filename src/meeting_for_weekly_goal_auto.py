@@ -25,7 +25,7 @@ from camel.logger import set_log_level
 
 import config
 import json
-from foundation_model import create_camel_model
+from foundation_model import create_meeting_camel_model
 
 
 from dotenv import load_dotenv
@@ -86,21 +86,23 @@ def load_member_profile(
             As a {member_profile['role']}, you are assigned to {member_profile['description']}.
             Your personality is {member_profile['personality']}.""",
         ),
-        model=create_camel_model(),
-        tools=[*search_tools],
+        model=create_meeting_camel_model(),
+        tools=[*search_tools] if search_tools else None,
     )
     return member_profile, member_agent
 
 
 def WeeklyPlan(member_dir: str):
-    search_toolkit = SearchToolkit()
-    search_tools = [
-        FunctionTool(search_toolkit.search_google),
-        FunctionTool(search_toolkit.search_duckduckgo),
-    ]
+    search_tools = []
+    if not config.offline_mode:
+        search_toolkit = SearchToolkit()
+        search_tools = [
+            FunctionTool(search_toolkit.search_google),
+            FunctionTool(search_toolkit.search_duckduckgo),
+        ]
 
     agent_kwargs = {
-        "model": create_camel_model(),
+        "model": create_meeting_camel_model(),
     }
 
     workforce = Workforce(

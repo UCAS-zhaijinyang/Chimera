@@ -16,12 +16,12 @@ import os
 
 from dotenv import load_dotenv
 
-base_dir = "/Users/ayang/Desktop/项目/Chimera"  ###### 1 #######
+base_dir = "/home/zjy/Chimera"  ###### 1 #######
 env_path = f"{base_dir}/.env"
 load_dotenv(env_path)
 
 # scenario name
-scenario_name = "chimera_scenario_1"
+scenario_name = "chimera_scenario_100d"
 
 # company_id = "tech_company" ###### 2 #######
 # company_id = "finance_corporation"
@@ -54,17 +54,17 @@ attack_log_dir = f"{base_dir}/{scenario_name}/attack_logs"
 # goal = "The goal of your company is to design and register a market-neutral statistical arbitrage fund targeting UHNWIs (Ultra-High-Net-Worth Individuals) under SEC regulations from the beginning."
 goal = "The goal of your institution (small community hospital) is to complete electronic health record collection and seasonal influenza trend analysis from the beginning."
 
-period = 4  # weeks
-employee_number = 5  # IMPORTANT: to change the number of employees
+period = 20  # weeks (20 x Mon-Fri = 100 workdays)
+employee_number = 90  # IMPORTANT: to change the number of employees
 
 # date for starters
 base_date = "2026-08-28"
 
 # Simulated workday hours used when generating / updating schedules.
 work_start = "10:00"
-work_end = "14:00"
+work_end = "18:00"
 # Hard stop for the Phase-2 day simulation loop (HH:MM:SS).
-sim_day_end = "15:00:00"
+sim_day_end = "19:00:00"
 
 # maximum number of attempts for query LLM for structured output
 max_attempt = 5
@@ -95,6 +95,10 @@ offline_mode = True
 llm_model_id = os.environ.get("LLM_MODEL_ID", "").strip()
 llm_base_url = os.environ.get("LLM_BASE_URL", "").strip()
 llm_api_key = os.environ.get("LLM_API_KEY", "").strip() or "EMPTY"
+# Local vLLM endpoint (current server: max_model_len=16384, tool calling enabled).
+llm_max_tokens = int(os.environ.get("LLM_MAX_TOKENS", "4096"))
+llm_agent_max_tokens = int(os.environ.get("LLM_AGENT_MAX_TOKENS", "2048"))
+local_llm_disable_tools = False
 
 ### openai
 # foundation_corp = "openai"

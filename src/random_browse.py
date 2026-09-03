@@ -48,32 +48,31 @@ def construct_society(question: str) -> RolePlaying:
     }
 
     # Configure toolkits
-    tools = [
-        *FileWriteToolkit(output_dir="./").get_tools(),
-    ]
-    if not config.offline_mode:
-        tools += [
-            *BrowserToolkit(
-                headless=True,
-                web_agent_model=models["browsing"],
-                planning_agent_model=models["planning"],
-            ).get_tools(),
-            SearchToolkit().search_duckduckgo,
-            SearchToolkit().search_google,
-            SearchToolkit().search_wiki,
+    tools = []
+    if not (
+        config.foundation_corp == "openai_compatible"
+        and getattr(config, "local_llm_disable_tools", False)
+    ):
+        tools = [
+            *FileWriteToolkit(output_dir="./").get_tools(),
         ]
+        if not config.offline_mode:
+            tools += [
+                *BrowserToolkit(
+                    headless=True,
+                    web_agent_model=models["browsing"],
+                    planning_agent_model=models["planning"],
+                ).get_tools(),
+                SearchToolkit().search_duckduckgo,
+                SearchToolkit().search_google,
+                SearchToolkit().search_wiki,
+            ]
 
     # Configure agent roles and parameters
-    max_tool_iterations = getattr(config, "max_tool_iterations", 20)
-    user_agent_kwargs = {
-        "model": models["user"],
-        "max_tool_iterations": max_tool_iterations,
-    }
-    assistant_agent_kwargs = {
-        "model": models["assistant"],
-        "tools": tools,
-        "max_tool_iterations": max_tool_iterations,
-    }
+    user_agent_kwargs = {"model": models["user"]}
+    assistant_agent_kwargs = {"model": models["assistant"]}
+    if tools:
+        assistant_agent_kwargs["tools"] = tools
 
     # Configure task parameters
     task_kwargs = {

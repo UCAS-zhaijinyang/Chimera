@@ -12,7 +12,10 @@
 # limitations under the License.
 # ========= Copyright 2023-2026 @ CAMEL-AI.org. All Rights Reserved. =========
 import nest_asyncio
-from multiprocessing import Process
+import multiprocessing as mp
+
+# fork() from worker threads is unsafe when filelock holds FDs (CAMEL/HF cache).
+Process = mp.get_context("spawn").Process
 from threading import Thread
 from dotenv import load_dotenv
 import time
@@ -30,6 +33,7 @@ from task import run_task
 from member_email import get_email_members, get_email_content, reply_email_content
 from daily_plan_update import update_daily_schedule_attack
 from attack_schedule import select_attack_date
+from daily_attack_schedule import update_daily_schedule_with_attack
 from foundation_model import run_llm
 from activity_utils import is_email_send_activity
 from process_registry import (
@@ -728,6 +732,8 @@ class Member:
                     writer.writerow(
                         [
                             "id",
+                            "week",
+                            "date",
                             "real_timestamp",
                             "sim_timestamp",
                             "name",
@@ -738,6 +744,8 @@ class Member:
                 writer.writerow(
                     [
                         write_id,
+                        self.week,
+                        self.date,
                         real_timestamp,
                         sim_timestamp,
                         self.name,
@@ -764,6 +772,8 @@ class Member:
                     writer.writerow(
                         [
                             "id",
+                            "week",
+                            "date",
                             "index",
                             "real_timestamp",
                             "sim_timestamp",
@@ -775,6 +785,8 @@ class Member:
                 writer.writerow(
                     [
                         write_id,
+                        self.week,
+                        self.date,
                         self.execution_task_id,
                         real_timestamp,
                         sim_timestamp,
@@ -809,6 +821,8 @@ class Member:
                     writer.writerow(
                         [
                             "email_from",
+                            "week",
+                            "date",
                             "real_timestamp",
                             "sim_timestamp",
                             "name",
@@ -821,6 +835,8 @@ class Member:
                 writer.writerow(
                     [
                         write_id,
+                        self.week,
+                        self.date,
                         real_timestamp,
                         sim_timestamp,
                         self.name,
@@ -835,23 +851,91 @@ class Member:
                 )
 
 
+def load_attack_manifest(manifest_path):
+    """Return (log_tag, {member_id: attack_id}) from a manifest JSON file."""
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    log_tag = data.get("log_tag", "multi_insider")
+    attackers = data.get("attackers")
+    if isinstance(attackers, dict):
+        return log_tag, attackers
+    if isinstance(attackers, list):
+        return log_tag, {
+            entry["member_id"]: entry["attack_id"] for entry in attackers
+        }
+    raise ValueError(
+        f'Attack manifest must contain "attackers" as dict or list: {manifest_path}'
+    )
+
+
+def inject_attack_schedules(week, date, attacker_attack_map, id_role_map):
+    for member_id, attack_id in attacker_attack_map.items():
+        update_daily_schedule_with_attack(
+            week, date, member_id, attack_id, id_role_map
+        )
+        print(
+            f"[INFO] Injected attack schedule: {member_id} / {attack_id} "
+            f"week {week} - {date}"
+        )
+
+
+def remove_attack_schedule_files(week, date, attacker_ids):
+    for member_id in attacker_ids:
+        attack_schedule_file = os.path.join(
+            config.attack_schedule_dir,
+            f"{member_id}_week_{week}_{date}_attack.json",
+        )
+        if os.path.exists(attack_schedule_file):
+            os.remove(attack_schedule_file)
+            print(f"[INFO] Removed the attack schedule file: {attack_schedule_file}")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Attack execution for existing schedules and members."
     )
     parser.add_argument(
-        "--attacker", type=str, required=True, help="Attacker id, e.g., cdev-1"
+        "--attacker",
+        type=str,
+        help="Single attacker id (legacy mode), e.g., cdev-1",
     )
     parser.add_argument(
-        "--attid", type=str, required=True, help="Attack id, e.g., gen_attack_1"
+        "--attid",
+        type=str,
+        help="Single attack scenario id (legacy mode), e.g., gen_attack_1",
+    )
+    parser.add_argument(
+        "--attack-manifest",
+        type=str,
+        help="JSON file mapping multiple attackers to attack scenario ids",
+    )
+    parser.add_argument(
+        "--log-tag",
+        type=str,
+        help="Output subdirectory tag under attack_logs/ (overrides manifest log_tag)",
+    )
+    parser.add_argument("--week", type=int, help="Simulation week, e.g., 2")
+    parser.add_argument(
+        "--date", type=str, help="Simulation weekday, e.g., Wednesday"
     )
     args = parser.parse_args()
 
-    # Attack setting
-    attacker_id = args.attacker
-    attacker_ids = [attacker_id]
-    attack_id = args.attid
-    print(attacker_ids)
+    if args.attack_manifest:
+        manifest_log_tag, attacker_attack_map = load_attack_manifest(
+            args.attack_manifest
+        )
+        attacker_ids = list(attacker_attack_map.keys())
+        log_tag = args.log_tag or manifest_log_tag
+    elif args.attacker and args.attid:
+        attacker_attack_map = {args.attacker: args.attid}
+        attacker_ids = [args.attacker]
+        log_tag = args.log_tag or args.attid
+    else:
+        parser.error(
+            "Provide --attack-manifest or both --attacker and --attid."
+        )
+
+    print(f"[INFO] Attackers ({len(attacker_ids)}): {attacker_attack_map}")
 
     ########################
     # Get the total employee info
@@ -872,11 +956,30 @@ if __name__ == "__main__":
             profile_list.append(member_profile)  # add profile
     ########################
 
-    attacker_id = attacker_ids[0]
-    attack_week, attack_date = select_attack_date(attacker_id, attack_id, id_role_map)
+    if not args.week or not args.date:
+        if len(attacker_ids) == 1:
+            attack_week, attack_date = select_attack_date(
+                attacker_ids[0],
+                attacker_attack_map[attacker_ids[0]],
+                id_role_map,
+            )
+        else:
+            parser.error(
+                "Multi-attacker runs require --week and --date "
+                "(LLM day-selection supports only a single attacker)."
+            )
+    else:
+        attack_week = args.week
+        attack_date = args.date
+        inject_attack_schedules(
+            attack_week, attack_date, attacker_attack_map, id_role_map
+        )
+        print(
+            f"[INFO] Using fixed simulation day: week {attack_week} - {attack_date}"
+        )
 
     # attack execution log directory
-    log_dir = os.path.join(config.attack_log_dir, f"{attack_id}_{config.company_id}")
+    log_dir = os.path.join(config.attack_log_dir, f"{log_tag}_{config.company_id}")
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
@@ -903,8 +1006,8 @@ if __name__ == "__main__":
             log_dir,
             id_list,
             id_role_map,
-            attack_id=attack_id,
-            attacker=True if member_id in attacker_ids else False,
+            attack_id=attacker_attack_map.get(member_id, ""),
+            attacker=member_id in attacker_attack_map,
         )
         for member_id in id_list
     ]
@@ -944,14 +1047,8 @@ if __name__ == "__main__":
         f"[INFO][Attack] All members have completed their tasks for week {attack_week} - date {attack_date}."
     )
 
-    # remove the attack schedule file
-    attack_schedule_file = os.path.join(
-        config.attack_schedule_dir,
-        f"{attacker_id}_week_{attack_week}_{attack_date}_attack.json",
-    )
-    if os.path.exists(attack_schedule_file):
-        os.remove(attack_schedule_file)
-        print(f"[INFO] Removed the attack schedule file: {attack_schedule_file}")
+    remove_attack_schedule_files(attack_week, attack_date, attacker_ids)
 
+    sys.stdout.flush()
     sys.stdout.close()
-    exit(0)
+    os._exit(0)

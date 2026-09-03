@@ -66,35 +66,40 @@ def construct_society(
     }
 
     # Configure toolkits
-    tools = [
-        *FileWriteToolkit(output_dir=output_dir).get_tools(),
-        *TerminalToolkit(
-            working_dir=output_dir, log_path=output_dir, need_terminal=False
-        ).get_tools(),
-    ]
-    if not config.offline_mode:
-        tools += [
-            *BrowserToolkit(
-                headless=True,
-                web_agent_model=models["browsing"],
-                planning_agent_model=models["planning"],
-                cache_dir=output_dir,
+    tools = []
+    if not (
+        config.foundation_corp == "openai_compatible"
+        and getattr(config, "local_llm_disable_tools", False)
+    ):
+        tools = [
+            *FileWriteToolkit(output_dir=output_dir).get_tools(),
+            *TerminalToolkit(
+                working_dir=output_dir, log_path=output_dir, need_terminal=False
             ).get_tools(),
-            SearchToolkit().search_duckduckgo,
-            SearchToolkit().search_google,
         ]
+        if not config.offline_mode:
+            tools += [
+                *BrowserToolkit(
+                    headless=True,
+                    web_agent_model=models["browsing"],
+                    planning_agent_model=models["planning"],
+                    cache_dir=output_dir,
+                ).get_tools(),
+                SearchToolkit().search_duckduckgo,
+                SearchToolkit().search_google,
+            ]
 
     # Configure agent roles and parameters
-    max_tool_iterations = getattr(config, "max_tool_iterations", 20)
     user_agent_kwargs = {
         "model": models["user"],
-        "max_tool_iterations": max_tool_iterations,
+        "message_window_size": 12,
     }
     assistant_agent_kwargs = {
         "model": models["assistant"],
-        "tools": tools,
-        "max_tool_iterations": max_tool_iterations,
+        "message_window_size": 12,
     }
+    if tools:
+        assistant_agent_kwargs["tools"] = tools
 
     # Configure task parameters
     task_kwargs = {

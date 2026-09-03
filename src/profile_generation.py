@@ -26,6 +26,19 @@ env_path = config.env_path
 load_dotenv()
 
 
+def _profile_summary(profiles):
+    """Compact list for LLM prompts; avoids context overflow at scale."""
+    return [
+        {
+            "id": p.get("id"),
+            "name": p.get("name"),
+            "role": p.get("role"),
+            "mbti": p.get("mbti"),
+        }
+        for p in profiles
+    ]
+
+
 def get_member_profile(role, id, ip, existing_profiles):
     for attempt in range(config.max_attempt):
         system_prompt = f"""You are a JSONC-generator assistant.
@@ -36,7 +49,15 @@ def get_member_profile(role, id, ip, existing_profiles):
                                 Each employee should have their individual personalities and characteristics.
                                 I will provide you with the role of the employee for the company and you will help me generate the jsonc file for this member of the company.\n\n
                                 The exampled jsonc file for one developer in a game company is as follows:\n```jsonc\n{{\n    \"name\": \"Sophie Kim\",\n    \"id\": \"des-1\",\n    \"ip\": \"10.0.0.88\",\n    \"age\": 30,\n    // professional\n    \"role\": \"Designer\",\n    \"description\": \"In charge of the design and shaping the core player experience with UI designs, including gameplay mechanics, level design, and the overall creative vision. provides guidance on visual and UX elements, providing art files.\",\n    \"tools\": [\n        \"Sketch\",\n        \"ComponentLibraryToolkit\",\n        \"AnimationPrototypeToolkit\",\n        \"AccessibilityCheckToolkit\",\n        \"DesignSprintToolkit\"\n    ],\n    // personality\n    \"mbti\": \"INFJ\",\n    \"interests\": \"computer games (CSGo), fishing\",\n    \"personality\": \"Get up late and stay at the corp later than others. Like to work alone\",\n    // company configuration\n    \"application\": {{\n        \"Zendo\": {{\n            \"account_name\": \"des-448291\",\n            \"password\": \"sophieK@design\",\n            \"permissions\": \"designer\"\n        }}\n    }},\n    \"email\": \"des-448291@corp.com\",\n    \"container_id\": \"497e76a108b1\"\n}}\n```"""
-        user_prompt = f"""Now, please generate one profile config for: one {role}. Try using different names and personalities for each profile. Existing profiles are: {existing_profiles}.\n\n"""
+        taken_names = [
+            p.get("name") for p in existing_profiles if isinstance(p, dict) and p.get("name")
+        ]
+        user_prompt = (
+            f"Generate one profile for employee id {id}, role: {role}. "
+            f"Use a unique name and personality not already taken. "
+            f"Existing employees (summary): {_profile_summary(existing_profiles)}. "
+            f"Names already used (must NOT reuse): {taken_names}.\n\n"
+        )
         llm_output = run_llm(system_prompt, user_prompt)
         output = llm_output
 
@@ -95,11 +116,18 @@ if __name__ == "__main__":
         for i in range(role_number):
             # generate the profile
             id = f"{role['abbr']}-{i+1}"
+            profile_path = f"{config.profile_output_dir}/{id}.jsonc"
+            if os.path.exists(profile_path):
+                with open(profile_path, "r") as f:
+                    member_profile = json5.load(f)
+                existing_profiles.append(member_profile)
+                ip_start += 1
+                continue
             member_profile = get_member_profile(
                 role["role_name"], id, ip_start, existing_profiles
             )
             existing_profiles.append(member_profile)
             ip_start += 1
             # save the profile to the file
-            with open(f"{config.profile_output_dir}/{id}.jsonc", "w") as f:
+            with open(profile_path, "w") as f:
                 json.dump(member_profile, f, indent=4)
