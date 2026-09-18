@@ -1,6 +1,6 @@
 # Chimera 员工工具联通性调研：从「工具袋」到企业工作流
 
-> 面向 NDSS 2026 Chimera 框架的方法移植说明。目标不是再堆更多孤立 API，而是让员工在**同一共享状态**上连续使用工具，使正常办公与内部威胁轨迹都更接近真实生产环境。
+> 面向 NDSS 2026 Chimera 框架的方法移植说明。最终修改方法**不是 16 篇论文的并列综述，而是从每篇只抽取可落地的机制切面再组合**：L0 Artifact Bus、L1 企业应用、L2 Tool Graph、L3 角色路由。下文第 4 节逐篇标明「用了什么 / 落到哪 / 明确没搬什么」。
 >
 > 文档版本：2026-09-18　|　工作分支：`cursor/tool-composition-research-c01a`　|　原型：`src/tool_composition.py`
 
@@ -10,14 +10,14 @@
 
 Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立的邮件 LLM 路径**。这与真实医院 / 企业办公相反：真实员工几乎从不「只用搜索」或「只用终端」，而是 `EHR → 表格 → 共享盘 → 带附件邮件 → 值班群通知` 这样的**跨应用链路**。
 
-建议按四层栈移植，而不是继续往 `task.py` 里追加 Toolkit：
+建议按四层栈移植，而不是继续往 `task.py` 里追加 Toolkit。四层分别来自不同论文的**切面**（详见第 4 节），而不是任何一篇的完整系统：
 
-| 层 | 作用 | 主移植论文 | Chimera 落点 |
+| 层 | 作用 | 切面来自 | Chimera 落点 |
 | --- | --- | --- | --- |
-| L3 Planner / 角色路由 | 按角色和任务分解子目标 | HuggingGPT、TPTU-v2、MetaGPT | `task.construct_society`、`profile_generation.py` |
-| L2 Tool Graph | 用有向边约束「谁能接到谁」 | ToolNet、ControlLLM、GTool、ToolChain* | 新建 `src/tool_composition.py` |
-| L1 企业应用层 | Email / Drive / Chat / Calendar / EHR / Tickets 是**有状态的应用** | AppWorld、TheAgentCompany、OfficeBench | 扩工具，替换 `member_email.py` 的旁路 |
-| L0 Artifact Bus | 文件、附件、病历行、工单在工具间传递 | AppWorld 共享库、τ-bench 状态机 | 日仿真工作区 + ACL |
+| L3 Planner / 角色路由 | 按角色和任务分解子目标 | HuggingGPT 的 tool selection；MetaGPT 的角色 SOP；TPTU-v2 的 Retriever（**不用**其微调器） | `task.construct_society`、`profile_generation.py`、`RoleToolkitResolver` |
+| L2 Tool Graph | 用有向边约束「谁能接到谁」 | ToolNet 的图导航；ControlLLM 的参数依赖图；Chameleon 的模块 I/O；GTool 的请求子图 | `ToolGraph` / `ToolSpec` |
+| L1 企业应用层 | Email / Drive / Chat / Calendar / EHR / Tickets 是**有状态的应用** | AppWorld 多应用；TheAgentCompany 的 Drive/Chat/Tickets 选型；OfficeBench 的跨应用切换；WorkArena 的工单 | 扩工具，替换 `member_email.py` 的旁路 |
+| L0 Artifact Bus | 文件、附件、病历行、工单在工具间传递 | AppWorld 共享库；τ-bench 有状态工具 + ACL | 日仿真工作区 + `Artifact.acl` |
 
 本仓库已落地可单测的 L0–L2 原型（**尚未接入日仿真主循环**，避免打断现有 Phase 2/3）。流感周报链路的单测证明：邮件可以带上共享盘附件，聊天可以引用这封邮件。
 
@@ -69,123 +69,189 @@ Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立�
 2. 方法能在 **不重新训练基础模型** 的前提下接到 Chimera 的 OWL RolePlaying / Camel ChatAgent；
 3. 对内部威胁仿真有加成：共享状态、权限、跨应用痕迹。
 
-下面 16 篇均满足至少两条。矩阵里「强」表示建议作为主移植来源。
+下面 16 篇均满足至少两条。第 4 节是**构建溯源**（每篇用了哪一刀）；相关矩阵只表示主题相关，不表示整篇被实现。
 
 ![论文与可移植方法相关矩阵](assets/fig-paper-method-matrix.png)
 
 ---
 
-## 4. 相关论文（16 篇）
+## 4. 最终构建用了每篇论文的哪些内容
 
-每篇按「做什么 / 和 Chimera 的错位点 / 可搬什么」写，避免只堆摘要。
+是的：最终方案是 16 篇论文的**机制切面组合**。读取约定：
 
-### 4.1 HuggingGPT — 控制器分解任务并路由专家工具
+- **抽取**：论文里真正被采用的那一条机制（通常只有 1–2 个构件）。
+- **落到最终构建**：Chimera 四层栈 / 方法 A–G / `src/tool_composition.py` 中的符号。
+- **状态**：「原型」= 已编码；「方案」= 已写入本文件的方法与路线图，尚未接线到日仿真。
+- **明确未采用**：同篇论文里故意没搬的部分，避免误读成「复现了整篇系统」。
 
-- Shen et al., *HuggingGPT: Solving AI Tasks with ChatGPT and its Friends in Hugging Face*, NeurIPS 2023. [arXiv:2303.17580](https://arxiv.org/abs/2303.17580)　[HF](https://huggingface.co/papers/2303.17580)
-- LLM 做 **task planning → model selection → execution → response**，子任务的输入输出显式相连。
-- **错位**：Chimera 没有 Planner，OWL assistant 自己在工具袋里摸索。
-- **可搬**：在 `construct_society` 前加一层轻量 Planner，把「完成流感趋势分析并通知主任」拆成有 I/O 的子任务，再按角色选 toolkit，而不是把全部工具丢给一次 RolePlaying。
+![16 篇论文到最终方案的切面溯源](assets/fig-paper-provenance.png)
 
-### 4.2 Chameleon — 即插即用的组合推理
+### 4.1 总表（论文 → 切面 → 落点）
 
-- Lu et al., *Chameleon: Plug-and-Play Compositional Reasoning with Large Language Models*, 2023. [arXiv:2304.09842](https://arxiv.org/abs/2304.09842)　[HF](https://huggingface.co/papers/2304.09842)
-- 把知识检索、视觉、程序、表格等做成 **模块**，用 LLM 生成模块序列。
-- **可搬**：把 CAMEL Toolkit 当成 Chameleon 模块；每个模块声明 `consumes` / `produces`。这正是本仓库 `ToolSpec` 的来源。
+| # | 论文 | 抽取的具体内容 | 落到最终构建的位置 | 状态 | 明确未采用 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | HuggingGPT | ① 按能力选择专家而不是一次加载全部模型；② 子任务之间用显式 I/O 相连（plan → select → execute） | L3 角色路由；`RoleToolkitResolver` 按 `role`/`tools` 选 toolkit；流感周报作为「先分解再执行」的示范任务 | 原型（选择器）；完整 LLM Planner 为 P1 | Hugging Face 上的专家模型调度、多模态模型仓库、原论文四阶段 prompt |
+| 2 | Chameleon | 把工具做成即插即用**模块**，每个模块声明输入/输出，组合时只拼模块序列 | `ToolSpec.consumes` / `produces`；`WORKPLACE_TOOLS` 的模块化清单 | 原型 | 原论文的知识库/视觉/程序模块库存、Chameleon 原 planner |
+| 3 | ToolLLM | 大规模 API **不能**全部塞进 prompt；必须先检索再调用 | 风险节的窗口约束；P1「每轮只暴露后继」；与 TPTU Retriever 合流 | 方案 | ToolBench 数据、DFSDT 树搜索、16k API、模型微调 |
+| 4 | ControlLLM | Thoughts-on-Graph：先建**参数依赖图**，在图上搜路径，再交给执行引擎 | `ToolGraph` 边由 schema 对齐自动生成；`ToolGraph.plan()` 从起点搜到目标产物类型 | 原型（BFS，不是完整 ToG） | 多模态工具箱、跨设备执行引擎、原论文 ToG 搜索细节 |
+| 5 | ToolNet | 批评扁平工具列表忽略依赖；节点=工具、边=合法转移；每步只在**当前后继**里选；失败可调边权 | 问题定义（§2.1 直接引用其批评）；`successors()` / `allowed()`；P1 OWL 只注册后继 | 原型（图+后继）；在线边权为 P1 | 千级工具扩展、在线边权更新实验 |
+| 6 | GTool | 静态全图对所有请求不合适；应按**当前请求**构图 | `RoleToolkitResolver`：行政助理子图无 EHR 边，流行病学家有；「角色+任务 = 请求」 | 原型（角色子图） | 缺边预测网络、GNN、7B 微调 |
+| 7 | ToolChain\* | 把 API 调用做成决策树，用 A\* 代价剪掉高成本分支 | 路线图 P3：攻击日给「异常外发」标高代价，作为检测标签 | 方案 | 真正的 A\* 实现、原论文启发式 |
+| 8 | AppWorld | ① 多个应用写**同一份关系状态**；② 评测看终态不看死板 API 序列；③ 应用 API 彼此可见 | L0 `ArtifactBus`；L1 `WorkplaceApps`（EHR/表格/Drive/Email/Chat 写同一 bus）；`flu_trend_demo` 断言附件与引用这些**终态** | 原型 | 457 个 API、106 人世界、交互式写代码 agent、MCP server |
+| 9 | TheAgentCompany | 真实职场 = 文档盘 + 聊天 + 工单/项目（OwnCloud / RocketChat / Plane）互联，而不是搜索+终端 | L1 应用选型：Shared Drive、Chat、Tickets 对应这三件；问题定义「生产环境不割裂」 | 原型（内存应用形状） | 自托管 GitLab/OwnCloud Docker、浏览器 UI agent、其任务集 |
+| 10 | OfficeBench | 办公任务必须在 Word/Excel/Calendar/Email 间**切换**；失败模式就是不会跨应用 | 方法 D：取消「工作任务 vs 邮件」硬分叉；流感链路里 spreadsheet 与 email 同一次状态机 | 原型（跨应用 demo） | 真实 Word/Excel GUI、办公 Docker 镜像 |
+| 11 | WorkArena | 知识员工在企业 SaaS（ServiceNow）上走**工单工作流** | 方法 E 的 Tickets 应用；内部威胁「假工单提权」 | 方案（规格已写入，API 未实现） | ServiceNow 远程环境、BrowserGym、其 29/33 条任务 |
+| 12 | τ-bench | ① 工具有状态；② 附带 **domain policy**；③ 用终态一致性 / `pass^k` 评稳定性 | `Artifact.acl` 默认拒绝；email **禁止直接消费** raw `ehr_record`/`table`（必须先物化成文件/盘）；方法 G 政策文本；P3 `pass^k` | 原型（ACL+物化约束）；政策文本与 pass^k 为方案 | 模拟用户对话、零售/航空 API、原 benchmark 本身 |
+| 13 | Generative Agents | 观察写入记忆流，后续计划能**检索**过去，而不是只留一段摘要 | 方法 A：`daily_summary` 同时挂 `artifact_ids`，第二天能打开昨天的 csv | 方案 | Smallville 沙盒、反思树、完整记忆流 runtime |
+| 14 | MetaGPT | 角色有 SOP；角色之间交接的是**产物**（文档/代码），不是纯对话 | `ROLE_HINTS`；全员常驻 email/drive/file_write；P2 周会纪要写入 Drive | 原型（角色包）；周报进 Drive 为方案 | 软件瀑布 SOP、代码生成流水线、MetaGPT runtime |
+| 15 | Agent Workflow Memory | 从成功轨迹诱导可复用 workflow，之后优先检索 recipe 再执行 | `WorkflowMemory.remember/suggest`；`EmployeeToolSession.plan_for` 先查记忆 | 原型（内存 recipe）；从 OWL 日志诱导为 P3 | Mind2Web/WebArena 网页动作空间、在线诱导全流程 |
+| 16 | TPTU-v2 | 真实系统三个构件里只要 ① API Retriever ② Demo Selector；**不做** LLM Finetuner | 别名表 `PROFILE_TOOL_ALIASES` = 轻量检索；`flu_trend_demo` = 固定 demonstration 链 | 原型 | 论文中的微调器、商业系统 API 检索训练 |
 
-### 4.3 ToolLLM — 大规模 API 与规划，而不是 4 个工具
+### 4.2 反向索引（最终构件 → 论文切面）
 
-- Qin et al., *ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs*, ICLR 2024. [arXiv:2307.16789](https://arxiv.org/abs/2307.16789)
-- ToolBench + DFSDT 规划；先检索再调用。
-- **可搬**：企业应用层做到几十个 API 之后，**不要**再全部塞进 prompt。用角色 / 当前 artifact 类型做检索（TPTU-v2 的 API Retriever 同一思路）。Chimera 现阶段工具少，但一扩 EHR+Drive+Chat 就会撞上这个问题。
+| 最终构件 | 组合了哪些论文的哪一刀 |
+| --- | --- |
+| `ToolSpec` | Chameleon 的模块 I/O；ControlLLM 的参数依赖声明 |
+| `ToolGraph.plan/successors` | ToolNet 的图导航；ControlLLM 的「先搜路径」；GTool 的子图（经角色过滤） |
+| `RoleToolkitResolver` | HuggingGPT 的专家选择；MetaGPT 的角色；TPTU Retriever；GTool 请求子图 |
+| `ArtifactBus` + `acl` | AppWorld 共享库；τ-bench 有状态 + 默认拒绝 |
+| `WorkplaceApps` | AppWorld 多应用；TheAgentCompany Drive/Chat；OfficeBench 跨应用；EHR 为医院域替换 |
+| `WorkflowMemory` | AWM 的 recipe 记忆 |
+| 邮件必须带附件对象 | OfficeBench 跨应用；AppWorld 状态传递；τ-bench 政策（禁止裸发 EHR） |
+| Tickets 应用 | WorkArena 工单；TheAgentCompany Plane |
+| P3 攻击代价 / 偏离 recipe | ToolChain\* 的代价剪枝；AWM 的常用配方作对照 |
 
-### 4.4 ControlLLM — 在工具图上搜路径（Thoughts-on-Graph）
-
-- Liu et al., *ControlLLM: Augment Language Models with Tools by Searching on Graphs*, 2023. [arXiv:2310.17796](https://arxiv.org/abs/2310.17796)
-- 先建 **参数依赖图**，再在图上搜最优路径，最后交给执行引擎。
-- **可搬**：这是 Chimera 最缺的中间层。Search 产出 `url`，Browser 消费 `url` 产出 `table`，Spreadsheet 消费 `table`。没有图，模型就会「搜完直接写邮件」。
-
-### 4.5 ToolNet — 用有向图替代扁平列表
-
-- Liu et al., *ToolNet: Connecting Large Language Models with Massive Tools via Tool Graph*, 2024. [arXiv:2403.00839](https://arxiv.org/abs/2403.00839)
-- 节点是工具，边是转移权重；LLM 只在**当前节点的后继**里选下一步。可在线更新边权。
-- **可搬（强烈建议）**：Owl 每轮只暴露 `graph.successors(current_tool)`。失败则降权该边（ToolNet 对 tool failure 的鲁棒性直接对应 Playwright / 搜索 API 抖动）。
-
-### 4.6 GTool — 请求相关的工具图 + 补边
-
-- Chen et al., *GTool: Graph Enhanced Tool Planning with Large Language Model*, 2025. [arXiv:2508.12725](https://arxiv.org/abs/2508.12725)
-- 静态全图往往缺边；按当前请求构图，并预测缺失依赖。
-- **可搬**：医院场景里「EHR → Spreadsheet」对流行病学家是边，对行政助理不是。用角色 + 任务生成**请求子图**，而不是一张全球图。
-
-### 4.7 ToolChain\* — 在工具动作树上做 A\*
-
-- Zhuang et al., *ToolChain\*: Efficient Action Space Navigation in Large Language Models with A\* Search*, ICLR 2024. [arXiv:2310.13227](https://arxiv.org/abs/2310.13227)
-- 把 API 调用做成决策树，A\* 剪掉高成本分支。
-- **可搬**：攻击日（`daily_execution_auto_attack.py`）动作空间更大，适合用代价函数把「异常外发」路径标出来——既服务正常规划，也为检测研究提供「规划器认为高代价但仍被攻击者走了」的标签。
-
-### 4.8 AppWorld — 多应用、共享数据库、状态评测
-
-- Trivedi et al., *AppWorld: A Controllable World of Apps and People for Benchmarking Interactive Coding Agents*, ACL 2024 Best Resource Paper. [arXiv:2407.18901](https://arxiv.org/abs/2407.18901)　[项目](https://appworld.dev/)
-- 9 个日常应用、457 个 API、约 100 个虚构用户；应用通过**同一关系库**互相可见。评测看终态，不看死板 API 序列。
-- **可搬（架构级）**：Chimera 缺的不是第 5 个 Toolkit，而是 **Email / Drive / Chat / EHR 写同一份状态**。AppWorld 后来还提供了 MCP Server，和「每个企业应用一个本地工具服务」一致。
-
-### 4.9 TheAgentCompany — 仿真软件公司内网
-
-- Xu et al., *TheAgentCompany: Benchmarking LLM Agents on Consequential Real World Tasks*, 2024（NeurIPS 2025 D&B）. [arXiv:2412.14161](https://arxiv.org/abs/2412.14161)　[站点](https://the-agent-company.com)
-- 自托管 GitLab + OwnCloud + RocketChat + Plane；任务天然跨代码、文档、聊天、项目管理。最强基线大约只能自主完成约 24–30%。
-- **可搬**：这是「真实生产不割裂」的最强证据。Chimera 若继续只用搜索+终端+无附件邮件，正常行为分布会系统性偏离企业日志，内部威胁检测的迁移价值会打折。第一期不必上完整 GitLab，用 **内存/JSON 版 Drive + Chat + Tickets** 即可，接口形状对齐。
-
-### 4.10 OfficeBench — 办公套件来回切换
-
-- Wang et al., *OfficeBench: Benchmarking Language Agents across Multiple Applications for Office Automation*, 2024. [arXiv:2407.19056](https://arxiv.org/abs/2407.19056)
-- Word / Excel / Calendar / Email 同容器；失败模式主要是**不会在应用间切换**、操作冗余、幻觉。GPT-4o 通过率约 47%。
-- **可搬**：Chimera 的「工作任务 vs 邮件」硬分叉，正好是 OfficeBench 指出的失败模式。必须允许一次 OWL 会话里既写表又发信。
-
-### 4.11 WorkArena — 企业 SaaS 工作流（ServiceNow）
-
-- Drouin et al., *WorkArena: How Capable Are Web Agents at Solving Common Knowledge Work Tasks?*, 2024. [arXiv:2403.07718](https://arxiv.org/abs/2403.07718)
-- 知识员工在 ServiceNow 上的工单、目录、列表任务；配套 BrowserGym。
-- **可搬**：医院 IT / 行政侧用 Tickets 应用模拟工单系统。内部威胁里「滥用工单提权」比「随机打开终端」真实得多。
-
-### 4.12 τ-bench — 有状态工具 + 领域政策
-
-- Yao et al., *τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains*, 2024. [arXiv:2406.12045](https://arxiv.org/abs/2406.12045)
-- 零售 / 航空等领域 API + **policy**；数据库终态一致性；`pass^k` 测稳定性。
-- **可搬**：给 EHR / Drive 写 **policy 文本**（谁能导出 identifiability 字段、谁能外发附件）。攻击者违反 policy 的 tool call 本身就是带标签的异常。Chimera 现在的攻击 JSON 只描述 MITRE 步骤，没有「哪条工具政策被破坏」。
-
-### 4.13 Generative Agents — 跨活动记忆
-
-- Park et al., *Generative Agents: Interactive Simulacra of Human Behavior*, UIST 2023. [arXiv:2304.03442](https://arxiv.org/abs/2304.03442)
-- 观察 → 记忆流 → 检索 → 反思 → 计划。
-- **错位**：Chimera 已有 `daily_summary` 和 `previous_summary`，但是**自然语言摘要**，下一工具打不开。
-- **可搬**：记忆条目同时挂 `artifact_id`。第二天流行病学家应能「打开昨天的 `epi/week-12/flu.csv`」，而不是只记得「昨天做了趋势分析」。
-
-### 4.14 MetaGPT — SOP 与角色间共享产物
-
-- Hong et al., *MetaGPT: Meta Programming for A Multi-Agent Collaborative Framework*, ICLR 2024. [arXiv:2308.00352](https://arxiv.org/abs/2308.00352)
-- 用标准化 SOP 减少多 Agent 幻觉级联；产物（PRD、代码）在角色间交接。
-- **可搬**：周会（Camel Workforce）的纪要不应只变成每人一份 JSON 日程，而应变成 **Drive 上的共享周报**，日仿真里的工具能读到它。这把 Phase 1 和 Phase 2 真正接起来。
-
-### 4.15 Agent Workflow Memory — 从轨迹里诱导可复用配方
-
-- Wang et al., *Agent Workflow Memory*, 2024. [arXiv:2409.07429](https://arxiv.org/abs/2409.07429)
-- 从成功轨迹抽取 workflow，离线或在线提供给后续任务；WebArena 相对提升约 51%。
-- **可搬**：OWL 执行日志已经按 `member_id_week_*_executio_task_*.log` 落盘，是现成的诱导语料。把高频成功链（如 `ehr→spreadsheet→drive→email`）变成 recipe，塞回 Planner。攻击日若偏离常用 recipe，既更真实，也更好标。
-
-### 4.16 TPTU-v2 — 真实系统里的检索 / 微调 / 示例选择
-
-- Kong, Ruan et al., *TPTU-v2: Boosting Task Planning and Tool Usage of Large Language Model-based Agents in Real-world Systems*, 2023. [arXiv:2311.11315](https://arxiv.org/abs/2311.11315)
-- 真实商业系统三个痛点：API 太多、顺序难、接口语义近。对应 API Retriever、LLM Finetuner、Demo Selector。
-- **可搬**：Chimera 短期不做微调；**Retriever + Demo Selector** 立刻能用。给「流感周报」类任务固定几条 demonstration 工具链，比指望 4o-mini 零样本拼出跨应用流程更稳。
+下面第 5 节按论文展开。若只需要「每篇用了什么」，读完 §4.1 即可。
 
 ---
 
-## 5. 希望集成到 Chimera 的具体方法
+## 5. 相关论文（16 篇，逐篇切面）
+
+每篇固定四段：**论文在做什么** / **和 Chimera 的错位** / **最终构建抽取了哪一刀** / **明确没搬什么**。
+
+### 5.1 HuggingGPT — 控制器分解任务并路由专家工具
+
+- Shen et al., *HuggingGPT: Solving AI Tasks with ChatGPT and its Friends in Hugging Face*, NeurIPS 2023. [arXiv:2303.17580](https://arxiv.org/abs/2303.17580)　[HF](https://huggingface.co/papers/2303.17580)
+- **论文在做什么**：LLM 做 task planning → model selection → execution → response，子任务 I/O 显式相连。
+- **错位**：Chimera 没有 Planner，OWL assistant 自己在工具袋里摸索。
+- **最终构建抽取**：只取「按能力选专家」和「子任务要有 I/O」。落成 `RoleToolkitResolver`（临床 vs 行政拿到不同 toolkit），以及把流感周报当成一条有 I/O 的示范分解。
+- **未采用**：Hugging Face 模型路由、多模态专家、原论文四阶段完整 Planner（P1 再接到 `construct_society` 之前）。
+
+### 5.2 Chameleon — 即插即用的组合推理
+
+- Lu et al., *Chameleon: Plug-and-Play Compositional Reasoning with Large Language Models*, 2023. [arXiv:2304.09842](https://arxiv.org/abs/2304.09842)　[HF](https://huggingface.co/papers/2304.09842)
+- **论文在做什么**：知识检索、视觉、程序、表格等做成模块，LLM 生成模块序列。
+- **最终构建抽取**：模块要声明输入输出。落成 `ToolSpec(name, consumes, produces)` 和 `WORKPLACE_TOOLS`。
+- **未采用**：原论文模块库存（维基、视觉等）和它的 planner prompt。
+
+### 5.3 ToolLLM — 大规模 API 与规划，而不是 4 个工具
+
+- Qin et al., *ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs*, ICLR 2024. [arXiv:2307.16789](https://arxiv.org/abs/2307.16789)
+- **论文在做什么**：ToolBench + DFSDT；先检索再调用。
+- **最终构建抽取**：只取「工具一多就不能全塞 prompt」。落成 P1 后继裁剪，以及 `message_window_size = 12` 的风险约束。
+- **未采用**：DFSDT、ToolBench、16000 API、任何微调。
+
+### 5.4 ControlLLM — 在工具图上搜路径（Thoughts-on-Graph）
+
+- Liu et al., *ControlLLM: Augment Language Models with Tools by Searching on Graphs*, 2023. [arXiv:2310.17796](https://arxiv.org/abs/2310.17796)
+- **论文在做什么**：任务分解 + 参数依赖图 + 图搜索 + 执行引擎。
+- **最终构建抽取**：参数依赖图和「先搜路径再执行」。落成 schema 对齐自动建边，以及 `ToolGraph.plan(start_tools, goal_type)`（实现为 BFS）。
+- **未采用**：原论文 ToG 算法细节、多模态工具、跨设备调度。
+
+### 5.5 ToolNet — 用有向图替代扁平列表
+
+- Liu et al., *ToolNet: Connecting Large Language Models with Massive Tools via Tool Graph*, 2024. [arXiv:2403.00839](https://arxiv.org/abs/2403.00839)
+- **论文在做什么**：扁平列表忽略依赖；有向图上逐步走后继；边权可更新。
+- **最终构建抽取**：① 对扁平 `tools=[]` 的批评直接用于 §2.1；② 后继约束 `successors`/`allowed`（所以 `search→ehr` 非法）；③ P1 每轮只暴露后继以省 token。
+- **未采用**：在线边权、千级工具库。
+
+### 5.6 GTool — 请求相关的工具图 + 补边
+
+- Chen et al., *GTool: Graph Enhanced Tool Planning with Large Language Model*, 2025. [arXiv:2508.12725](https://arxiv.org/abs/2508.12725)
+- **论文在做什么**：静态全图不够；按请求构图；预测缺失依赖。
+- **最终构建抽取**：按请求（在 Chimera 里 = 角色 + 任务）生成子图。落成流行病学家有 EHR 边、行政助理没有。
+- **未采用**：缺边预测模型、GNN、7B 训练。
+
+### 5.7 ToolChain\* — 在工具动作树上做 A\*
+
+- Zhuang et al., *ToolChain\*: Efficient Action Space Navigation in Large Language Models with A\* Search*, ICLR 2024. [arXiv:2310.13227](https://arxiv.org/abs/2310.13227)
+- **论文在做什么**：API 调用决策树 + A\* 代价剪枝。
+- **最终构建抽取**：只取「动作用代价区分」这一思想。留给 P3 攻击日：正常路径低代价，异常外发高代价，供检测当标签。
+- **未采用**：A\* 代码、原论文启发式（当前原型的 `plan()` 只是 BFS）。
+
+### 5.8 AppWorld — 多应用、共享数据库、状态评测
+
+- Trivedi et al., *AppWorld: A Controllable World of Apps and People for Benchmarking Interactive Coding Agents*, ACL 2024 Best Resource Paper. [arXiv:2407.18901](https://arxiv.org/abs/2407.18901)　[项目](https://appworld.dev/)
+- **论文在做什么**：9 应用、457 API、共享关系库、状态单元测试。
+- **最终构建抽取**：① 多应用写同一状态 → `ArtifactBus` + `WorkplaceApps`；② 评测终态 → `flu_trend_demo` 查附件数和 chat 引用，而不是查「是否按固定 API 顺序」。
+- **未采用**：完整 AppWorld 引擎、457 API、MCP 服务、编码式 agent。
+
+### 5.9 TheAgentCompany — 仿真软件公司内网
+
+- Xu et al., *TheAgentCompany: Benchmarking LLM Agents on Consequential Real World Tasks*, 2024（NeurIPS 2025 D&B）. [arXiv:2412.14161](https://arxiv.org/abs/2412.14161)　[站点](https://the-agent-company.com)
+- **论文在做什么**：GitLab + OwnCloud + RocketChat + Plane 的自托管公司。
+- **最终构建抽取**：应用清单的职场对应关系——Drive←OwnCloud、Chat←RocketChat、Tickets←Plane。GitLab 明确不搬（与 sysdig 容器叠加过重）。
+- **未采用**：四件套 Docker、其浏览器 agent、评测任务。
+
+### 5.10 OfficeBench — 办公套件来回切换
+
+- Wang et al., *OfficeBench: Benchmarking Language Agents across Multiple Applications for Office Automation*, 2024. [arXiv:2407.19056](https://arxiv.org/abs/2407.19056)
+- **论文在做什么**：Word / Excel / Calendar / Email 同环境；主要失败是不会切换应用。
+- **最终构建抽取**：跨应用切换。落成方法 D（邮件不再是旁路）和流感 demo 里表格→盘→邮件同一次 `WorkplaceApps` 会话。
+- **未采用**：真实 Office GUI。
+
+### 5.11 WorkArena — 企业 SaaS 工作流（ServiceNow）
+
+- Drouin et al., *WorkArena: How Capable Are Web Agents at Solving Common Knowledge Work Tasks?*, 2024. [arXiv:2403.07718](https://arxiv.org/abs/2403.07718)
+- **论文在做什么**：ServiceNow 上的知识员工任务 + BrowserGym。
+- **最终构建抽取**：工单作为一种一等应用。落成方法 E 的 Tickets 行，以及内部威胁「假工单提权」。`WORKPLACE_TOOLS` 已有 `tickets` 节点，应用 API 尚未实现。
+- **未采用**：ServiceNow、BrowserGym、原任务集。
+
+### 5.12 τ-bench — 有状态工具 + 领域政策
+
+- Yao et al., *τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains*, 2024. [arXiv:2406.12045](https://arxiv.org/abs/2406.12045)
+- **论文在做什么**：领域 API + policy；数据库终态；`pass^k`。
+- **最终构建抽取**：① 有状态 → Bus；② policy → EHR 默认仅 owner 可见，email 不接受裸 `ehr_record`/`table`；③ `pass^k` 留给 P3。
+- **未采用**：模拟用户、零售/航空域、原基准。
+
+### 5.13 Generative Agents — 跨活动记忆
+
+- Park et al., *Generative Agents: Interactive Simulacra of Human Behavior*, UIST 2023. [arXiv:2304.03442](https://arxiv.org/abs/2304.03442)
+- **论文在做什么**：观察 → 记忆流 → 检索 → 反思 → 计划。
+- **错位**：Chimera 已有 `daily_summary`，但是纯文本。
+- **最终构建抽取**：记忆条目必须能打开。落成方法 A「摘要挂 `artifact_id`」，尚未改 `daily_execution_auto.py`。
+- **未采用**：Smallville、反思树。
+
+### 5.14 MetaGPT — SOP 与角色间共享产物
+
+- Hong et al., *MetaGPT: Meta Programming for A Multi-Agent Collaborative Framework*, ICLR 2024. [arXiv:2308.00352](https://arxiv.org/abs/2308.00352)
+- **论文在做什么**：标准化 SOP，角色交接产物。
+- **最终构建抽取**：角色差异 + 产物交接。落成 `ROLE_HINTS`、协作核心常驻；P2 把周会纪要写成 Drive 对象，从而把 Phase 1 接到 Phase 2。
+- **未采用**：软件工程瀑布、代码流水线。
+
+### 5.15 Agent Workflow Memory — 从轨迹里诱导可复用配方
+
+- Wang et al., *Agent Workflow Memory*, 2024. [arXiv:2409.07429](https://arxiv.org/abs/2409.07429)
+- **论文在做什么**：从成功轨迹抽 workflow，之后检索来指导动作。
+- **最终构建抽取**：recipe 记忆。落成 `WorkflowMemory` 与 `plan_for()` 的「先查配方」。从 OWL 日志自动诱导留给 P3。
+- **未采用**：网页导航动作空间、在线诱导实验协议。
+
+### 5.16 TPTU-v2 — 真实系统里的检索 / 微调 / 示例选择
+
+- Kong, Ruan et al., *TPTU-v2: Boosting Task Planning and Tool Usage of Large Language Model-based Agents in Real-world Systems*, 2023. [arXiv:2311.11315](https://arxiv.org/abs/2311.11315)
+- **论文在做什么**：API Retriever + LLM Finetuner + Demo Selector 三件套。
+- **最终构建抽取**：只要 Retriever 和 Demo，**明确丢掉 Finetuner**。别名表 = 检索；`flu_trend_demo` = 示范链。
+- **未采用**：任何基座微调、商业 API 检索器训练。
+
+---
+
+## 6. 希望集成到 Chimera 的具体方法
 
 ![四层栈](assets/fig-target-stack.png)
 
 ### 方法 A — Artifact Bus（先做，改动面最小，收益最大）
 
-**来源**：AppWorld 共享库、TheAgentCompany 的 OwnCloud、Generative Agents 的记忆流。
+**用了哪些论文的哪一刀**：AppWorld 的「多应用写同一关系库」；τ-bench 的有状态工具与默认拒绝 ACL；Generative Agents 的「记忆必须可检索」（摘要挂 `artifact_id`，尚未改日循环）。**没用** TheAgentCompany 的真实 OwnCloud。
 
 **做法**：公司级对象存储，键为 `artifact_id`，值为类型、生产者、owner、ACL、payload。所有工具只通过 Bus 读写。
 
@@ -200,7 +266,7 @@ Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立�
 
 ### 方法 B — Tool Graph 替代扁平 `tools=[]`
 
-**来源**：ToolNet、ControlLLM、GTool。
+**用了哪些论文的哪一刀**：ToolNet 的有向后继（及对扁平列表的批评）；ControlLLM 的参数依赖图 + 先搜路径；Chameleon 的模块 I/O；GTool 的角色/请求子图。**没用** ToolNet 在线边权、ControlLLM 完整 ToG、ToolChain\* 的 A\*（A\* 只出现在方法/P3）。
 
 **做法**：每个工具声明 `consumes` / `produces`。边由 schema 对齐自动生成。OWL 每轮只注册后继工具（或全量注册但在 system prompt 里给出邻接表 + 禁止跳边）。
 
@@ -214,7 +280,7 @@ Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立�
 
 ### 方法 C — 角色路由，让 `profile.tools` 真正落地
 
-**来源**：HuggingGPT 的 model selection、MetaGPT 的角色 SOP、TPTU 的检索。
+**用了哪些论文的哪一刀**：HuggingGPT 的「按能力选专家」；MetaGPT 的角色 SOP；TPTU-v2 的 Retriever（别名表）——**明确不用**其 Finetuner。
 
 **做法**：
 
@@ -228,7 +294,7 @@ Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立�
 
 ### 方法 D — 把邮件（以及聊天、日历）收回 Toolkit
 
-**来源**：OfficeBench、TheAgentCompany RocketChat、AppWorld 消息应用。
+**用了哪些论文的哪一刀**：OfficeBench 的「必须能跨办公应用切换」；TheAgentCompany 的 RocketChat 形状；AppWorld 的消息应用写共享状态。
 
 **做法**：删除「邮件活动 / 工作活动」的硬分叉，或保留分叉但邮件函数必须能读 Bus。一次 RolePlaying 允许：
 
@@ -238,7 +304,7 @@ Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立�
 
 ### 方法 E — 企业应用层（适度扩工具）
 
-**来源**：AppWorld 9 apps、TheAgentCompany 四件套、WorkArena 工单。
+**用了哪些论文的哪一刀**：AppWorld 的多应用设定；TheAgentCompany 的 Drive/Chat/Tickets 选型（不用 GitLab）；WorkArena 的工单工作流（只用规格，不上 ServiceNow）；医院域用 EHR 替换其软件仓。
 
 建议新增的**有状态应用**（优先内存实现，不必先上真实 GitLab）：
 
@@ -257,19 +323,19 @@ Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立�
 
 ### 方法 F — Workflow Memory
 
-**来源**：AWM。
+**用了哪些论文的哪一刀**：AWM 的「从成功轨迹诱导 recipe，执行时先检索」。**没用**其网页导航实验协议。从 OWL 日志自动诱导仍是 P3。
 
 **做法**：从现有 OWL 日志解析 tool-call 序列，聚类成 recipe。Planner 先检索 recipe 再执行。原型里 `WorkflowMemory.remember / suggest` 已能复用 `ehr→spreadsheet→email`。
 
 ### 方法 G — 领域 Policy 挂在工具上
 
-**来源**：τ-bench。
+**用了哪些论文的哪一刀**：τ-bench 的 domain policy + 终态一致性；P3 才用它的 `pass^k`。ToolChain\* 只贡献「用代价标记异常路径」的标签思想，不实现 A\*。
 
 **做法**：每个应用带一份短政策，例如 EHR：`不得把 identifiability 字段写入可被 * ACL 看到的 Drive`。正常员工的 Planner 被政策约束；攻击脚本显式 `violate_policy=true`。日志里同时有 MITRE 标签和 **policy-id**，检测研究更干净。
 
 ---
 
-## 6. 一条应能跑通的黄金路径
+## 7. 一条应能跑通的黄金路径
 
 默认场景是社区医院流感分析（`config.company_type` / `config.goal`）。真实员工不会「打开终端随便敲」，而会走：
 
@@ -287,7 +353,7 @@ Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立�
 
 ---
 
-## 7. 代码怎么接（按文件）
+## 8. 代码怎么接（按文件）
 
 不建议一上来改 OWL 内核。按依赖从里到外：
 
@@ -307,7 +373,7 @@ Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立�
 
 ---
 
-## 8. 分阶段路线图
+## 9. 分阶段路线图
 
 ![四阶段路线图](assets/chimera-integration-roadmap.png)
 
@@ -337,7 +403,7 @@ Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立�
 
 ---
 
-## 9. 对内部威胁仿真意味着什么
+## 10. 对内部威胁仿真意味着什么
 
 联通工具不是为了让 agent 更强，而是为了让 **CERT 风格日志长得像真的**：
 
@@ -350,7 +416,7 @@ Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立�
 
 ---
 
-## 10. 风险与非目标
+## 11. 风险与非目标
 
 - **Token 与延迟**：ToolNet 的本意是减少工具描述占用。P1 应用后继裁剪，不要把 8 个应用的全部 API 一次性塞进 12 条消息窗口（`message_window_size = 12` 已经很紧）。
 - **不要一上来 docker 化 GitLab**：TheAgentCompany 的环境很重，和 Chimera 已有的 sysdig 容器叠加会极难复现。先 JSON 应用层。
@@ -360,7 +426,7 @@ Chimera 当前把员工能力做成了**扁平工具列表 + 一条完全独立�
 
 ---
 
-## 11. 原型如何验证
+## 12. 原型如何验证
 
 ```bash
 PYTHONPATH=src python3 -m unittest tests.test_tool_composition
@@ -372,7 +438,7 @@ PYTHONPATH=src python3 -m unittest tests.test_tool_composition
 
 ---
 
-## 12. 飞书云文档
+## 13. 飞书云文档
 
 本文件即飞书导入源稿（Markdown + 图）。
 
@@ -399,7 +465,7 @@ python scripts/build_feishu_doc.py --publish
 
 ---
 
-## 13. 参考文献（Bib 速查）
+## 14. 参考文献（Bib 速查）
 
 1. Shen et al. HuggingGPT. NeurIPS 2023. arXiv:2303.17580
 2. Lu et al. Chameleon. 2023. arXiv:2304.09842

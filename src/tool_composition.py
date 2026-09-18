@@ -1,12 +1,21 @@
 """Composable workplace tools for Chimera employees.
 
 This module is a transplantable design, not yet wired into the Phase-2/3
-day loop. It captures four ideas from the research note:
+day loop. Each class below is a *slice* of a paper, not a reimplementation:
 
-* HuggingGPT / TPTU-v2: role-conditioned toolkit routing
-* ToolNet / ControlLLM / GTool: a directed tool graph with schema edges
-* AppWorld / TheAgentCompany / OfficeBench: shared, stateful workplace apps
-* Agent Workflow Memory: recipes induced from successful tool traces
+* ``ToolSpec.consumes/produces`` ← Chameleon modules; ControlLLM param graph
+* ``ToolGraph`` / ``successors`` / ``plan`` ← ToolNet directed graph;
+  ControlLLM path search (BFS, not full Thoughts-on-Graph)
+* ``RoleToolkitResolver`` / ``ROLE_HINTS`` / aliases ← HuggingGPT selection,
+  MetaGPT role SOP, TPTU-v2 retriever (no finetune), GTool request subgraph
+* ``ArtifactBus`` + ACL ← AppWorld shared DB; τ-bench stateful tools
+* ``WorkplaceApps`` ← AppWorld apps; TheAgentCompany Drive/Chat;
+  OfficeBench cross-app switch; EHR is Chimera's hospital analogue
+* ``WorkflowMemory`` ← Agent Workflow Memory recipes
+* email refuses raw ``ehr_record``/``table`` ← τ-bench domain policy
+
+Not in this file (documented only): ToolLLM DFSDT, ToolChain* A*,
+WorkArena ServiceNow, Generative Agents memory stream, TPTU finetuner.
 
 Keep this file independent of Camel/OWL so it can be unit-tested without
 extracting ``zips/owl.zip``.
@@ -14,7 +23,7 @@ extracting ``zips/owl.zip``.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 import uuid
 

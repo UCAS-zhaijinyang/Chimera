@@ -266,6 +266,76 @@ def figure_paper_map():
     return path
 
 
+def figure_paper_provenance():
+    """Each paper: what slice entered the Chimera stack."""
+    rows = [
+        ("HuggingGPT", "按能力选专家 + 子任务 I/O", "L3 / 方法C  RoleToolkitResolver", "原型"),
+        ("Chameleon", "模块 consumes/produces", "L2  ToolSpec", "原型"),
+        ("ToolLLM", "API 先检索再调用", "P1 后继裁剪 / 窗口风险", "方案"),
+        ("ControlLLM", "参数依赖图上搜路径", "L2  ToolGraph.plan", "原型"),
+        ("ToolNet", "有向图替代扁平列表", "L2  successors/allowed", "原型"),
+        ("GTool", "按请求生成工具子图", "L2  角色过滤后的子图", "原型"),
+        ("ToolChain*", "A* 代价剪异常路径", "P3 攻击日代价标签", "方案"),
+        ("AppWorld", "多应用写同一份状态", "L0/L1  ArtifactBus+Apps", "原型"),
+        ("TheAgentCompany", "Drive/Chat/Tickets 互联", "L1  应用选型", "原型"),
+        ("OfficeBench", "必须能跨办公应用切换", "方法D  取消邮件硬分叉", "原型"),
+        ("WorkArena", "企业工单工作流", "L1  Tickets 应用", "方案"),
+        ("τ-bench", "有状态工具 + 领域政策", "L0 ACL / 方法G", "原型"),
+        ("Generative Agents", "跨活动记忆可检索", "artifact_id 挂日摘要", "方案"),
+        ("MetaGPT", "角色 SOP + 产物交接", "ROLE_HINTS / 周报进 Drive", "原型"),
+        ("AWM", "从成功轨迹诱导配方", "WorkflowMemory", "原型"),
+        ("TPTU-v2", "Retriever + Demo，不微调", "别名检索 / 流感示范链", "原型"),
+    ]
+    fig, ax = plt.subplots(figsize=(13.4, 9.2), dpi=160)
+    ax.set_xlim(0, 13.4)
+    ax.set_ylim(0, 9.4)
+    ax.axis("off")
+    ax.set_title(
+        "16 篇论文 → 最终 Chimera 方案：每篇只用其中切面，不是整篇搬入",
+        fontsize=13,
+        color=NAVY,
+        pad=8,
+        fontweight="bold",
+    )
+    headers = [(0.2, "论文"), (2.6, "抽取的机制切面"), (7.3, "落到最终构建的位置"), (11.2, "状态")]
+    ax.add_patch(
+        FancyBboxPatch((0.15, 8.55), 13.1, 0.55, boxstyle="round,pad=0.01,rounding_size=0.04",
+                       facecolor=NAVY, edgecolor=NAVY, linewidth=0)
+    )
+    for x, text in headers:
+        ax.text(x, 8.82, text, ha="left", va="center", fontsize=10, color="white")
+    status_color = {"原型": TEAL, "方案": GOLD}
+    y = 8.05
+    for i, (paper, slice_, dest, status) in enumerate(rows):
+        bg = LIGHT if i % 2 == 0 else "#FFFFFF"
+        ax.add_patch(
+            FancyBboxPatch((0.15, y - 0.12), 13.1, 0.48, boxstyle="round,pad=0.01,rounding_size=0.02",
+                           facecolor=bg, edgecolor="#E8EEF5", linewidth=0.6)
+        )
+        ax.text(0.25, y + 0.12, paper, ha="left", va="center", fontsize=8.5, color=NAVY)
+        ax.text(2.6, y + 0.12, slice_, ha="left", va="center", fontsize=8.5, color=GRAY)
+        ax.text(7.3, y + 0.12, dest, ha="left", va="center", fontsize=8.5, color=NAVY)
+        ax.add_patch(
+            FancyBboxPatch((11.2, y - 0.02), 1.7, 0.28, boxstyle="round,pad=0.01,rounding_size=0.06",
+                           facecolor=status_color[status], edgecolor=status_color[status], linewidth=0)
+        )
+        ax.text(12.05, y + 0.12, status, ha="center", va="center", fontsize=8, color="white")
+        y -= 0.48
+    ax.text(
+        6.7,
+        0.22,
+        "「原型」= 已写入 src/tool_composition.py    「方案」= 已写入最终方法，待 P1–P3 接线    整篇论文的其余部分明确不搬",
+        ha="center",
+        fontsize=8.5,
+        color=GRAY,
+    )
+    fig.tight_layout()
+    path = OUT / "fig-paper-provenance.png"
+    fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
 def figure_flu_workflow():
     fig, ax = plt.subplots(figsize=(13.2, 5.8), dpi=160)
     ax.set_xlim(0, 13.2)
@@ -319,6 +389,7 @@ def main():
         figure_current_callgraph(),
         figure_target_stack(),
         figure_paper_map(),
+        figure_paper_provenance(),
         figure_flu_workflow(),
     ]
     for p in paths:
