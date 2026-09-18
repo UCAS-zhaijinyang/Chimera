@@ -87,6 +87,6 @@ docker_cmd exec \
     cd '${ROOT}'
     # shellcheck disable=SC1091
     source '${ROOT}/.venv/bin/activate'
-    mkdir -p /data/meeting_logs
+    mkdir -p /data/meeting_logs /data/MultiAgentLog/demo/meeting_logs
     python scripts/smoke_test.py
   "
