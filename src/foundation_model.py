@@ -72,6 +72,8 @@ def camel_model_backend_kwargs():
     if config.foundation_corp == "openai_compatible":
         kwargs["url"] = config.llm_base_url
         kwargs["api_key"] = config.api_key or "EMPTY"
+    elif getattr(config, "api_key", ""):
+        kwargs["api_key"] = config.api_key
     return kwargs
 
 

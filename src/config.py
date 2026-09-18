@@ -16,12 +16,14 @@ import os
 
 from dotenv import load_dotenv
 
-base_dir = "/home/zjy/Chimera"  ###### 1 #######
+base_dir = os.environ.get("CHIMERA_BASE_DIR", "/home/zjy/Chimera")  ###### 1 #######
 env_path = f"{base_dir}/.env"
 load_dotenv(env_path)
+# Also pick up a repo-root .env when the process cwd differs from base_dir.
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 
 # scenario name
-scenario_name = "chimera_scenario_100d"
+scenario_name = os.environ.get("CHIMERA_SCENARIO_NAME", "chimera_scenario_100d")
 
 # company_id = "tech_company" ###### 2 #######
 # company_id = "finance_corporation"
@@ -54,31 +56,31 @@ attack_log_dir = f"{base_dir}/{scenario_name}/attack_logs"
 # goal = "The goal of your company is to design and register a market-neutral statistical arbitrage fund targeting UHNWIs (Ultra-High-Net-Worth Individuals) under SEC regulations from the beginning."
 goal = "The goal of your institution (small community hospital) is to complete electronic health record collection and seasonal influenza trend analysis from the beginning."
 
-period = 20  # weeks (20 x Mon-Fri = 100 workdays)
-employee_number = 90  # IMPORTANT: to change the number of employees
+period = int(os.environ.get("CHIMERA_PERIOD", "20"))  # weeks (20 x Mon-Fri = 100 workdays)
+employee_number = int(os.environ.get("CHIMERA_EMPLOYEE_NUMBER", "90"))  # IMPORTANT: to change the number of employees
 
 # date for starters
 base_date = "2026-08-28"
 
 # Simulated workday hours used when generating / updating schedules.
-work_start = "10:00"
-work_end = "18:00"
+work_start = os.environ.get("CHIMERA_WORK_START", "10:00")
+work_end = os.environ.get("CHIMERA_WORK_END", "18:00")
 # Hard stop for the Phase-2 day simulation loop (HH:MM:SS).
-sim_day_end = "19:00:00"
+sim_day_end = os.environ.get("CHIMERA_SIM_DAY_END", "19:00:00")
 
 # maximum number of attempts for query LLM for structured output
 max_attempt = 5
 # maximum query loop
-round_limit = 5
+round_limit = int(os.environ.get("CHIMERA_ROUND_LIMIT", "5"))
 # Cap internal tool-calling iterations inside a single ChatAgent.step/astep.
 # Prevents unbounded while-True tool loops when context truncation forces retries.
 max_tool_iterations = 20
 # Wall-clock timeout for a single Phase-2 OWL task subprocess (seconds).
 # Timed-out / unfinished workers are killed by the process registry.
-task_process_timeout = 600
+task_process_timeout = int(os.environ.get("CHIMERA_TASK_PROCESS_TIMEOUT", "600"))
 
 # loaf parameters
-loaf_rate = 0.3
+loaf_rate = float(os.environ.get("CHIMERA_LOAF_RATE", "0.3"))
 loaf_interval = 40
 
 # time simulation
@@ -99,6 +101,10 @@ llm_api_key = os.environ.get("LLM_API_KEY", "").strip() or "EMPTY"
 llm_max_tokens = int(os.environ.get("LLM_MAX_TOKENS", "4096"))
 llm_agent_max_tokens = int(os.environ.get("LLM_AGENT_MAX_TOKENS", "2048"))
 local_llm_disable_tools = False
+# Smoke tests / cloud-provider runs can force-disable the local endpoint override.
+if os.environ.get("CHIMERA_FORCE_CLOUD", "").strip().lower() in {"1", "true", "yes"}:
+    llm_model_id = ""
+    llm_base_url = ""
 
 ### openai
 # foundation_corp = "openai"
