@@ -45,9 +45,18 @@ def _qwen3_no_think_extra_body():
     }
 
 
+def _ensure_openai_tool_message_compat():
+    """Install Camel patches so truncated tool_calls never reach DeepSeek."""
+    from openai_tool_messages import install_openai_tool_message_compat
+
+    install_openai_tool_message_compat()
+
+
 def camel_model_backend_kwargs():
     """Shared kwargs for camel.models.ModelFactory.create."""
     from camel.types import ModelPlatformType, ModelType
+
+    _ensure_openai_tool_message_compat()
 
     corp_to_type = {
         "openai": ModelType.GPT_4O_MINI,
