@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Chimera 员工分组与级联日程调研</title>
+  <style>
+    :root { --ink:#0f172a; --muted:#475569; --line:#e2e8f0; --accent:#0f766e; }
+    body { margin:0; background:#f8fafc; color:var(--ink);
+           font: 16px/1.65 "Source Han Sans SC","Noto Sans SC",sans-serif; }
+    main { max-width: 920px; margin: 32px auto 80px; background:#fff;
+           padding: 48px 56px; border:1px solid var(--line); border-radius: 16px; }
+    h1 { font-size: 28px; line-height: 1.3; }
+    h2 { margin-top: 40px; padding-top: 12px; border-top:1px solid var(--line); }
+    h3 { color:#134e4a; }
+    a { color:#0f766e; }
+    code { background:#f1f5f9; padding: 0 4px; border-radius:4px; font-size: 0.92em; }
+    pre { background:#0f172a; color:#e2e8f0; padding:16px; border-radius:12px; overflow:auto; }
+    pre code { background:transparent; color:inherit; }
+    table { border-collapse: collapse; width:100%; margin: 16px 0; font-size:14px; }
+    th, td { border:1px solid var(--line); padding:8px 10px; vertical-align:top; }
+    th { background:#f0fdfa; text-align:left; }
+    figure { margin: 24px 0; }
+    img { max-width:100%; height:auto; border:1px solid var(--line); border-radius:12px; }
+    figcaption { color:var(--muted); font-size:13px; margin-top:8px; }
+    blockquote { border-left:4px solid var(--accent); margin: 16px 0; padding: 8px 16px;
+                 background:#f0fdfa; color:#134e4a; }
+    ul, ol { padding-left: 1.2em; }
+  </style>
+</head>
+<body>
+<main>
+<h1>Chimera 员工分组与级联日程：论文调研与可移植集成方案</h1>
+<blockquote>调研结论先说：<strong>不要再开一场全员周会。</strong> Chimera 的公司画像 JSON 里其实已经有部门树，只是员工生成和周会编排把它拍平了。最适合移植进本框架的，不是再造一套多智能体操作系统，而是 <strong>OrgCascade</strong>：用静态组织树做常设科室，用嵌套 Workforce 做部门周会，用负责人通道做跨组协调，必要时再为跨科目标拉临时项目组。</blockquote>
+<p>本文面向把 <code>employee_number</code> 从个位数拉到几十、上百人后，仍用「全体员工开会定日程」会失效的问题。文中给出 12+ 篇可对照论文、一张映射到 Chimera 源码的集成蓝图，以及已经在工作分支上跑通的组织规划原型（90 人医院：<strong>18 场会议，单场最多 10 人，0 场全员会</strong>）。</p>
+<p>---</p>
+<h2>1. 问题：员工是「一盘散沙」，周会却是「全体大会」</h2>
+<p>Chimera（NDSS 2026）用多智能体社会模拟一家机构的日常与内部威胁。Phase 1 的日程链是：</p>
+<ol><li><code>company_profile_automation.py</code> 生成<strong>嵌套</strong>团队 JSON（<code>programming_team</code> / <code>design_team</code> / <code>support_teams</code> 等）</li></ol>
+<ol><li><code>profile_generation.py</code> 用 <code>extract_roles()</code> <strong>递归拍平</strong>所有 <code>roles</code></li></ol>
+<ol><li><code>meeting_for_weekly_goal_auto.py</code> 把<strong>每一位</strong>员工加进同一个 Camel <code>Workforce</code></li></ol>
+<ol><li><code>post_meeting_summary_auto.py</code> 试图从一场会的纪要里，给全部员工抽出当周目标（纪要还会被截到约 6000 字符）</li></ol>
+<ol><li><code>daily_plan_generation_auto.py</code> 再把周目标拆成每日日程</li></ol>
+<p>默认配置里 <code>employee_number = 90</code>、<code>period = 20</code>。5 人工作室时，「全员周会 → 每人一张周表」还能凑合；90 人社区医院再让检验科、护士站、EHR 工程师、安保坐在同一场 Camel Workforce 里争论下周目标，既不像真实组织，也会把上下文、token 和日志一起撑爆。</p>
+<figure><img src="assets/chimera-allhands-problem.png" alt="现状：扁平全员周会"><figcaption>现状：扁平全员周会</figcaption></figure>
+<p>代码层面的「拍平」发生在这里：</p>
+<pre><code class="84:95:src/profile_generation.py">
+def extract_roles(data):
+    roles = []
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if key == &quot;roles&quot; and isinstance(value, list):
+                roles.extend(value)
+            else:
+                roles.extend(extract_roles(value))
+</code></pre>
+<pre><code class="118:130:src/meeting_for_weekly_goal_auto.py">
+    for file in os.listdir(member_dir):
+        if file.endswith(&quot;.jsonc&quot;):
+            ...
+            workforce.add_single_agent_worker(member_description, worker=member_agent)
+</code></pre>
+<p>周会任务描述明确要求「每个员工、每一周」都写进一张大表，这是规模化后最不合理的约束。</p>
+<figure><img src="assets/pipeline-compare.svg" alt="拍平 vs 级联"><figcaption>拍平 vs 级联</figcaption></figure>
+<p>---</p>
+<h2>2. 调研范围与筛选标准</h2>
+<p>检索来源：Hugging Face Papers API、arXiv HTML/PDF、ACL Anthology。筛选标准有三条，都直接服务 Chimera，而不是泛泛的「多智能体很火」：</p>
+<table>
+<tr><th>标准</th><th>为什么重要</th></tr>
+<tr><td><strong>组织 / 分组 / 层级</strong></td><td>对应「员工要分成小组」，而不是继续全员对话</td></tr>
+<tr><td><strong>可映射到现有流水线</strong></td><td>Chimera 已经依赖 Camel Workforce + OWL RolePlaying，优先能嵌进去的方法</td></tr>
+<tr><td><strong>身份要稳定</strong></td><td>内部威胁模拟需要固定员工 ID、角色、工具权限；不能每回合随机招人换人</td></tr>
+</table>
+<p>因此：<strong>MetaGPT / ChatDev / Agent Hospital 的静态 SOP 组织</strong>用来保身份；<strong>TalkHier / MegaAgent / OWL Workforce 的层级协调</strong>用来开会；<strong>Captain Agent / AgentVerse / DyLAN</strong> 只作为跨科临时项目组，不替代科室编制。</p>
+<p>---</p>
+<h2>3. 相关论文（12+）</h2>
+<p>下列每篇都给出：核心机制、和 Chimera 的关系、建议吸收的那一块。链接同时给出 arXiv 与 Hugging Face Papers。</p>
+<h3>3.1 组织模板：先有科室，再有对话</h3>
+<h4>P1. MetaGPT: Meta Programming for Multi-Agent Collaborative Framework</h4>
+<ul><li><strong>作者 / 年份</strong>：Sirui Hong, Xiawu Zheng, Jonathan Chen 等，2023；ICLR 2024</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2308.00352 · https://huggingface.co/papers/2308.00352</li></ul>
+<ul><li><strong>机制</strong>：把软件公司 SOP 编码成固定角色（PM、架构师、工程师）和标准化工件流转，而不是让所有人在一个群里自由聊天。</li></ul>
+<ul><li><strong>可移植点</strong>：Chimera 的 <code>team/*.json</code> 已经是 SOP 的胚胎。不要丢掉这棵树。给每个角色补上 <code>unit_path</code>、<code>is_lead</code>，周会按 SOP 规定的部门开，而不是按「所有 jsonc 文件」开。</li></ul>
+<h4>P2. ChatDev: Communicative Agents for Software Development</h4>
+<ul><li><strong>作者 / 年份</strong>：Chen Qian, Xin Cong, Cheng Yang 等，ACL 2024（arXiv 2307.07924）</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2307.07924 · https://huggingface.co/papers/2307.07924</li></ul>
+<ul><li><strong>机制</strong>：虚拟软件公司 + Chat Chain，把瀑布阶段拆成「谁和谁、谈什么」的短对话，而不是全员长对话。</li></ul>
+<ul><li><strong>可移植点</strong>：把 Phase 1 的「一场周会」改成聊天链：<code>治理会 → 并行部门会 →（可选）跨科对齐</code>。每场会的 prompt 只覆盖本部门成员，对应 Chat Chain 的 phase 隔离。</li></ul>
+<h4>P3. Agent Hospital: A Simulacrum of Hospital with Evolvable Medical Agents</h4>
+<ul><li><strong>作者 / 年份</strong>：Junkai Li, Siyu Wang, Meng Zhang 等，2024</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2405.02957 · https://huggingface.co/papers/2405.02957</li></ul>
+<ul><li><strong>机制</strong>：医院模拟里医生 / 护士 / 患者是不同智能体群体，医疗流程按科室和职责走，而不是全院大会诊来决定每个人今天干什么。</li></ul>
+<ul><li><strong>可移植点</strong>：Chimera 默认场景就是社区医院 + EHR / 流感分析。员工分组应按<strong>临床、护理、检验、流病、信息、安保、行政</strong>切，而不是按「有一个 role 字符串」切。日程是科室班次，不是全院共识。</li></ul>
+<h4>P4. OrgAgent: Organize Your Multi-Agent System like a Company</h4>
+<ul><li><strong>作者 / 年份</strong>：Yiru Wang, Xinyue Shen, Yaohui Han 等，2026</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2604.01020 · https://huggingface.co/papers/2604.01020</li></ul>
+<ul><li><strong>机制</strong>：把多智能体协作分成治理层（计划与资源）、执行层（做事与互评）、合规层（最终出口）。论文报告层级结构相对扁平协作，在部分任务上效果更好、token 更少（文中 GPT-OSS-120B 在 SQuAD 2.0 上相对扁平 MAS +102.73% 且 token −74.52%，以原论文数字为准）。</li></ul>
+<ul><li><strong>可移植点</strong>：这是最接近「公司怎么开会」的当代结果。Chimera 应对齐三层：</li></ul>
+<p>  - <strong>治理</strong>：院长 / 科室主任周会，只定机构目标</p>
+<p>  - <strong>执行</strong>：科室 Workforce 把目标拆到个人</p>
+<p>  - <strong>合规 / 汇总</strong>：<code>post_meeting_summary_auto.py</code> 做格式与覆盖率检查，而不是让一场会直接吐 90 行 JSON</p>
+<h3>3.2 层级协调：谁和谁说话</h3>
+<h4>P5. CAMEL: Communicative Agents for &quot;Mind&quot; Exploration of Large Scale Language Model Society</h4>
+<ul><li><strong>作者 / 年份</strong>：Guohao Li, Hasan Abed Al Kader Hammoud 等，NeurIPS 2023</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2303.17760 · https://huggingface.co/papers/2303.17760</li></ul>
+<ul><li><strong>机制</strong>：角色扮演 + inception prompting，让两个 agent 在设定角色下自主对话。Chimera 的周会和 OWL 任务都建立在 CAMEL 上。</li></ul>
+<ul><li><strong>可移植点</strong>：CAMEL 本身解决的是「怎么聊」，不是「谁该在一个房间」。继续用 <code>ChatAgent</code>，但每个 Workforce 只放一个科室。Camel 文档中的 Workforce 还支持把子 Workforce 当作 worker 嵌套——这正是部门套部门的接口，不必换框架。</li></ul>
+<h4>P6. OWL: Optimized Workforce Learning for General Multi-Agent Assistance</h4>
+<ul><li><strong>作者 / 年份</strong>：Mengkang Hu, Yuhang Zhou, Wendong Fan 等，2025</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2505.23885 · https://huggingface.co/papers/2505.23885</li></ul>
+<ul><li><strong>机制</strong>：Workforce = 领域无关 Planner + Coordinator + 领域 Worker。战略规划和执行解耦。</li></ul>
+<ul><li><strong>可移植点</strong>：Chimera 今天把「全公司」当成一个 Workforce，等于让 Coordinator 在 90 个工人里做任务分配。应改成：</li></ul>
+<p>  - 机构级 Planner：只看见科室列表和本周机构目标</p>
+<p>  - 科室 Coordinator：只看见本科室成员</p>
+<p>  - 个人 Worker：仍用现有 <code>ChatAgent</code> / 后续 OWL RolePlaying 跑具体任务</p>
+<h4>P7. TalkHier: Talk Structurally, Act Hierarchically</h4>
+<ul><li><strong>作者 / 年份</strong>：Zhao Wang, Sota Moriyama, Wei-Yao Wang 等，2025</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2502.11098 · https://huggingface.co/papers/2502.11098</li></ul>
+<ul><li><strong>机制</strong>：图上每个团队 = 1 名 supervisor + 若干 member；下层 member 可以同时是更下层的 supervisor，形成嵌套。</li></ul>
+<ul><li><strong>可移植点</strong>：这是 OrgCascade 的会议拓扑模板。<code>Nurse Manager</code> 在护理会里是 supervisor，在治理会里是 member。身份字段用 <code>is_lead</code> + <code>reports_to</code> 编码即可，不必上新的图执行引擎。</li></ul>
+<h4>P8. MegaAgent: A Large-Scale Autonomous LLM-based Multi-Agent System Without Predefined SOPs</h4>
+<ul><li><strong>作者 / 年份</strong>：Qian Wang, Tianyu Wang, Zhenheng Tang, Qinbin Li 等，ACL 2025 Findings（arXiv 2408.09955）</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2408.09955 · https://github.com/Xtra-Computing/MegaAgent</li></ul>
+<ul><li><strong>机制</strong>：Boss 拆任务 → Admin 招人组成层级小组；<strong>组内全员聊，组间只走 Admin</strong>；可扩到约 590 个 agent。论文刻意弱化预定义 SOP。</li></ul>
+<ul><li><strong>可移植点</strong>：通信拓扑（intra-group / inter-group）必须吸收；「随时招人」不能照搬——内部威胁日志需要稳定的 <code>des-1</code> / <code>rn-14</code>。Chimera 的折中是：<strong>编制固定（MetaGPT），沟通分层（MegaAgent）</strong>。</li></ul>
+<figure><img src="assets/intra-inter-group-comm.png" alt="组内全员、组间只走负责人"><figcaption>组内全员、组间只走负责人</figcaption></figure>
+<h4>P9. HALO: Hierarchical Autonomous Logic-Oriented Orchestration</h4>
+<ul><li><strong>作者 / 年份</strong>：Zhipeng Hou, Junyi Tang, Yipeng Wang，2025</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2505.13516 · https://huggingface.co/papers/2505.13516</li></ul>
+<ul><li><strong>机制</strong>：三层推理栈——高层规划拆子任务、中层动态设计角色、底层执行。</li></ul>
+<ul><li><strong>可移植点</strong>：对应 Chimera 的三步：机构目标 → 科室角色（已有，不要动态乱造）→ 个人周目标。中层「动态设计角色」在威胁模拟里应关掉，改成「从组织树选已有角色」。</li></ul>
+<h4>P10. AgentOrchestra: A Hierarchical Multi-Agent Framework for General-Purpose Task Solving</h4>
+<ul><li><strong>作者 / 年份</strong>：Wentao Zhang, Liang Zeng, Ce Cui 等，2025</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2506.12508 · https://huggingface.co/papers/2506.12508</li></ul>
+<ul><li><strong>机制</strong>：专门强调「协调专业化 agent」和跨域复用，而不是一个扁平对话图。</li></ul>
+<ul><li><strong>可移植点</strong>：科室 Workforce 应作为可插拔子图：医院场景插护理 / 检验，游戏公司场景插程序 / 美术，接口相同。</li></ul>
+<h4>P11. HyperTree Planning: Enhancing LLM Reasoning via Hierarchical Thinking</h4>
+<ul><li><strong>作者 / 年份</strong>：Runquan Gui, Zhihai Wang, Jie Wang 等，2025</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2505.02322 · https://huggingface.co/papers/2505.02322</li></ul>
+<ul><li><strong>机制</strong>：把长程规划写成层次树，而不是一条超长 chain-of-thought。</li></ul>
+<ul><li><strong>可移植点</strong>：周目标本来就是树：机构目标 → 科室目标 → 个人目标 → 日计划。不要让一场会直接从机构目标跳到 90 人 × 20 周单元格。</li></ul>
+<h3>3.3 动态编组：只用在跨科任务上</h3>
+<h4>P12. Adaptive In-conversation Team Building (Captain Agent)</h4>
+<ul><li><strong>作者 / 年份</strong>：Linxin Song, Jiale Liu, Jieyu Zhang 等，2024</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2405.19425 · https://huggingface.co/papers/2405.19425</li></ul>
+<ul><li><strong>机制</strong>：Captain 按子任务招人、开嵌套小组对话、用 reflector 决定换人还是收工。来自 AutoGen 生态。</li></ul>
+<ul><li><strong>可移植点</strong>：仅用于跨科目标。例如「流感趋势分析」需要流病分析师 + EHR 接口工程师 + 检验科，治理会可以派一个 Captain 式临时项目组。项目组<strong>不改</strong>人事档案，避免攻击者身份漂移。</li></ul>
+<h4>P13. AgentVerse: Facilitating Multi-Agent Collaboration and Exploring Emergent Behaviors</h4>
+<ul><li><strong>作者 / 年份</strong>：Weize Chen, Yusheng Su, Jingwei Zuo 等，2023</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2308.10848 · https://huggingface.co/papers/2308.10848</li></ul>
+<ul><li><strong>机制</strong>：专家招募 + 动态组队，观察涌现行为。</li></ul>
+<ul><li><strong>可移植点</strong>：治理会输出「本周需要哪些角色开会」，比「所有人到齐」更接近真实医院。招募池必须限制在已生成的 <code>generated_members/</code> 里。</li></ul>
+<h4>P14. DyLAN: Dynamic LLM-Agent Network</h4>
+<ul><li><strong>作者 / 年份</strong>：Zijun Liu, Yanzhe Zhang, Peng Li, Yang Liu, Diyi Yang，2023</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2310.02170 · https://huggingface.co/papers/2310.02170</li></ul>
+<ul><li><strong>机制</strong>：交互过程中优化 agent 团队，而不是固定通信图。</li></ul>
+<ul><li><strong>可移植点</strong>：可用于「这场部门会哪些人必须发言、哪些人只需接收纪要」。早期集成不必上，先用 <code>max_group_size</code> 硬切。</li></ul>
+<h3>3.4 规模、记忆与汇总</h3>
+<h4>P15. Generative Agents: Interactive Simulacra of Human Behavior</h4>
+<ul><li><strong>作者 / 年份</strong>：Joon Sung Park, Joseph C. O&#x27;Brien 等，UIST 2023</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2304.03442 · https://huggingface.co/papers/2304.03442</li></ul>
+<ul><li><strong>机制</strong>：25 人小镇；计划是层次的（天 → 小时），记忆检索 + 反思；群体活动是涌现的，不是全镇开会排班。</li></ul>
+<ul><li><strong>可移植点</strong>：个人日程应来自「我的科室目标 + 我的记忆/个性」，而不是全员会议纪要。这与 Chimera 后续 <code>daily_plan_generation_auto.py</code> / <code>daily_plan_update.py</code> 更合拍。</li></ul>
+<h4>P16. Mixture-of-Agents Enhances Large Language Model Capabilities</h4>
+<ul><li><strong>作者 / 年份</strong>：Junlin Wang, Jue Wang, Ben Athiwaratkun, Ce Zhang, James Zou，2024</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2406.04692 · https://huggingface.co/papers/2406.04692</li></ul>
+<ul><li><strong>机制</strong>：多层 proposer + 最后一层 aggregator。</li></ul>
+<ul><li><strong>可移植点</strong>：直接替换当前「读一份被截断的 <code>meeting_response.csv</code>，一次生成全部人的 JSON」。改成：每场会一份纪要 → 科室 aggregator → 机构 aggregator。这也能缓解 6000 字符截断。</li></ul>
+<h4>P17. OASIS: Open Agent Social Interaction Simulations with One Million Agents</h4>
+<ul><li><strong>作者 / 年份</strong>：Ziyi Yang, Zaibin Zhang 等，2024</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2411.11581 · https://huggingface.co/papers/2411.11581</li></ul>
+<ul><li><strong>机制</strong>：百万级社交模拟；规模本身会改变群体动力学。</li></ul>
+<ul><li><strong>可移植点</strong>：90 人和 5 人不是同一分布。全员开会在小团队是「站会」，在 90 人是「广播」。规模变了，交互图必须变。</li></ul>
+<h4>P18. AgentSociety: Large-Scale Simulation of LLM-Driven Generative Agents</h4>
+<ul><li><strong>作者 / 年份</strong>：Jinghua Piao, Yuwei Yan 等，2025</li></ul>
+<ul><li><strong>链接</strong>：https://arxiv.org/abs/2502.08691 · https://huggingface.co/papers/2502.08691</li></ul>
+<ul><li><strong>机制</strong>：大规模生成式社会模拟，自底向上。</li></ul>
+<ul><li><strong>可移植点</strong>：日程生成可以「自上而下下发目标 + 自下而上报个人计划」，两头对接，而不是单场会议包办。</li></ul>
+<h4>对照阅读（不展开，但实现时有用）</h4>
+<table>
+<tr><th>论文</th><th>ID</th><th>一句话</th></tr>
+<tr><td>AutoGen</td><td><a href="https://arxiv.org/abs/2308.08155" target="_blank" rel="noreferrer">2308.08155</a></td><td>GroupChat 可做部门会的对话控制器；Captain Agent 建立在它上面</td></tr>
+<tr><td>Generative Agent Simulations of 1,000 People</td><td><a href="https://arxiv.org/abs/2411.10109" target="_blank" rel="noreferrer">2411.10109</a></td><td>个体校准后的大规模人行为模拟，提醒「人多了不能共用一个 prompt」</td></tr>
+<tr><td>BusiAgent</td><td><a href="https://arxiv.org/abs/2508.15447" target="_blank" rel="noreferrer">2508.15447</a></td><td>CEO/CTO/CFO 的 Stackelberg 层级决策，可参考治理会的议事顺序</td></tr>
+</table>
+<p>---</p>
+<h2>4. 希望集成进 Chimera 的具体方法：OrgCascade</h2>
+<figure><img src="assets/chimera-orgcascade-proposed.png" alt="OrgCascade 概念图"><figcaption>OrgCascade 概念图</figcaption></figure>
+<h3>4.1 设计原则</h3>
+<ol><li><strong>编制静态，沟通分层。</strong> 员工 ID、角色、工具、邮箱一旦生成就不要改（服务内部威胁 ground truth）。变的是「这场会请谁」。</li></ol>
+<ol><li><strong>复用已有部门 JSON。</strong> 不要另起炉灶让 LLM 再发明一套组织。</li></ol>
+<ol><li><strong>单场会议人数有硬顶。</strong> 默认 <code>max_group_size = 10</code>。超过就拆 huddle，再由负责人同步。</li></ol>
+<ol><li><strong>组间只走负责人。</strong> 对应 MegaAgent 的 intra / inter-group。</li></ol>
+<ol><li><strong>跨科用临时项目组，不改科室。</strong> 对应 Captain Agent / AgentVerse，招募池 = 已有成员。</li></ol>
+<figure><img src="assets/paper-method-stack.png" alt="论文方法栈"><figcaption>论文方法栈</figcaption></figure>
+<h3>4.2 方法拆到文件</h3>
+<table>
+<tr><th>层次</th><th>吸收的论文</th><th>Chimera 落点</th><th>具体改动</th></tr>
+<tr><td>组织树</td><td>MetaGPT, ChatDev, Agent Hospital</td><td><code>company_profile_automation.py</code> + 新模块 <code>org_structure.py</code></td><td>保留 nested JSON；解析 <code>unit_path</code></td></tr>
+<tr><td>成员元数据</td><td>TalkHier supervisor/member</td><td><code>profile_generation.py</code></td><td>每个 jsonc 增加 <code>department</code>, <code>team</code>, <code>unit_path</code>, <code>is_lead</code>, <code>reports_to</code></td></tr>
+<tr><td>治理会</td><td>OrgAgent governance, OWL Planner, HyperTree</td><td><code>meeting_for_weekly_goal_auto.py</code></td><td>只请科室负责人；输出「机构目标 + 各科室目标包」</td></tr>
+<tr><td>部门会 / huddle</td><td>TalkHier, MegaAgent, CAMEL nested Workforce</td><td>同上，按 <code>MeetingSpec</code> 循环</td><td>每个科室一个 Workforce（或 huddle）；并行</td></tr>
+<tr><td>临时项目组</td><td>Captain Agent, AgentVerse, DyLAN</td><td>可选，治理会触发</td><td>例如流感专题组：<code>eple-*</code> + <code>ehra-*</code> + <code>cls-*</code></td></tr>
+<tr><td>分层汇总</td><td>Mixture-of-Agents</td><td><code>post_meeting_summary_auto.py</code></td><td>按会汇总，再聚合；取消「一份纪要生成全体 JSON」</td></tr>
+<tr><td>个人日程</td><td>Generative Agents</td><td><code>daily_plan_generation_auto.py</code></td><td>输入从「全员会议」改为「本科室目标 + 个人档案」</td></tr>
+</table>
+<h3>4.3 会议拓扑</h3>
+<figure><img src="assets/meeting-topology.svg" alt="90 人医院会议拓扑"><figcaption>90 人医院会议拓扑</figcaption></figure>
+<p>推荐的周会顺序（ChatDev 式 chat chain）：</p>
+<ol><li><strong>Governance（先开）</strong>  </li></ol>
+<p>   成员 = 各 leaf unit 的 lead（院长 / 科主任 / 护士长 / HIT 主管等）。  </p>
+<p>   产出 = 本周机构目标，以及每个科室最多 3–5 条目标包。</p>
+<ol><li><strong>Department / Huddle（并行）</strong>  </li></ol>
+<p>   输入 = 本科室目标包。  </p>
+<p>   产出 = 本科室每个 <code>member_id</code> 的 <code>detailed_goals</code>。</p>
+<ol><li><strong>Lead sync（仅超编科室）</strong>  </li></ol>
+<p>   当护理单元 21 人被切成多个 huddle 时，huddle 主席再开一场短同步，避免同一科室目标冲突。</p>
+<ol><li><strong>Optional task force</strong>  </li></ol>
+<p>   若治理会发现目标跨科（EHR 采集 ∩ 流感分析），从相关科室抽 4–8 人开专题，结果写回双方科室计划。</p>
+<h3>4.4 建议的数据字段</h3>
+<pre><code class="jsonc">
+{
+  &quot;id&quot;: &quot;rn-4&quot;,
+  &quot;role&quot;: &quot;Registered Nurse&quot;,
+  &quot;department&quot;: &quot;clinical_services&quot;,
+  &quot;team&quot;: &quot;nursing_unit&quot;,
+  &quot;unit_path&quot;: [&quot;clinical_services&quot;, &quot;nursing_unit&quot;],
+  &quot;is_lead&quot;: false,
+  &quot;reports_to&quot;: &quot;nsmg-1&quot;
+  // 其余 name / personality / tools / email 保持不变
+}
+</code></pre>
+<p>攻击模拟仍然按 <code>id</code> 注入，不依赖会议形态；但攻击者的「正常日程」会看起来像护士站班次，而不是全院大会后的平均任务。</p>
+<h3>4.5 明确不移植的部分</h3>
+<table>
+<tr><th>想法</th><th>来源</th><th>为什么先不做</th></tr>
+<tr><td>运行时随意招聘新 agent</td><td>MegaAgent, AgentVerse 原版</td><td>会破坏固定身份与 CERT 风格日志</td></tr>
+<tr><td>百万级社交推荐器</td><td>OASIS</td><td>Chimera 是职场日程，不是信息流</td></tr>
+<tr><td>用 RL 训练 Planner</td><td>OWL 的 SFT+RL</td><td>当前流水线是 prompting；先改拓扑再考虑训练</td></tr>
+<tr><td>让 90 人共享一个记忆池</td><td>部分 Workforce <code>share_memory</code></td><td>会泄漏跨科信息，也不像真实医院</td></tr>
+</table>
+<p>---</p>
+<h2>5. 工作分支上的验证（未改主流水线入口）</h2>
+<p>本环境没有安装 Camel，因此<strong>没有</strong>把 <code>WeeklyPlan()</code> 直接改成嵌套 Workforce 调用，以免在缺依赖时把 Phase 1 跑挂。验证做在可独立运行的 <code>src/org_structure.py</code>：</p>
+<ul><li>从嵌套公司 JSON 恢复部门树</li></ul>
+<ul><li>按 Chimera 的 <code>{abbr}-{i}</code> 规则把人编进科室并选出 lead</li></ul>
+<ul><li>输出 OrgCascade <code>MeetingSpec</code>（governance / department / huddle）</li></ul>
+<ul><li>硬约束 <code>max_group_size</code></li></ul>
+<p>90 人社区医院夹具 <code>tests/fixtures/hospital_90.json</code> 的规划结果：</p>
+<table>
+<tr><th>指标</th><th>当前 Chimera WeeklyPlan</th><th>OrgCascade（max=10）</th></tr>
+<tr><td>会议场数</td><td>1</td><td>18（1 治理 + 8 部门 + 9 huddle）</td></tr>
+<tr><td>单场最大人数</td><td>90</td><td>10</td></tr>
+<tr><td>治理会人数</td><td>90</td><td>8 名科室负责人</td></tr>
+<tr><td>全员大会</td><td>是</td><td>否</td></tr>
+</table>
+<p>跑法：</p>
+<pre><code class="bash">
+PYTHONPATH=src python -m unittest tests.test_org_structure -v
+PYTHONPATH=src python src/org_structure.py tests/fixtures/hospital_90.json --max-group-size 10
+</code></pre>
+<p>后续若要接到真正的 Camel 周会，建议接口保持为：</p>
+<pre><code class="python">
+from org_structure import plan_from_company_file
+
+plan = plan_from_company_file(config.company_config_path, max_group_size=10)
+for meeting in plan[&quot;meetings&quot;]:
+    if meeting[&quot;kind&quot;] == &quot;governance&quot;:
+        ...  # 小 Workforce，只加 chair / leads
+    else:
+        ...  # 每场一个 Workforce，只加 meeting[&quot;member_ids&quot;]
+</code></pre>
+<p>治理会必须先跑，部门会 prompt 带上治理会对该科室的目标包。</p>
+<p>---</p>
+<h2>6. 推荐落地顺序</h2>
+<ol><li><strong>P0（已在本分支验证）</strong>  </li></ol>
+<p>   落地 <code>org_structure.py</code>，成员 jsonc 写入部门字段。即使仍用单模型生成日程，prompt 里也只给本科室同事，不再塞 90 人名单。</p>
+<ol><li><strong>P1</strong>  </li></ol>
+<p>   改 <code>meeting_for_weekly_goal_auto.py</code>：按 <code>MeetingSpec</code> 开多场 Camel Workforce；治理会先行。</p>
+<ol><li><strong>P2</strong>  </li></ol>
+<p>   改 <code>post_meeting_summary_auto.py</code>：按会汇总 + MoA 聚合；去掉 6000 字符一刀切对「全公司纪要」的依赖。</p>
+<ol><li><strong>P3</strong>  </li></ol>
+<p>   跨科目标触发 Captain 式 task force；默认关闭，用配置项打开。</p>
+<ol><li><strong>P4（可选）</strong>  </li></ol>
+<p>   个人日计划加入 Generative Agents 式「科室目标 + 个人记忆/个性」的反思，而不是只靠周会单元格。</p>
+<p>---</p>
+<h2>7. 参考文献（Bib 线索）</h2>
+<ol><li>Li et al. CAMEL. NeurIPS 2023. arXiv:2303.17760  </li></ol>
+<ol><li>Park et al. Generative Agents. UIST 2023. arXiv:2304.03442  </li></ol>
+<ol><li>Qian et al. ChatDev. ACL 2024. arXiv:2307.07924  </li></ol>
+<ol><li>Hong et al. MetaGPT. ICLR 2024. arXiv:2308.00352  </li></ol>
+<ol><li>Wu et al. AutoGen. arXiv:2308.08155  </li></ol>
+<ol><li>Chen et al. AgentVerse. arXiv:2308.10848  </li></ol>
+<ol><li>Liu et al. DyLAN. arXiv:2310.02170  </li></ol>
+<ol><li>Li et al. Agent Hospital. arXiv:2405.02957  </li></ol>
+<ol><li>Song et al. Captain Agent / Adaptive Team Building. arXiv:2405.19425  </li></ol>
+<ol><li>Wang et al. Mixture-of-Agents. arXiv:2406.04692  </li></ol>
+<ol><li>Wang et al. MegaAgent. ACL 2025 Findings. arXiv:2408.09955  </li></ol>
+<ol><li>Yang et al. OASIS. arXiv:2411.11581  </li></ol>
+<ol><li>Park et al. Generative Agent Simulations of 1,000 People. arXiv:2411.10109  </li></ol>
+<ol><li>Wang et al. TalkHier. arXiv:2502.11098  </li></ol>
+<ol><li>Piao et al. AgentSociety. arXiv:2502.08691  </li></ol>
+<ol><li>Gui et al. HyperTree Planning. arXiv:2505.02322  </li></ol>
+<ol><li>Hou et al. HALO. arXiv:2505.13516  </li></ol>
+<ol><li>Hu et al. OWL. arXiv:2505.23885  </li></ol>
+<ol><li>Zhang et al. AgentOrchestra. arXiv:2506.12508  </li></ol>
+<ol><li>Wang et al. OrgAgent. arXiv:2604.01020  </li></ol>
+<ol><li>Yu et al. Chimera. NDSS 2026.</li></ol>
+<h2>8. 飞书云文档怎么用这份稿</h2>
+<p>正文按飞书可导入 Markdown 写：标题、表格、图片、代码块都可以直接贴进飞书云文档。</p>
+<p><strong>方式 A：开放平台一键导入</strong>（需要自建应用被加入目标知识空间，并开通云文档读写 / 导入权限）</p>
+<pre><code class="bash">
+export FEISHU_APP_ID=cli_xxx
+export FEISHU_APP_SECRET=xxx
+export FEISHU_FOLDER_TOKEN=xxx   # 可选，目标文件夹
+python scripts/publish_feishu_doc.py
+</code></pre>
+<p><strong>方式 B：飞书网页手动导入</strong></p>
+<ol><li>打开飞书云文档，新建空白文档或进入目标知识库文件夹</li></ol>
+<ol><li>右上角 <code>···</code> → <strong>导入</strong> → 选择 Markdown</li></ol>
+<ol><li>上传 <code>docs/org-cascade/ORG_CASCADE_RESEARCH.md</code></li></ol>
+<ol><li>若图片未内嵌，从 <code>docs/org-cascade/assets/</code> 按图题插入（PNG + SVG）</li></ol>
+<p>本云代理环境没有 <code>FEISHU_APP_ID</code> / <code>FEISHU_APP_SECRET</code>，所以这里不能直接写出一个 <code>feishu.cn/docx/...</code> 链接。源稿、图和导入脚本都在本分支，配好应用后即可变成云文档。</p>
+<p>本地图文预览页：<code>docs/org-cascade/ORG_CASCADE_RESEARCH.html</code>。</p>
+<p>---</p>
+<p>*文档版本：OrgCascade 调研稿。论文摘要与数字以 arXiv / Hugging Face Papers 页面为准。*</p>
+</main>
+</body>
+</html>
