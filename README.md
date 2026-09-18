@@ -43,6 +43,7 @@ Not every pipeline step uses Camel/OWL multi-agent societies. See [Where multi-a
   - [Supported LLM Backends](#supported-llm-backends)
   - [Citation](#citation)
   - [Community Contributions](#community-contributions)
+- [Employee tool composition research](#employee-tool-composition-research)
 
 ---
 
@@ -430,3 +431,12 @@ We welcome contributions from the community to extend and improve Chimera. This 
 - Improving agent behavior realism or expanding organizational role coverage
 
 Feel free to open an issue or submit a pull request. We appreciate all forms of feedback and collaboration.
+
+## Employee tool composition research
+
+Current employee tools in Phase 2/3 are a flat bag (search / browser / file write / terminal) plus a separate no-attachment email path. A survey of composable-tool and enterprise-agent papers, plus a transplant plan for Chimera, is in:
+
+- [docs/chimera-tool-composition-research.md](docs/chimera-tool-composition-research.md) (Markdown source, 16 papers, figures)
+- Feishu-importable HTML: `python scripts/build_feishu_doc.py` → `docs/feishu/chimera-tool-composition.html`
+- Prototype (not yet wired into the day loop): `src/tool_composition.py`
+
