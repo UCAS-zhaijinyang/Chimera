@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 """Build a Feishu-importable HTML pack and optionally publish it.
 
-The research note lives at ``docs/chimera-tool-composition-research.md``.
+Default research note: ``docs/chimera-tool-composition-research.md``.
+Pass ``--doc`` to pack another markdown file (figures resolved relative to
+that file).
+
 This script:
 
 1. Always emits a self-contained HTML file with embedded figures
-   (``docs/feishu/chimera-tool-composition.html``).
+   under ``docs/feishu/``.
 2. If ``FEISHU_APP_ID`` / ``FEISHU_APP_SECRET`` are set, imports that HTML
    into a Feishu cloud doc via the official drive import API and prints the URL.
 
 Usage::
 
     python scripts/build_feishu_doc.py
+    python scripts/build_feishu_doc.py --doc docs/chimera-dataset-eval-research.md
     FEISHU_APP_ID=cli_xxx FEISHU_APP_SECRET=xxx python scripts/build_feishu_doc.py --publish
 """
 
@@ -31,10 +35,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DOC = ROOT / "docs" / "chimera-tool-composition-research.md"
-ASSETS = ROOT / "docs" / "assets"
+DEFAULT_DOC = ROOT / "docs" / "chimera-tool-composition-research.md"
 OUT_DIR = ROOT / "docs" / "feishu"
-OUT_HTML = OUT_DIR / "chimera-tool-composition.html"
 FEISHU_OPEN = "https://open.feishu.cn/open-apis"
 
 
@@ -104,7 +106,7 @@ def markdown_to_html(md: str) -> str:
             close_lists()
             flush_table()
             alt, src = img.group(1), img.group(2)
-            path = (DOC.parent / src).resolve()
+            path = (_DOC_DIR / src).resolve()
             if path.exists():
                 html.append(
                     f'<figure><img src="{_embed_image(path)}" alt="{alt}" />'
@@ -192,18 +194,24 @@ blockquote { border-left: 4px solid #C9A227; margin: 0; padding: 4px 14px; backg
 """
 
 
-def build_html() -> Path:
-    if not DOC.exists():
-        raise SystemExit(f"missing markdown: {DOC}")
-    body = markdown_to_html(DOC.read_text(encoding="utf-8"))
+def build_html(doc: Path, out_html: Path, title: str) -> Path:
+    if not doc.exists():
+        raise SystemExit(f"missing markdown: {doc}")
+    # Resolve relative image paths against the markdown file.
+    global _DOC_DIR
+    _DOC_DIR = doc.parent
+    body = markdown_to_html(doc.read_text(encoding="utf-8"))
     page = (
         "<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'/>"
-        "<title>Chimera 员工工具联通性调研</title>"
+        f"<title>{title}</title>"
         f"<style>{CSS}</style></head><body>{body}</body></html>"
     )
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    OUT_HTML.write_text(page, encoding="utf-8")
-    return OUT_HTML
+    out_html.parent.mkdir(parents=True, exist_ok=True)
+    out_html.write_text(page, encoding="utf-8")
+    return out_html
+
+
+_DOC_DIR = DEFAULT_DOC.parent
 
 
 def _http(method: str, url: str, token: str | None = None, data=None, headers=None):
@@ -239,7 +247,7 @@ def tenant_token(app_id: str, app_secret: str) -> str:
     return token
 
 
-def publish_html(html_path: Path, token: str, folder_token: str | None) -> str:
+def publish_html(html_path: Path, token: str, folder_token: str | None, file_name: str) -> str:
     raw = html_path.read_bytes()
     boundary = "----ChimeraFeishuBoundary"
     extra = json.dumps({"obj_type": "docx", "file_extension": "html"})
@@ -279,7 +287,7 @@ def publish_html(html_path: Path, token: str, folder_token: str | None) -> str:
         "file_extension": "html",
         "file_token": file_token,
         "type": "docx",
-        "file_name": "Chimera 员工工具联通性调研",
+        "file_name": file_name,
     }
     if folder_token:
         task_body["point"] = {"mount_type": 1, "mount_key": folder_token}
@@ -305,8 +313,25 @@ def publish_html(html_path: Path, token: str, folder_token: str | None) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--publish", action="store_true", help="Import into Feishu if credentials exist")
+    parser.add_argument(
+        "--doc",
+        default=str(DEFAULT_DOC),
+        help="Markdown source (default: tool-composition research note)",
+    )
+    parser.add_argument("--title", default="", help="HTML / Feishu document title")
+    parser.add_argument("--out", default="", help="Output HTML path under the repo")
     args = parser.parse_args()
-    html_path = build_html()
+    doc = Path(args.doc)
+    if not doc.is_absolute():
+        doc = ROOT / doc
+    title = args.title.strip() or _title_from_markdown(doc)
+    if args.out:
+        out_html = Path(args.out)
+        if not out_html.is_absolute():
+            out_html = ROOT / out_html
+    else:
+        out_html = OUT_DIR / (doc.stem + ".html")
+    html_path = build_html(doc, out_html, title)
     print(f"built {html_path} ({html_path.stat().st_size} bytes)")
 
     app_id = os.environ.get("FEISHU_APP_ID", "").strip()
@@ -321,9 +346,9 @@ def main() -> int:
             )
             return 2
         token = tenant_token(app_id, app_secret)
-        url = publish_html(html_path, token, folder)
+        url = publish_html(html_path, token, folder, title)
         print(f"feishu_doc_url={url}")
-        (OUT_DIR / "feishu_url.txt").write_text(url + "\n", encoding="utf-8")
+        (OUT_DIR / f"{doc.stem}_feishu_url.txt").write_text(url + "\n", encoding="utf-8")
         return 0
 
     print(
@@ -333,6 +358,14 @@ def main() -> int:
         "  3. Or set FEISHU_APP_ID / FEISHU_APP_SECRET and rerun with --publish"
     )
     return 0
+
+
+def _title_from_markdown(doc: Path) -> str:
+    if doc.exists():
+        for line in doc.read_text(encoding="utf-8").splitlines():
+            if line.startswith("# "):
+                return line[2:].strip()
+    return doc.stem
 
 
 if __name__ == "__main__":

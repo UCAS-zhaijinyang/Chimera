@@ -440,3 +440,11 @@ Current employee tools in Phase 2/3 are a flat bag (search / browser / file writ
 - Feishu-importable HTML: `python scripts/build_feishu_doc.py` → `docs/feishu/chimera-tool-composition.html`
 - Prototype (not yet wired into the day loop): `src/tool_composition.py`
 
+## Generated-dataset evaluation
+
+After tool composition and OrgCascade, the thing to evaluate is the **generated ChimeraLog**, not those two features themselves. A 14-paper survey, method trade-offs, and a six-layer preliminary protocol are in:
+
+- [docs/chimera-dataset-eval-research.md](docs/chimera-dataset-eval-research.md)
+- Feishu-importable HTML: `python scripts/build_feishu_doc.py --doc docs/chimera-dataset-eval-research.md`
+- Executable L1/L2 scorecard (prototypes only): `PYTHONPATH=src python scripts/run_preliminary_eval.py`
+
