@@ -87,6 +87,35 @@ fi
 extract_framework owl owl/pyproject.toml
 extract_framework camel camel/pyproject.toml
 
+# Patched Camel writes weekly-meeting CSV here (see README). Create it so
+# Workforce workers do not fail on a missing directory.
+sudo mkdir -p /data/MultiAgentLog/demo/meeting_logs 2>/dev/null \
+  || mkdir -p /data/MultiAgentLog/demo/meeting_logs 2>/dev/null \
+  || true
+if [[ -f "${ROOT}/camel/camel/societies/workforce/single_agent_worker.py" ]]; then
+  python3 - "${ROOT}" <<'PY'
+from pathlib import Path
+import sys
+
+root = sys.argv[1]
+path = Path(root) / "camel/camel/societies/workforce/single_agent_worker.py"
+text = path.read_text(encoding="utf-8")
+old = 'log_dir = "/data/MultiAgentLog/demo/meeting_logs"'
+new = (
+    "log_dir = os.environ.get(\n"
+    '            "CHIMERA_MEETING_CSV_DIR",\n'
+    '            "/data/MultiAgentLog/demo/meeting_logs",\n'
+    "        )\n"
+    "        os.makedirs(log_dir, exist_ok=True)"
+)
+if old in text:
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+    print("patched camel meeting CSV log_dir")
+else:
+    print("camel meeting CSV log_dir already patched or missing")
+PY
+fi
+
 # Keep README / config.py default paths working on this machine.
 if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
   sudo mkdir -p /home/zjy /data /opt/chimera/zips
