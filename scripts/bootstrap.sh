@@ -21,7 +21,8 @@ fi
 ZIP_CACHE="${CHIMERA_ZIP_CACHE:-/opt/chimera/zips}"
 SHAREPOINT_BASE="https://smu-my.sharepoint.com/personal/jcyu_2022_phdcs_smu_edu_sg"
 SHAREPOINT_FOLDER="/personal/jcyu_2022_phdcs_smu_edu_sg/Documents/NDSS-Zips"
-SHAREPOINT_LINK="${SHAREPOINT_BASE}/:f:/g/personal/jcyu_2022_phdcs_smu_edu_sg/IgCEKu7l0NDkS6GDb2zYZPCZAaX1IwVKAATWTcR8IeMCYko?e=lsdNon"
+# Guest sharing URL from zips/download.txt. Do not prefix SHAREPOINT_BASE — that 404s.
+SHAREPOINT_LINK="https://smu-my.sharepoint.com/:f:/g/personal/jcyu_2022_phdcs_smu_edu_sg/IgCEKu7l0NDkS6GDb2zYZPCZAaX1IwVKAATWTcR8IeMCYko?e=lsdNon"
 
 export DEBIAN_FRONTEND=noninteractive
 export PATH="${HOME}/.local/bin:${PATH}"
@@ -50,9 +51,14 @@ download_zip() {
   cookie_jar="$(mktemp)"
   curl -fsSL -c "${cookie_jar}" -b "${cookie_jar}" -A 'Mozilla/5.0' \
     "${SHAREPOINT_LINK}" -o /dev/null
-  curl -fL --retry 4 --retry-delay 4 -c "${cookie_jar}" -b "${cookie_jar}" -A 'Mozilla/5.0' \
-    "${SHAREPOINT_BASE}/_api/web/GetFileByServerRelativeUrl('${SHAREPOINT_FOLDER}/${name}')/\$value" \
-    -o "${dest}.partial"
+  local encoded_path="${SHAREPOINT_FOLDER}/${name}"
+  if ! curl -fL --retry 4 --retry-delay 4 -c "${cookie_jar}" -b "${cookie_jar}" -A 'Mozilla/5.0' \
+    "${SHAREPOINT_BASE}/_api/web/GetFileByServerRelativePath(decodedurl='${encoded_path}')/\$value" \
+    -o "${dest}.partial"; then
+    curl -fL --retry 4 --retry-delay 4 -c "${cookie_jar}" -b "${cookie_jar}" -A 'Mozilla/5.0' \
+      "${SHAREPOINT_BASE}/_api/web/GetFileByServerRelativeUrl('${encoded_path}')/\$value" \
+      -o "${dest}.partial"
+  fi
   mv "${dest}.partial" "${dest}"
   rm -f "${cookie_jar}"
 }
