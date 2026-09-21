@@ -16,12 +16,12 @@ import os
 
 from dotenv import load_dotenv
 
-base_dir = "/home/zjy/Chimera"  ###### 1 #######
+base_dir = os.environ.get("CHIMERA_BASE_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 env_path = f"{base_dir}/.env"
 load_dotenv(env_path)
 
 # scenario name
-scenario_name = "chimera_scenario_100d"
+scenario_name = os.environ.get("CHIMERA_SCENARIO", "chimera_scenario_100d")
 
 # company_id = "tech_company" ###### 2 #######
 # company_id = "finance_corporation"
@@ -42,6 +42,8 @@ company_config_path = f"{base_dir}/{scenario_name}/team/{company_id}.json"
 
 # meeting log directory
 meeting_log_dir = f"{base_dir}/{scenario_name}/meeting_logs"
+# Complete handoff from phase meetings to the independent daily-plan program.
+phase_plan_path = f"{meeting_log_dir}/phase_plans.json"
 # initial schedule directory
 init_schedule_dir = f"{base_dir}/{scenario_name}/init_schedule"
 # execution log directory
@@ -54,7 +56,8 @@ attack_log_dir = f"{base_dir}/{scenario_name}/attack_logs"
 # goal = "The goal of your company is to design and register a market-neutral statistical arbitrage fund targeting UHNWIs (Ultra-High-Net-Worth Individuals) under SEC regulations from the beginning."
 goal = "The goal of your institution (small community hospital) is to complete electronic health record collection and seasonal influenza trend analysis from the beginning."
 
-period = 20  # weeks (20 x Mon-Fri = 100 workdays)
+period = 20  # Legacy weekly meeting only; the phase pipeline never reads this.
+total_workdays = 100  # Business phases must cover exactly this many working days.
 employee_number = 90  # IMPORTANT: to change the number of employees
 
 # date for starters
@@ -63,6 +66,16 @@ base_date = "2026-08-28"
 # Simulated workday hours used when generating / updating schedules.
 work_start = "10:00"
 work_end = "18:00"
+planning_hours_per_day = 8
+# Explicit overrides keyed by department ID / nested role-tree path joined with __.
+# Needed only when leader_id, is_leader or a unique reports_to root is unavailable.
+planning_department_leaders = {}
+planning_workers = 3
+planning_daily_batch_days = 5  # API output-size bound, independent of phase/calendar boundaries.
+planning_meeting_rounds = 3
+planning_meeting_timeout = 900
+planning_max_api_calls = 1000
+planning_agent_max_tokens = 4096
 # Hard stop for the Phase-2 day simulation loop (HH:MM:SS).
 sim_day_end = "19:00:00"
 
