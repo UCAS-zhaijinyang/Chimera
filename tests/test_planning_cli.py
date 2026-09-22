@@ -21,15 +21,24 @@ def test_separate_programs_need_only_published_bundle(tmp_path):
         write(recording / "daily" / row["phase_id"] / (row["id"] + ".json"),
               json.loads(daily_reply("", json.dumps(context))))
     source = write(tmp_path / "company.json", company())
-    meeting_output = tmp_path / "meeting_output"
-    subprocess.run([sys.executable, str(HARNESS), "meetings", str(recording),
-                    "--company", str(source), "--output", str(meeting_output)], check=True, cwd=tmp_path)
-    subprocess.run([sys.executable, str(HARNESS), "phase_plans", str(recording),
-                    "--meetings", str(meeting_output), "--output", str(meeting_output / "phase_plans.json")],
+    leadership_output = tmp_path / "leadership_output"
+    subprocess.run([sys.executable, str(HARNESS), "leadership", str(recording),
+                    "--company", str(source), "--output", str(leadership_output)], check=True, cwd=tmp_path)
+    department_plan_path = tmp_path / "department_phase_plans.json"
+    subprocess.run([sys.executable, str(HARNESS), "department_plans", str(recording),
+                    "--meetings", str(leadership_output), "--output", str(department_plan_path)],
                    check=True, cwd=tmp_path)
+    department_output = tmp_path / "department_output"
+    subprocess.run([sys.executable, str(HARNESS), "departments", str(recording),
+                    "--department-plans", str(department_plan_path), "--output", str(department_output)],
+                   check=True, cwd=tmp_path)
+    final_plan_path = tmp_path / "phase_plans.json"
+    subprocess.run([sys.executable, str(HARNESS), "employee_plans", str(recording),
+                    "--meetings", str(department_output), "--department-plans", str(department_plan_path),
+                    "--output", str(final_plan_path)], check=True, cwd=tmp_path)
     saved = tmp_path / "phase_plans.json"
-    saved.write_bytes((meeting_output / "phase_plans.json").read_bytes())
-    meeting_output.rename(tmp_path / "unavailable_meetings")
+    leadership_output.rename(tmp_path / "unavailable_leadership_meetings")
+    department_output.rename(tmp_path / "unavailable_department_meetings")
     source.unlink()
     output = tmp_path / "schedule"
     command = [sys.executable, str(HARNESS), "daily", str(recording), "--plans", str(saved),

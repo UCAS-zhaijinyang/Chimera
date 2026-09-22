@@ -42,7 +42,11 @@ company_config_path = f"{base_dir}/{scenario_name}/team/{company_id}.json"
 
 # meeting log directory
 meeting_log_dir = f"{base_dir}/{scenario_name}/meeting_logs"
-# Complete handoff from phase meetings to the independent daily-plan program.
+# Phase 1 meeting and plan-generation artifacts.
+leadership_meeting_dir = f"{meeting_log_dir}/leadership_meetings"
+department_phase_plan_path = f"{meeting_log_dir}/department_phase_plans.json"
+department_meeting_dir = f"{meeting_log_dir}/department_meetings"
+# Complete employee-phase handoff to the independent daily-plan program.
 phase_plan_path = f"{meeting_log_dir}/phase_plans.json"
 # initial schedule directory
 init_schedule_dir = f"{base_dir}/{scenario_name}/init_schedule"

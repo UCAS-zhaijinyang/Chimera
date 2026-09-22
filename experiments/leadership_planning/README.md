@@ -6,9 +6,11 @@
 
 当前流程见 [业务阶段示例](../phase_planning/README.md) 和根目录 [README](../../README.md)：
 
-1. `src/meeting_for_phase_goal_auto.py`：负责人会议、并行部门会议，只保存会议产物。
-2. `src/phase_plan_generation_auto.py`：独立读取会议产物，生成每人每阶段的计划。
-3. `src/daily_plan_generation_auto.py`：独立读取阶段计划，生成日计划及现有执行程序可读的文件。
-4. `src/planning_audit.py`：只读核验阶段计划及日计划产物。
+1. `src/meeting_for_phase_goal_auto.py --stage leadership`：负责人会议，只保存会议产物。
+2. `src/phase_plan_generation_auto.py --stage departments`：读取负责人会议产物，生成各部门阶段计划。
+3. `src/meeting_for_phase_goal_auto.py --stage departments`：读取部门阶段计划，召开部门会议并保存会议产物。
+4. `src/phase_plan_generation_auto.py --stage employees`：读取部门会议产物，生成每人每阶段计划。
+5. `src/daily_plan_generation_auto.py`：读取员工阶段计划，生成日计划及现有执行程序可读的文件。
+6. `src/planning_audit.py`：只读核验阶段计划及日计划产物。
 
 `src/profile_generation.py` 与 `src/meeting_for_weekly_goal_auto.py` 保持原样；后者作为兼容入口和会议辅助函数来源保留，不作为新流程的周计划中间层。

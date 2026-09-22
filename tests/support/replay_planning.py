@@ -1,6 +1,6 @@
 """Offline CLI harness: replace only model/meeting boundaries with saved replies.
 
-Usage: python tests/support/replay_planning.py meetings|phase_plans|daily RECORDING [real CLI args...]
+Usage: python tests/support/replay_planning.py leadership|department_plans|departments|employee_plans|daily RECORDING [real CLI args...]
 The recording layout matches the preserved phase-planning experiment.
 """
 import json
@@ -24,15 +24,17 @@ def main():
     import planning_runtime
     planning_runtime.credentials = lambda *args: None
     planning_runtime.trace_api = lambda *args: None
-    if stage == "meetings":
+    if stage in {"leadership", "departments"}:
         def replay(job_path):
             job = json.loads(job_path.read_text())
             original = recording / "meetings" / job["meeting"]["id"] / "meeting_result.log"
             (job_path.parent / "meeting_result.log").write_bytes(original.read_bytes())
         planning_runtime.run_meeting_job = replay
         import meeting_for_phase_goal_auto as entry
-    elif stage == "phase_plans":
+        sys.argv.extend(["--stage", stage])
+    elif stage in {"department_plans", "employee_plans"}:
         import phase_plan_generation_auto as entry
+        sys.argv.extend(["--stage", "departments" if stage == "department_plans" else "employees"])
         entry.main()
         return
     elif stage == "daily":

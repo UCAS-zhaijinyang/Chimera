@@ -196,6 +196,9 @@ All simulation parameters are controlled via `src/config.py`. Key settings to ad
 | `planning_department_leaders` | Optional explicit department-ID → employee-ID mapping for older organizations | `{"design": "des-1"}` |
 | `planning_workers` | Maximum parallel department meetings / employee-phase daily generators | `3` |
 | `planning_daily_batch_days` | Maximum days per daily-generation API response; does not set phase lengths | `5` |
+| `leadership_meeting_dir` | Saved leadership meeting artifacts | `<scenario>/meeting_logs/leadership_meetings` |
+| `department_phase_plan_path` | Department plans generated from the leadership artifact | `<scenario>/meeting_logs/department_phase_plans.json` |
+| `department_meeting_dir` | Saved department meeting artifacts | `<scenario>/meeting_logs/department_meetings` |
 | `phase_plan_path` | Persistent handoff read by the independent daily-plan program | `<scenario>/meeting_logs/phase_plans.json` |
 | `period` | Legacy weekly entry only; unused by the phase-planning pipeline | `20` |
 | `base_date` | Start date of the simulation | `"2025-05-02"` |
@@ -254,12 +257,12 @@ python src/company_profile_automation.py
 python src/profile_generation.py
 ```
 
-**Step 3 - Run the leadership and department meetings** (Camel Workforce):
+**Step 3 - Run the leadership meeting** (Camel Workforce):
 ```bash
-python src/meeting_for_phase_goal_auto.py
+python src/meeting_for_phase_goal_auto.py --stage leadership
 ```
 
-Department leaders first discuss phase names, durations, department outcomes and handoff dates from the company goal, actual profile count, available hours and `total_workdays`. Each department then holds its own meeting, in parallel, to discuss the employee allocations. This program only saves the company snapshot, meeting inputs, raw meeting results and meeting logs under `<scenario>/meeting_logs/`; it does not publish `phase_plans.json`.
+Department leaders first discuss phase names, durations, department outcomes and handoff dates from the company goal, actual profile count, available hours and `total_workdays`. This program only saves the leadership meeting input and raw result under `<scenario>/meeting_logs/`; it does not generate department or employee plans.
 
 Existing JSON/JSONC profiles are read without regeneration. Departments come from explicit `departments` entries, profile `department_id` fields, or the nested `roles` arrays in the generated company configuration. Leaders come from explicit `leader_id`, `planning_department_leaders`, `is_leader`, an unambiguous `reports_to` root, or a singleton department. If none identifies a unique representative, the program prints the department ID and asks for a mapping in configuration before making API calls. It does not guess from job-title keywords.
 
@@ -269,21 +272,42 @@ The company generator now includes an explicit `leader_id` in each department. F
 planning_department_leaders = {"core_development_team__programming_team": "lpro-1"}
 ```
 
-**Step 4 - Generate the structured phase plans from meeting artifacts** (no model calls):
+**Step 4 - Generate department phase plans from the leadership meeting artifact** (no model calls):
 ```bash
-python src/phase_plan_generation_auto.py
+python src/phase_plan_generation_auto.py --stage departments \
+  --meetings <scenario>/meeting_logs \
+  --output <scenario>/meeting_logs/department_phase_plans.json
 ```
 
-This program reads only the saved meeting artifacts, validates the leadership result and every department result, and publishes `<scenario>/meeting_logs/phase_plans.json`. It is the equivalent of the old post-meeting summary stage, but uses business phases and employee-phase rows rather than weekly goals. If a meeting result is missing or inconsistent, it stops without publishing a bundle.
+This program reads only the leadership meeting artifact, validates the leadership result, and publishes one plan for every department in `<scenario>/meeting_logs/department_phase_plans.json`. It is the first post-meeting summary stage.
 
-**Step 5 - Inspect/validate the saved phase plans** (no model calls):
+**Step 5 - Run department meetings** (Camel Workforce):
+```bash
+python src/meeting_for_phase_goal_auto.py --stage departments \
+  --department-plans <scenario>/meeting_logs/department_phase_plans.json \
+  --output <scenario>/meeting_logs/department_meetings
+```
+
+Each department meeting reads the persisted department phase plans. The meeting program saves only department meeting artifacts and does not assemble employee plans.
+
+**Step 6 - Generate employee phase plans from department meeting artifacts** (no model calls):
+```bash
+python src/phase_plan_generation_auto.py --stage employees \
+  --meetings <scenario>/meeting_logs/department_meetings \
+  --department-plans <scenario>/meeting_logs/department_phase_plans.json \
+  --output <scenario>/meeting_logs/phase_plans.json
+```
+
+This second post-meeting summary stage reads every department meeting result and generates one employee plan for every business phase. It will not publish a final bundle when a department meeting is missing, changed or inconsistent.
+
+**Step 7 - Inspect/validate the saved employee phase plans** (no model calls):
 ```bash
 python src/planning_audit.py --plans <scenario>/meeting_logs/phase_plans.json
 ```
 
 The bundle contains the company/profile snapshot, the agreed company phase plan, and `personal_plans` with one entry for each employee and phase. It is the complete input to the next program: meeting logs and the original profile directory are not needed to generate daily schedules from this file. Structural validation does not establish semantic completeness or realistic effort estimates; review the goals before execution.
 
-**Step 6 - Independently generate daily schedules from the saved phase plans** (LLM; required before Phase 2):
+**Step 8 - Independently generate daily schedules from the saved phase plans** (LLM; required before Phase 2):
 ```bash
 python src/daily_plan_generation_auto.py
 ```
@@ -292,23 +316,36 @@ This program reads `config.phase_plan_path`, directly expands personal phase goa
 
 The meeting and daily generators support `--dry-run`, `--resume` and `--key-stdin` (hidden key input). The phase-plan generator supports `--dry-run` and `--resume`. Resume reuses validated outputs only for matching inputs; use a new output directory after changing the company, meeting artifacts, phase bundle or work window. Individual failed attempts are retained.
 
-To run the generic six-person fixture with explicit paths, execute these **three separate commands**:
+To run the generic six-person fixture with explicit paths, execute these **five separate pipeline commands**, followed by the read-only audit:
 
 ```bash
 python src/meeting_for_phase_goal_auto.py \
+  --stage leadership \
   --company experiments/phase_planning/company.json \
-  --output experiment_output/phase_example/meeting_logs --key-stdin
+  --output experiment_output/phase_example/leadership_meetings --key-stdin
 
 python src/phase_plan_generation_auto.py \
-  --meetings experiment_output/phase_example/meeting_logs \
-  --output experiment_output/phase_example/meeting_logs/phase_plans.json
+  --stage departments \
+  --meetings experiment_output/phase_example/leadership_meetings \
+  --output experiment_output/phase_example/department_phase_plans.json
+
+python src/meeting_for_phase_goal_auto.py \
+  --stage departments \
+  --department-plans experiment_output/phase_example/department_phase_plans.json \
+  --output experiment_output/phase_example/department_meetings --key-stdin
+
+python src/phase_plan_generation_auto.py \
+  --stage employees \
+  --meetings experiment_output/phase_example/department_meetings \
+  --department-plans experiment_output/phase_example/department_phase_plans.json \
+  --output experiment_output/phase_example/phase_plans.json
 
 python src/daily_plan_generation_auto.py \
-  --plans experiment_output/phase_example/meeting_logs/phase_plans.json \
+  --plans experiment_output/phase_example/phase_plans.json \
   --output experiment_output/phase_example/init_schedule --key-stdin
 
 python src/planning_audit.py \
-  --plans experiment_output/phase_example/meeting_logs/phase_plans.json \
+  --plans experiment_output/phase_example/phase_plans.json \
   --schedules experiment_output/phase_example/init_schedule
 ```
 
