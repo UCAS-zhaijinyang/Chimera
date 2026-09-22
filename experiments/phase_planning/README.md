@@ -1,6 +1,6 @@
 # 业务阶段计划：示例与历史实验
 
-正式入口已迁入 `src/`，按根目录 README 的 Phase 1 分步运行。先完成全部员工的阶段计划并保存，再单独执行日计划程序。两个程序之间不依赖内存对象或会议日志，也不经过周计划。
+正式入口已迁入 `src/`，按根目录 README 的 Phase 1 分步运行。会议、会议产物整理和日计划是三个独立程序，分别通过文件交接，不经过周计划。
 
 ## 当前运行方法
 
@@ -12,15 +12,20 @@
 # 只检查输入和参会名单，不调用模型
 python src/meeting_for_phase_goal_auto.py --company experiments/phase_planning/company.json --dry-run
 
-# 程序一：负责人会议 → 并行部门会议 → 每人每阶段计划
+# 程序一：负责人会议 → 并行部门会议 → 保存会议产物
 python src/meeting_for_phase_goal_auto.py \
   --company experiments/phase_planning/company.json \
   --output experiment_output/phase_example/meeting_logs --key-stdin
 
+# 程序二：从会议产物生成每人每阶段计划
+python src/phase_plan_generation_auto.py \
+  --meetings experiment_output/phase_example/meeting_logs \
+  --output experiment_output/phase_example/meeting_logs/phase_plans.json
+
 # 只读检查；也应人工检查阶段目标、责任和估计工时
 python src/planning_audit.py --plans experiment_output/phase_example/meeting_logs/phase_plans.json
 
-# 程序二：只读取已保存计划，生成每日活动与执行文件
+# 程序三：只读取已保存阶段计划，生成每日活动与执行文件
 python src/daily_plan_generation_auto.py \
   --plans experiment_output/phase_example/meeting_logs/phase_plans.json \
   --output experiment_output/phase_example/init_schedule --key-stdin
@@ -34,7 +39,9 @@ python src/planning_audit.py \
 
 ## 实现与产物
 
-负责人会议使用 CAMEL Workforce，为每位部门代表建立独立智能体，依据公司目标、实际人数、可用工时和总工作日确定阶段名称、持续天数、部门任务及交接。各部门随后在独立进程中并行开会，给每位员工分配各阶段目标。所有部门结果通过校验后，才发布完整的 `meeting_logs/phase_plans.json`。
+负责人会议使用 CAMEL Workforce，为每位部门代表建立独立智能体，依据公司目标、实际人数、可用工时和总工作日讨论阶段名称、持续天数、部门任务及交接。各部门随后在独立进程中并行开会，讨论每位员工在各阶段的目标。会议程序只保存 `company.json`、每场会议的输入和 `meeting_result.log`。
+
+`phase_plan_generation_auto.py` 仅读取这些会议产物，验证负责人会议结果与所有部门会议结果，组装出完整的 `phase_plans.json`。它不重新开会，也不依赖原始员工画像目录；缺少或修改会议结果时不会静默生成旧计划。
 
 每场会议的完整背景进入员工智能体上下文；日期或引用冲突会连同原提案退回参会者重新讨论，最多 `planning_meeting_rounds` 轮。JSON 解析不通过另一个模型改写决策。复用原周会议程序的画像加载及日志函数，原周计划入口和画像生成程序保持不变。
 
@@ -42,8 +49,9 @@ python src/planning_audit.py \
 
 | 当前产物 | 用途 |
 |---|---|
-| `meeting_logs/phase_plans.json` | 完整交接文件：`company`、`phase_plan`、`personal_plans`、`schema_version` |
+| `meeting_logs/company.json` | 会议阶段使用的完整公司和画像快照 |
 | `meeting_logs/meetings/<会议>/` | 参会画像、输入、原始输出和日志 |
+| `meeting_logs/phase_plans.json` | 独立计划生成阶段发布的完整交接文件：`company`、`phase_plan`、`personal_plans`、`schema_version` |
 | `init_schedule/daily/<阶段>/<员工>.json` | 个人整个阶段的逐日活动 |
 | `init_schedule/chunks/` | 可续跑的批次及尝试记录 |
 | `init_schedule/workdays/day_001/<员工>.json` | 全局工作日的活动与依赖 |
@@ -61,7 +69,7 @@ python src/planning_audit.py \
 
 [RESULTS.md](RESULTS.md) 记录重构前的真实 DeepSeek 实验及内容问题，旧命令与旧文件布局只用于解释历史。`experiment_output/phase_planning_run1` 至 `phase_planning_run4` 保留不动，旧耦合实验脚本已删除。
 
-重构回放结果在 `experiment_output/phase_pipeline_replay/`：两个程序分别在独立进程中运行，复用 run4 的原始会议与日计划响应。得到 3 个阶段、18 份个人阶段计划、72 份执行日文件、576 人时，结构审计通过。回放测试禁用网络，没有新增 API 调用；它验证新程序的编排与文件接口，不是新的模型质量实验。
+重构回放结果在 `experiment_output/phase_pipeline_replay/`：三个程序分别在独立进程中运行，复用 run4 的原始会议与日计划响应。得到 3 个阶段、18 份个人阶段计划、72 份执行日文件、576 人时，结构审计通过。回放测试禁用网络，没有新增 API 调用；它验证新程序的编排与文件接口，不是新的模型质量实验。
 
 可重复验证：
 
@@ -70,6 +78,9 @@ python -m pytest -q
 python tests/support/replay_planning.py meetings experiment_output/phase_planning_run4 \
   --company experiments/phase_planning/company.json \
   --output experiment_output/phase_pipeline_replay/meeting_logs --resume
+python tests/support/replay_planning.py phase_plans experiment_output/phase_planning_run4 \
+  --meetings experiment_output/phase_pipeline_replay/meeting_logs \
+  --output experiment_output/phase_pipeline_replay/meeting_logs/phase_plans.json --resume
 python tests/support/replay_planning.py daily experiment_output/phase_planning_run4 \
   --plans experiment_output/phase_pipeline_replay/meeting_logs/phase_plans.json \
   --output experiment_output/phase_pipeline_replay/init_schedule --batch-days 2 --resume

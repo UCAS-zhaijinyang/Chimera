@@ -35,7 +35,8 @@
 ## Task 2: Stage meetings entry point
 
 - [x] Add a real orchestration test with a controlled external meeting boundary: verify complete bundle publication and absence of daily files; failed department meetings must not publish a bundle.
-- [x] Move meeting/provider/trace utilities into planning_runtime.py. Add meeting_for_phase_goal_auto.py with config defaults, dry-run, resume and isolated worker jobs; no daily functions.
+- [x] Move meeting/provider/trace utilities into planning_runtime.py. Add meeting_for_phase_goal_auto.py with config defaults, dry-run, resume and isolated worker jobs; save meeting artifacts only.
+- [x] Add phase_plan_generation_auto.py as a separate post-meeting stage that validates meeting artifacts and publishes the employee-phase bundle.
 - [x] Test resume refusal on different inputs and model/context factory behavior.
 
 ## Task 3: Independent daily generation
@@ -53,5 +54,5 @@
 ## Task 5: Verification
 
 - [x] Run the full pytest suite, both CLI help/dry-run paths, shell syntax checks, protected-file diff, stale-reference search and git diff --check.
-- [x] Exercise separate processes using historical real-model meeting/daily responses, through a test-only model boundary; audit the resulting execution schedule without API spend or Phase 2 side effects.
+- [x] Exercise three separate processes using historical real-model meeting/daily responses, through a test-only model boundary; audit the resulting execution schedule without API spend or Phase 2 side effects.
 - [x] Inspect final changes against the spec and record concrete verification/limitations in the final response.

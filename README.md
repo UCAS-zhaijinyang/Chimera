@@ -55,7 +55,8 @@ Chimera/
 │   ├── foundation_model.py       
 │   ├── company_profile_automation.py
 │   ├── profile_generation.py
-│   ├── meeting_for_phase_goal_auto.py   # Leadership + department meetings → employee-phase plans
+│   ├── meeting_for_phase_goal_auto.py   # Leadership + department meetings → saved artifacts
+│   ├── phase_plan_generation_auto.py     # Meeting artifacts → employee-phase plan bundle
 │   ├── daily_plan_generation_auto.py    # Saved employee-phase plans → daily execution files
 │   ├── phase_planning.py                # Phase schemas, constraints and meeting prompts
 │   ├── planning_io.py                   # Existing profiles/organization → complete plan bundle
@@ -253,12 +254,12 @@ python src/company_profile_automation.py
 python src/profile_generation.py
 ```
 
-**Step 3 - Generate every employee's business-phase plans** (Camel Workforce):
+**Step 3 - Run the leadership and department meetings** (Camel Workforce):
 ```bash
 python src/meeting_for_phase_goal_auto.py
 ```
 
-Department leaders first agree phase names, durations, department outcomes and handoff dates from the company goal, actual profile count, available hours and `total_workdays`. Each department then holds its own meeting, in parallel, to allocate goals to every employee for every phase. This program publishes `<scenario>/meeting_logs/phase_plans.json` and **stops there**; it does not generate daily plans.
+Department leaders first discuss phase names, durations, department outcomes and handoff dates from the company goal, actual profile count, available hours and `total_workdays`. Each department then holds its own meeting, in parallel, to discuss the employee allocations. This program only saves the company snapshot, meeting inputs, raw meeting results and meeting logs under `<scenario>/meeting_logs/`; it does not publish `phase_plans.json`.
 
 Existing JSON/JSONC profiles are read without regeneration. Departments come from explicit `departments` entries, profile `department_id` fields, or the nested `roles` arrays in the generated company configuration. Leaders come from explicit `leader_id`, `planning_department_leaders`, `is_leader`, an unambiguous `reports_to` root, or a singleton department. If none identifies a unique representative, the program prints the department ID and asks for a mapping in configuration before making API calls. It does not guess from job-title keywords.
 
@@ -268,28 +269,39 @@ The company generator now includes an explicit `leader_id` in each department. F
 planning_department_leaders = {"core_development_team__programming_team": "lpro-1"}
 ```
 
-**Step 4 - Inspect/validate the saved phase plans** (no model calls):
+**Step 4 - Generate the structured phase plans from meeting artifacts** (no model calls):
+```bash
+python src/phase_plan_generation_auto.py
+```
+
+This program reads only the saved meeting artifacts, validates the leadership result and every department result, and publishes `<scenario>/meeting_logs/phase_plans.json`. It is the equivalent of the old post-meeting summary stage, but uses business phases and employee-phase rows rather than weekly goals. If a meeting result is missing or inconsistent, it stops without publishing a bundle.
+
+**Step 5 - Inspect/validate the saved phase plans** (no model calls):
 ```bash
 python src/planning_audit.py --plans <scenario>/meeting_logs/phase_plans.json
 ```
 
 The bundle contains the company/profile snapshot, the agreed company phase plan, and `personal_plans` with one entry for each employee and phase. It is the complete input to the next program: meeting logs and the original profile directory are not needed to generate daily schedules from this file. Structural validation does not establish semantic completeness or realistic effort estimates; review the goals before execution.
 
-**Step 5 - Independently generate daily schedules from the saved phase plans** (LLM; required before Phase 2):
+**Step 6 - Independently generate daily schedules from the saved phase plans** (LLM; required before Phase 2):
 ```bash
 python src/daily_plan_generation_auto.py
 ```
 
 This program reads `config.phase_plan_path`, directly expands personal phase goals into global working days, and writes `config.init_schedule_dir`. It never starts meetings or creates an intermediate weekly plan. Long phases are generated in bounded batches while retaining the full phase goal and earlier daily activities.
 
-Both generators support `--dry-run`, `--resume` and `--key-stdin` (hidden key input). Resume reuses validated outputs only for matching inputs; use a new output directory after changing the company, phase bundle or work window. Individual failed attempts are retained.
+The meeting and daily generators support `--dry-run`, `--resume` and `--key-stdin` (hidden key input). The phase-plan generator supports `--dry-run` and `--resume`. Resume reuses validated outputs only for matching inputs; use a new output directory after changing the company, meeting artifacts, phase bundle or work window. Individual failed attempts are retained.
 
-To run the generic six-person fixture with explicit paths, execute these **two separate commands**:
+To run the generic six-person fixture with explicit paths, execute these **three separate commands**:
 
 ```bash
 python src/meeting_for_phase_goal_auto.py \
   --company experiments/phase_planning/company.json \
   --output experiment_output/phase_example/meeting_logs --key-stdin
+
+python src/phase_plan_generation_auto.py \
+  --meetings experiment_output/phase_example/meeting_logs \
+  --output experiment_output/phase_example/meeting_logs/phase_plans.json
 
 python src/daily_plan_generation_auto.py \
   --plans experiment_output/phase_example/meeting_logs/phase_plans.json \

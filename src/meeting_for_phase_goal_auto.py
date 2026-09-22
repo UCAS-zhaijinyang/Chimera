@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-"""Phase 1: leadership and departmental meetings -> saved employee-phase plans."""
+"""Phase 1a: run leadership and department meetings and save their artifacts."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 
-from phase_planning import (build_phase_meetings, department_prompt, leadership_prompt,
-                            validate_phase_personal, validate_phase_plan)
-from planning_io import (SCHEMA_VERSION, dump, fingerprint, load_company, parse_json,
-                         prepare_output, read, validate_bundle)
+from phase_planning import build_phase_meetings, department_prompt, leadership_prompt
+from planning_io import dump, fingerprint, load_company, parse_json, prepare_output, read
 
 
-def run_phase_planning(company, output, *, meeting_runner=None, workers=3, resume=False, runtime=None):
+def run_phase_meetings(company, output, *, meeting_runner=None, workers=3, resume=False, runtime=None):
+    """Run meetings only. Plan extraction is deliberately a separate program."""
     meetings = build_phase_meetings(company)
     if workers < 1:
         raise ValueError("workers must be positive")
@@ -21,15 +20,16 @@ def run_phase_planning(company, output, *, meeting_runner=None, workers=3, resum
         runtime = settings()
     runtime = runtime or {}
     output = Path(output).resolve()
-    manifest = {"schema_version": SCHEMA_VERSION, "stage": "phase_plans", "input_sha256": fingerprint(company),
+    manifest = {"schema_version": 1, "stage": "meetings", "input_sha256": fingerprint(company),
                 "runtime": runtime}
     prepare_output(output, manifest, resume)
-    (output / "phase_plans.json").unlink(missing_ok=True)
+    dump(output / "company.json", company)
     profiles = {p["id"]: p for p in company["profiles"]}
 
-    def run(spec, prompt, validator, phase_plan=None):
+    def run(spec, prompt, meeting_context=None):
         folder = output / "meetings" / spec["id"]
-        job = {"company": company, "meeting": spec, "prompt": prompt, "phase_plan": phase_plan, "runtime": runtime}
+        job = {"company": company, "meeting": spec, "prompt": prompt,
+               "meeting_context": meeting_context, "runtime": runtime}
         completed = None
         if resume and (folder / "completed.json").exists():
             completed = read(folder / "completed.json")
@@ -41,29 +41,26 @@ def run_phase_planning(company, output, *, meeting_runner=None, workers=3, resum
                 dump(folder / "members" / (member_id + ".jsonc"), profiles[member_id])
             print("Meeting: " + spec["id"], flush=True)
             meeting_runner(folder / "job.json")
-        value = parse_json((folder / "meeting_result.log").read_text(encoding="utf-8"))
+        result_path = folder / "meeting_result.log"
+        if not result_path.exists():
+            raise ValueError(f"Missing meeting result: {result_path}")
+        value = parse_json(result_path.read_text(encoding="utf-8"))
         if completed and completed != {"input_sha256": fingerprint(job), "result_sha256": fingerprint(value)}:
             raise ValueError("Completed meeting result changed; use a new output directory")
-        validator(value)
         dump(folder / "completed.json", {"input_sha256": fingerprint(job), "result_sha256": fingerprint(value)})
         return value
 
-    plan = run(meetings[0], leadership_prompt(company), lambda value: validate_phase_plan(value, company))
-    dump(output / "phase_plan.json", plan)
+    leadership = run(meetings[0], leadership_prompt(company))
     departments = {d["id"]: d for d in company["departments"]}
 
     def department_run(spec):
-        d = departments[spec["department_id"]]
-        return run(spec, department_prompt(company, d, plan), lambda rows: validate_phase_personal(rows, d, plan), plan)
+        department = departments[spec["department_id"]]
+        prompt = department_prompt(company, department, leadership)
+        return run(spec, prompt, leadership)
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        groups = list(pool.map(department_run, meetings[1:]))
-    rows = sorted([r for group in groups for r in group], key=lambda r: (r["phase_id"], r["id"]))
-    bundle = validate_bundle({"schema_version": SCHEMA_VERSION, "company": company,
-                              "phase_plan": plan, "personal_plans": rows})
-    target = output / "phase_plans.json"
-    dump(target, bundle)
-    return target
+        list(pool.map(department_run, meetings[1:]))
+    return output
 
 
 def main():
@@ -92,12 +89,12 @@ def main():
     meetings = build_phase_meetings(company)
     if args.dry_run:
         print(json.dumps({"meetings": meetings, "total_workdays": company["total_workdays"],
-                          "employee_count": len(company["profiles"]), "output": str(args.output / "phase_plans.json")}, indent=2))
+                          "employee_count": len(company["profiles"]), "output": str(args.output)}, indent=2))
         return
     from planning_runtime import credentials
     credentials(args.key_stdin)
-    target = run_phase_planning(company, args.output, workers=args.workers, resume=args.resume)
-    print(f"Employee phase plans saved to {target}. Run daily_plan_generation_auto.py separately.")
+    target = run_phase_meetings(company, args.output, workers=args.workers, resume=args.resume)
+    print(f"Meeting artifacts saved to {target}. Run phase_plan_generation_auto.py next.")
 
 
 if __name__ == "__main__":

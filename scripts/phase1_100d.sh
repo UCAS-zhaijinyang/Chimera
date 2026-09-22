@@ -9,4 +9,5 @@ fi
 python src/company_profile_automation.py
 python src/profile_generation.py
 python src/meeting_for_phase_goal_auto.py --resume
+python src/phase_plan_generation_auto.py --resume
 python src/daily_plan_generation_auto.py --resume

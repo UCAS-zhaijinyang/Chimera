@@ -122,15 +122,17 @@ def test_daily_expansion_uses_phase_days_not_weekdays_and_rejects_extra_days():
             m.validate_phase_daily(value, personal()[1], plan(), company())
 
 
-def test_meeting_extraction_cannot_repair_a_conflicting_handoff(tmp_path):
-    from meeting_for_phase_goal_auto import run_phase_planning
+def test_plan_generation_rejects_a_conflicting_handoff(tmp_path):
+    from meeting_for_phase_goal_auto import run_phase_meetings
+    from phase_plan_generation_auto import generate_phase_plans
     value = plan()
     value["handoffs"][0]["needed_day"] = 3
     raw = json.dumps(value)
     def invalid_meeting(job_path):
         (job_path.parent / "meeting_result.log").write_text(raw)
+    output = run_phase_meetings(company(), tmp_path / "planning", meeting_runner=invalid_meeting)
     with pytest.raises(ValueError):
-        run_phase_planning(company(), tmp_path / "planning", meeting_runner=invalid_meeting)
+        generate_phase_plans(output)
     assert (tmp_path / "planning/meetings/leadership/meeting_result.log").read_text() == raw
     assert not (tmp_path / "planning/phase_plans.json").exists()
 

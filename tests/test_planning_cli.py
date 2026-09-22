@@ -24,6 +24,9 @@ def test_separate_programs_need_only_published_bundle(tmp_path):
     meeting_output = tmp_path / "meeting_output"
     subprocess.run([sys.executable, str(HARNESS), "meetings", str(recording),
                     "--company", str(source), "--output", str(meeting_output)], check=True, cwd=tmp_path)
+    subprocess.run([sys.executable, str(HARNESS), "phase_plans", str(recording),
+                    "--meetings", str(meeting_output), "--output", str(meeting_output / "phase_plans.json")],
+                   check=True, cwd=tmp_path)
     saved = tmp_path / "phase_plans.json"
     saved.write_bytes((meeting_output / "phase_plans.json").read_bytes())
     meeting_output.rename(tmp_path / "unavailable_meetings")

@@ -9,7 +9,7 @@ import threading
 import time
 
 from planning_io import dump, parse_json, read
-from phase_planning import participant_context, validate_phase_personal, validate_phase_plan
+from phase_planning import participant_context
 
 
 def settings():
@@ -152,12 +152,7 @@ def meeting_worker(job_path):
         raw = result.result or ""
         (folder / f"meeting_result.attempt{offset + attempt + 1}.log").write_text(raw, encoding="utf-8")
         try:
-            value = parse_json(raw)
-            if "department_id" in job["meeting"]:
-                department = next(d for d in job["company"]["departments"] if d["id"] == job["meeting"]["department_id"])
-                validate_phase_personal(value, department, job["phase_plan"])
-            else:
-                validate_phase_plan(value, job["company"])
+            parse_json(raw)
             (folder / "meeting_result.log").write_text(raw, encoding="utf-8")
             return
         except (ValueError, KeyError, TypeError) as exc:

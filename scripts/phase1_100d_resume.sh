@@ -7,4 +7,5 @@ if [ -f "$phase_repo/.venv/bin/activate" ]; then
   source "$phase_repo/.venv/bin/activate"
 fi
 python src/meeting_for_phase_goal_auto.py --resume
+python src/phase_plan_generation_auto.py --resume
 python src/daily_plan_generation_auto.py --resume

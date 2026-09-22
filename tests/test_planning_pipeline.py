@@ -124,10 +124,16 @@ def meeting_reply(job_path):
     write(job_path.parent / "meeting_result.log", result)
 
 
-def test_meeting_stage_publishes_only_complete_employee_phase_bundle(tmp_path):
+def test_meeting_stage_publishes_only_raw_meeting_artifacts(tmp_path):
     entry = module("meeting_for_phase_goal_auto")
-    target = entry.run_phase_planning(company(), tmp_path / "meetings", meeting_runner=meeting_reply)
-    result = module("planning_io").load_bundle(target)
+    target = entry.run_phase_meetings(company(), tmp_path / "meetings", meeting_runner=meeting_reply)
+    assert target.is_dir()
+    assert (target / "company.json").exists()
+    assert (target / "meetings/leadership/meeting_result.log").exists()
+    assert not (target / "phase_plans.json").exists()
+    planner = module("phase_plan_generation_auto")
+    plan_path = planner.generate_phase_plans(target)
+    result = module("planning_io").load_bundle(plan_path)
     assert result["phase_plan"] == plan()
     assert len(result["personal_plans"]) == 6
     assert not (tmp_path / "init_schedule").exists()
@@ -135,7 +141,7 @@ def test_meeting_stage_publishes_only_complete_employee_phase_bundle(tmp_path):
     changed = company()
     changed["goal"] = "Different project"
     with pytest.raises(ValueError, match="input"):
-        entry.run_phase_planning(changed, tmp_path / "meetings", meeting_runner=meeting_reply, resume=True)
+        entry.run_phase_meetings(changed, tmp_path / "meetings", meeting_runner=meeting_reply, resume=True)
 
 
 def test_failed_department_never_publishes_complete_bundle(tmp_path):
@@ -145,19 +151,29 @@ def test_failed_department_never_publishes_complete_bundle(tmp_path):
             raise RuntimeError("Provider unavailable")
         meeting_reply(path)
     with pytest.raises(RuntimeError):
-        entry.run_phase_planning(company(), tmp_path / "meetings", meeting_runner=fail_department)
+        entry.run_phase_meetings(company(), tmp_path / "meetings", meeting_runner=fail_department)
     assert not (tmp_path / "meetings" / "phase_plans.json").exists()
 
 
 def test_resume_rejects_modified_meeting_result(tmp_path):
     entry = module("meeting_for_phase_goal_auto")
     output = tmp_path / "meetings"
-    entry.run_phase_planning(company(), output, meeting_runner=meeting_reply)
+    entry.run_phase_meetings(company(), output, meeting_runner=meeting_reply)
+    planner = module("phase_plan_generation_auto")
+    planner.generate_phase_plans(output)
     changed = plan()
     changed["phases"][0]["goal"] = "Unexpected edited commitment"
     write(output / "meetings/leadership/meeting_result.log", changed)
     with pytest.raises(ValueError, match="changed"):
-        entry.run_phase_planning(company(), output, meeting_runner=meeting_reply, resume=True)
+        planner.generate_phase_plans(output, resume=True)
+
+
+def test_plan_generation_requires_every_meeting_artifact(tmp_path):
+    entry = module("meeting_for_phase_goal_auto")
+    output = entry.run_phase_meetings(company(), tmp_path / "meetings", meeting_runner=meeting_reply)
+    (output / "meetings/department_build/meeting_result.log").unlink()
+    with pytest.raises(ValueError, match="meeting result"):
+        module("phase_plan_generation_auto").generate_phase_plans(output)
     assert not (output / "phase_plans.json").exists()
 
 
