@@ -152,7 +152,18 @@ def meeting_worker(job_path):
         raw = result.result or ""
         (folder / f"meeting_result.attempt{offset + attempt + 1}.log").write_text(raw, encoding="utf-8")
         try:
-            parse_json(raw)
+            value = parse_json(raw)
+            # Validate the artifact at the meeting boundary so an LLM proposal
+            # that is valid JSON but violates the planning contract is retried
+            # with actionable feedback instead of being persisted.
+            if job["meeting"]["id"] == "leadership":
+                from phase_planning import validate_phase_plan
+                validate_phase_plan(value, job["company"])
+            else:
+                from phase_planning import validate_phase_personal
+                department = next(d for d in job["company"]["departments"]
+                                  if d["id"] == job["meeting"]["department_id"])
+                validate_phase_personal(value, department, job["meeting_context"])
             (folder / "meeting_result.log").write_text(raw, encoding="utf-8")
             return
         except (ValueError, KeyError, TypeError) as exc:

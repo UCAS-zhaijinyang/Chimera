@@ -20,6 +20,10 @@ Every activity needs the individual's source_task_ids. Distinguish:
 - uses_deliverable_ids: all finalized deliverables actually consumed, including your own earlier outputs
   or other shared internal artifacts. Use their handoff IDs. An artifact is usable only AFTER the END
   of ready_day; an agreed recipient must also obey needed_day. earliest_artifact_use_workday is explicit.
+The input field allowed_incoming_handoff_ids is authoritative. If it is empty, every
+requires_handoff_ids array MUST be empty. Never put an outgoing handoff (one whose from_task_id
+matches your task) or another department's handoff in requires_handoff_ids; those may only be listed
+in uses_deliverable_ids when the artifact is actually consumed after it is ready.
 Producing an artifact is not consuming it. Draft preparation may precede final delivery. Never omit a
 real dependency merely to pass validation. Company artifacts are assumed shared internally.
 Output JSON only:
