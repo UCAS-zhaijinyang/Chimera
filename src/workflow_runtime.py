@@ -134,7 +134,7 @@ class FilesystemToolRuntime:
     """Execute semantic local tools and persist every output as an artifact."""
 
     def __init__(self, workspace: str | os.PathLike[str], *, member_id: str, trace_id: str):
-        self.workspace = Path(workspace)
+        self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.member_id = member_id
         self.trace_id = trace_id
@@ -343,6 +343,23 @@ TOOL_SCHEMAS: dict[str, dict[str, Any]] = {
     "approve": {"type": "object", "properties": {"input_artifact_id": {"type": "string"}}, "required": ["input_artifact_id"]},
 }
 
+# Models sometimes use a natural-language capability name even when the
+# registered function name is canonical.  Only explicit aliases are accepted;
+# arbitrary tool names still fail the workflow-state check.
+TOOL_ALIASES = {
+    "report_generate": "file_write",
+    "report_write": "file_write",
+    "save_report": "file_write",
+    "store_file": "shared_storage",
+    "send_email": "message_send",
+    "create_issue": "issue_create",
+    "create_pull_request": "pull_request",
+}
+
+
+def canonical_tool_name(tool_name: str) -> str:
+    return TOOL_ALIASES.get(tool_name, tool_name)
+
 
 def schemas_for_tools(tool_names: Iterable[str]) -> list[dict[str, Any]]:
     return [
@@ -362,7 +379,7 @@ class WorkflowRunResult:
 
 class WorkflowToolLoop:
     def __init__(self, workspace: str | os.PathLike[str], *, member_id: str, trace_id: str):
-        self.workspace = Path(workspace)
+        self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.member_id = member_id
         self.trace_id = trace_id
@@ -384,7 +401,18 @@ class WorkflowToolLoop:
         router = WorkflowRouter(workflow_id)
         state = router.initial_state
         tool_calls: list[str] = []
-        messages: list[dict[str, Any]] = [{"role": "user", "content": task}]
+        messages: list[dict[str, Any]] = [
+            {
+                "role": "system",
+                "content": (
+                    "You are an employee completing a structured work task. "
+                    "Use only the tools offered for the current workflow state. "
+                    "When a tool returns artifact IDs, pass those IDs to the next tool. "
+                    "If the task is complete or no useful next call is offered, answer briefly."
+                ),
+            },
+            {"role": "user", "content": task},
+        ]
         final_answer = ""
         for step in range(max_steps):
             allowed = router.tools_for_state(state)
@@ -402,10 +430,11 @@ class WorkflowToolLoop:
                 return WorkflowRunResult(workflow_id, state, final_answer, tool_calls, str(self.workspace))
             for call in tool_calls_payload:
                 function = call.get("function") or {}
-                tool_name = str(function.get("name") or "")
+                requested_tool_name = str(function.get("name") or "")
+                tool_name = canonical_tool_name(requested_tool_name)
                 if tool_name not in allowed:
-                    self._log("TOOL_EVENT", {"trace_id": self.trace_id, "state": state, "tool_name": tool_name, "status": "rejected"})
-                    raise ValueError(f"tool {tool_name!r} is not allowed in state {state!r}")
+                    self._log("TOOL_EVENT", {"trace_id": self.trace_id, "state": state, "tool_name": requested_tool_name, "status": "rejected"})
+                    raise ValueError(f"tool {requested_tool_name!r} is not allowed in state {state!r}")
                 raw_arguments = function.get("arguments") or {}
                 arguments = json.loads(raw_arguments) if isinstance(raw_arguments, str) else dict(raw_arguments)
                 old_state = state
@@ -413,7 +442,7 @@ class WorkflowToolLoop:
                     result = self.runtime.execute(tool_name, arguments)
                     state = router.apply(state, tool_name)
                     tool_calls.append(tool_name)
-                    event = {"trace_id": self.trace_id, "step": step, "workflow_id": workflow_id, "from_state": old_state, "to_state": state, "tool_name": tool_name, "arguments": arguments, "result": result, "status": "success"}
+                    event = {"trace_id": self.trace_id, "step": step, "workflow_id": workflow_id, "from_state": old_state, "to_state": state, "tool_name": tool_name, "requested_tool_name": requested_tool_name, "arguments": arguments, "result": result, "status": "success"}
                     self._log("TOOL_EVENT", event)
                     messages.append({"role": "assistant", "tool_calls": [call]})
                     messages.append({"role": "tool", "tool_call_id": call.get("id", tool_name), "content": json.dumps(result, ensure_ascii=False)})

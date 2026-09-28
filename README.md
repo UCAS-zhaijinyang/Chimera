@@ -543,9 +543,25 @@ Feel free to open an issue or submit a pull request. We appreciate all forms of 
 
 ## Employee tool composition research
 
-Current employee tools in Phase 2/3 are a flat bag (search / browser / file write / terminal) plus a separate no-attachment email path. A survey of composable-tool and enterprise-agent papers, plus a transplant plan for Chimera, is in:
+Current employee tools in the legacy Phase 2/3 path are a flat bag (search / browser / file write / terminal) plus a separate email path. The opt-in filesystem workflow runner adds the execution layer shown in the workflow diagram: classify the task, expose only the current state's tools to the LLM, execute the selected function in Python, persist every output in a task workspace, and extract the detailed log into a fine-grained tool dataset.
+
+Enable it for a task or day run with:
+
+```bash
+export CHIMERA_WORKFLOW_EXECUTION=1
+python scripts/run_workflow_deepseek_smoke.py \
+  --workspace /tmp/chimera-workflow-smoke
+python scripts/extract_tool_calls.py \
+  --logs /tmp/chimera-workflow-smoke/execution_logs \
+  --output /tmp/chimera-workflow-smoke/dataset
+```
+
+The workspace contains `artifacts/` and `manifest.jsonl`. The manifest records which artifact each tool produced and which prior artifacts it consumed. `tool_calls.csv` and `tool_transitions.csv` are derived from `execution_logs/*.log`; `final_schedule.csv` remains plan context rather than the fine-grained behavior dataset.
+
+A survey of composable-tool and enterprise-agent papers, plus the transplant plan for Chimera, is in:
 
 - [docs/chimera-tool-composition-research.md](docs/chimera-tool-composition-research.md) (Markdown source, 16 papers, figures)
 - Feishu-importable HTML: `python scripts/build_feishu_doc.py` → `docs/feishu/chimera-tool-composition.html`
-- Prototype (not yet wired into the day loop): `src/tool_composition.py`
-
+- Tool contracts and role-routing prototype: `src/tool_composition.py`
+- Filesystem workflow runtime: `src/workflow_runtime.py`
+- Detailed-log extractor: `src/tool_log_extractor.py`

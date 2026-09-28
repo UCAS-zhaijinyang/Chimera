@@ -8,6 +8,7 @@ from workflow_runtime import (
     WorkflowRouter,
     WorkflowToolLoop,
     classify_workflow,
+    canonical_tool_name,
 )
 
 
@@ -62,6 +63,20 @@ def test_data_report_tools_exchange_filesystem_artifacts(tmp_path: Path):
     assert final["inputs"] == [stored["output_artifact_ids"][0]]
 
 
+def test_runtime_normalizes_symlinked_workspace(tmp_path: Path):
+    physical = tmp_path / "physical"
+    physical.mkdir()
+    alias = tmp_path / "alias"
+    alias.symlink_to(physical, target_is_directory=True)
+    runtime = FilesystemToolRuntime(alias, member_id="m-1", trace_id="trace-1")
+    source = runtime.execute("source_query", {"query": "x"})
+    runtime.execute(
+        "file_write",
+        {"input_artifact_id": source["output_artifact_ids"][0], "path": "reports/out.md"},
+    )
+    assert (physical / "reports/out.md").exists()
+
+
 def test_tool_loop_rejects_illegal_transition(tmp_path: Path):
     responses = [
         {
@@ -110,3 +125,8 @@ def test_tool_loop_advances_state_and_returns_answer(tmp_path: Path):
     assert result.workflow_id == "data_report"
     assert result.state == "source_acquired"
     assert result.tool_calls == ["source_query"]
+
+
+def test_explicit_tool_alias_is_normalized(tmp_path: Path):
+    assert canonical_tool_name("report_generate") == "file_write"
+    assert canonical_tool_name("unregistered_tool") == "unregistered_tool"
