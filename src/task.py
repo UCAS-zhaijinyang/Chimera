@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 import logging
 import json
+import inspect
 from pathlib import Path
 import shutil
 from urllib.error import HTTPError, URLError
@@ -151,11 +152,31 @@ def construct_society(
         config.foundation_corp == "openai_compatible"
         and getattr(config, "local_llm_disable_tools", False)
     ):
+        terminal_kwargs = {
+            "working_dir": output_dir,
+            "log_path": output_dir,
+            "need_terminal": False,
+        }
+        # ``log_path`` is provided by Chimera's patched Camel toolkit.  The
+        # public Camel release used for local fallback does not have it.  The
+        # MCP decorator hides the original signature, so inspect its wrapped
+        # initializer when available instead of constructing a half-initialized
+        # toolkit and catching a TypeError afterward.
+        init_signature = inspect.signature(TerminalToolkit.__init__)
+        if "log_path" not in init_signature.parameters:
+            for cell in TerminalToolkit.__init__.__closure__ or ():
+                candidate = cell.cell_contents
+                if callable(candidate) and getattr(candidate, "__name__", "") == "__init__":
+                    try:
+                        init_signature = inspect.signature(candidate)
+                    except (TypeError, ValueError):
+                        continue
+                    break
+        if "log_path" not in init_signature.parameters:
+            terminal_kwargs.pop("log_path")
         tools = [
             *FileWriteToolkit(output_dir=output_dir).get_tools(),
-            *TerminalToolkit(
-                working_dir=output_dir, log_path=output_dir, need_terminal=False
-            ).get_tools(),
+            *TerminalToolkit(**terminal_kwargs).get_tools(),
         ]
         if not config.offline_mode:
             tools += [
@@ -234,7 +255,17 @@ def run_task(
     # Construct and run the legacy OWL/CAMEL society.
     global run_chimera_society
     if run_chimera_society is None:
-        from owl.utils import run_chimera_society as _run_chimera_society
+        try:
+            from owl.utils import run_chimera_society as _run_chimera_society
+        except ImportError:
+            # Public OWL exposes ``run_society`` while Chimera's patched OWL
+            # adds logging-oriented ``run_chimera_society``.  Keep the legacy
+            # execution path usable with the public package by adapting the
+            # common arguments and preserving its return tuple.
+            from owl.utils import run_society as _run_society
+
+            def _run_chimera_society(society, round_limit=15, **_kwargs):
+                return _run_society(society, round_limit=round_limit)
 
         run_chimera_society = _run_chimera_society
     # output_dir saves all the intermediate files and result during the execution
