@@ -5,6 +5,15 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+# Camel/OWL are intentionally installed by scripts/bootstrap.sh rather than
+# as a lightweight unit-test dependency.  Keep the pure-Python test suite
+# usable on developer machines without that optional runtime; CI images that
+# install Camel still execute all three tests below.
+pytest.importorskip(
+    "camel",
+    reason="Camel runtime is installed by scripts/bootstrap.sh for live planning tests",
+)
+
 
 def test_meeting_keeps_long_input_without_increasing_completion_budget(monkeypatch):
     import config
