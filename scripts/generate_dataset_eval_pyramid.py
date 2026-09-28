@@ -90,11 +90,14 @@ def main():
         wrap(d, metrics, left + 175, y_top + 82, right - left - 230, fnt(21), MUTED, gap=4)
 
     # Side labels clarify how to interpret the pyramid.
+    # Keep the guide outside the widest (L0) card so it never collides with
+    # the pyramid when the image is viewed at a reduced size.
     d.text((90, 555), "质量证明逐层收紧", font=fnt(26, True), fill=MUTED)
-    d.line((180, 650, 180, 1430), fill=GRID, width=5)
+    guide_x = 55
+    d.line((guide_x, 650, guide_x, 1430), fill=GRID, width=5)
     for y, label in [(690, "结构"), (870, "执行"), (1050, "行为"), (1230, "语义"), (1410, "效用")]:
-        d.ellipse((166, y, 194, y + 28), fill=TEAL)
-        d.text((98, y - 4), label, font=fnt(20), fill=MUTED)
+        d.ellipse((guide_x - 14, y, guide_x + 14, y + 28), fill=TEAL)
+        d.text((18, y - 4), label, font=fnt(20), fill=MUTED)
 
     # Right-side experimental recipe.
     rx0, ry0, rx1, ry1 = 1780, 420, 2270, 1360
