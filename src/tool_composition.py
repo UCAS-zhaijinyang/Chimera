@@ -25,7 +25,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple
+import base64
+import json
+import os
+from pathlib import Path
+import tempfile
 import uuid
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows fallback
+    fcntl = None
 
 
 # ---------------------------------------------------------------------------
@@ -57,6 +67,9 @@ class Artifact:
     payload: Any
     acl: Tuple[str, ...] = ()
     name: str = ""
+    trace_id: str = ""
+    path: str = ""
+    inputs: Tuple[str, ...] = ()
 
     def visible_to(self, member_id: str) -> bool:
         if member_id == self.owner_id:
@@ -120,6 +133,189 @@ class ArtifactBus:
     def latest_of_type(self, member_id: str, artifact_type: str) -> Optional[Artifact]:
         visible = self.list_visible(member_id, artifact_type)
         return visible[-1] if visible else None
+
+
+class FilesystemArtifactBus:
+    """Persistent artifact store backed by a task workspace.
+
+    The in-memory ``ArtifactBus`` is useful for unit tests and pure planning,
+    but Phase 2 tasks run in separate processes.  This implementation keeps
+    the same conceptual API while storing payloads under ``artifacts/`` and
+    appending lineage metadata to ``manifest.jsonl``.
+    """
+
+    def __init__(self, root_dir: str | os.PathLike[str]):
+        self.root = Path(root_dir)
+        self.artifacts_dir = self.root / "artifacts"
+        self.manifest_path = self.root / "manifest.jsonl"
+        self.lock_path = self.root / "manifest.lock"
+        self.artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+    def _records(self) -> list[dict[str, Any]]:
+        if not self.manifest_path.exists():
+            return []
+        records: list[dict[str, Any]] = []
+        for line in self.manifest_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError:
+                # A partially written line should never be produced by this
+                # class, but ignoring it makes reads tolerant of interrupted
+                # external writers instead of crashing every later task.
+                continue
+        return records
+
+    def _record(self, artifact_id: str) -> dict[str, Any]:
+        for record in reversed(self._records()):
+            if record.get("artifact_id") == artifact_id:
+                return record
+        raise KeyError(f"unknown artifact: {artifact_id}")
+
+    def _append_manifest(self, record: dict[str, Any]) -> None:
+        self.root.mkdir(parents=True, exist_ok=True)
+        with self.lock_path.open("a+", encoding="utf-8") as lock_file:
+            if fcntl is not None:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                with self.manifest_path.open("a", encoding="utf-8") as manifest:
+                    manifest.write(json.dumps(record, ensure_ascii=False) + "\n")
+                    manifest.flush()
+                    os.fsync(manifest.fileno())
+            finally:
+                if fcntl is not None:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+    @staticmethod
+    def _payload_encoding(payload: Any) -> str:
+        if isinstance(payload, (dict, list, tuple, int, float, bool)) or payload is None:
+            return "json"
+        if isinstance(payload, bytes):
+            return "bytes"
+        return "text"
+
+    @staticmethod
+    def _suffix(name: str, encoding: str) -> str:
+        suffix = Path(name).suffix if name else ""
+        if suffix:
+            return suffix
+        return {"json": ".json", "bytes": ".bin", "text": ".txt"}[encoding]
+
+    def put(
+        self,
+        artifact_type: str,
+        producer_tool: str,
+        owner_id: str,
+        payload: Any,
+        *,
+        name: str = "",
+        acl: Sequence[str] = (),
+        artifact_id: Optional[str] = None,
+        trace_id: str = "",
+        inputs: Sequence[str] = (),
+    ) -> Artifact:
+        if artifact_type not in ARTIFACT_TYPES:
+            raise ValueError(f"unknown artifact type: {artifact_type}")
+        for input_id in inputs:
+            self._record(input_id)
+        artifact_id = artifact_id or uuid.uuid4().hex[:12]
+        encoding = self._payload_encoding(payload)
+        suffix = self._suffix(name, encoding)
+        relative_path = Path("artifacts") / f"{artifact_id}{suffix}"
+        destination = self.root / relative_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        fd, temporary_name = tempfile.mkstemp(
+            prefix=f".{artifact_id}.", dir=str(destination.parent)
+        )
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                if encoding == "json":
+                    data = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+                elif encoding == "bytes":
+                    data = payload
+                else:
+                    data = str(payload).encode("utf-8")
+                handle.write(data)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary_name, destination)
+        finally:
+            if os.path.exists(temporary_name):
+                os.unlink(temporary_name)
+        record = {
+            "artifact_id": artifact_id,
+            "artifact_type": artifact_type,
+            "producer_tool": producer_tool,
+            "owner_id": owner_id,
+            "acl": list(dict.fromkeys(acl)),
+            "name": name or artifact_id,
+            "trace_id": trace_id,
+            "path": str(relative_path),
+            "encoding": encoding,
+            "inputs": list(inputs),
+        }
+        self._append_manifest(record)
+        return Artifact(
+            artifact_id=artifact_id,
+            artifact_type=artifact_type,
+            producer_tool=producer_tool,
+            owner_id=owner_id,
+            payload=payload,
+            acl=tuple(acl),
+            name=name or artifact_id,
+            trace_id=trace_id,
+            path=str(relative_path),
+            inputs=tuple(inputs),
+        )
+
+    def path_for(self, artifact_id: str) -> Path:
+        record = self._record(artifact_id)
+        return self.root / record["path"]
+
+    def get(self, artifact_id: str) -> Artifact:
+        record = self._record(artifact_id)
+        path = self.root / record["path"]
+        if not path.exists():
+            raise FileNotFoundError(f"artifact payload missing: {artifact_id}")
+        raw = path.read_bytes()
+        encoding = record.get("encoding", "text")
+        if encoding == "json":
+            payload: Any = json.loads(raw.decode("utf-8"))
+        elif encoding == "bytes":
+            payload = raw
+        else:
+            payload = raw.decode("utf-8")
+        return Artifact(
+            artifact_id=record["artifact_id"],
+            artifact_type=record["artifact_type"],
+            producer_tool=record["producer_tool"],
+            owner_id=record["owner_id"],
+            payload=payload,
+            acl=tuple(record.get("acl") or ()),
+            name=record.get("name", artifact_id),
+            trace_id=record.get("trace_id", ""),
+            path=record["path"],
+            inputs=tuple(record.get("inputs") or ()),
+        )
+
+    def list_visible(
+        self,
+        member_id: str,
+        artifact_type: Optional[str] = None,
+        trace_id: Optional[str] = None,
+    ) -> list[Artifact]:
+        visible: list[Artifact] = []
+        for record in self._records():
+            acl = tuple(record.get("acl") or ())
+            if member_id != record.get("owner_id") and "*" not in acl and member_id not in acl:
+                continue
+            if artifact_type is not None and record.get("artifact_type") != artifact_type:
+                continue
+            if trace_id is not None and record.get("trace_id") != trace_id:
+                continue
+            visible.append(self.get(record["artifact_id"]))
+        return visible
 
 
 # ---------------------------------------------------------------------------
