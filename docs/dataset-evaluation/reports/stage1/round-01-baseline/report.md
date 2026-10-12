@@ -1,0 +1,1362 @@
+# 第一阶段评测：study
+
+状态：**FAIL**。范围：workflow application simulation; no real system/network/email claim。
+
+| 指标 | 分子 / 分母 | 数值 | 状态 |
+|---|---|---|---|
+| L0.1 核心字段可用率 | 0 / 264 | 0.0 | FAIL |
+| L0.2 主键关联完整性 | 0 / 264 | 0.0 | FAIL |
+| L0.3 文件与事件守恒 | 0 / 90 | 0.0 | FAIL |
+| L0.4 产物血缘完整性 | 72 / 72 | 1.0 | FAIL |
+| L0.5 因果与时间约束 | 90 / 90 | 1.0 | FAIL |
+| L0.6 标签可追溯性 | 0 / 3 | 0.0 | FAIL |
+| L0.7 跨采集源对齐 | 0 / 0 | None | NOT_APPLICABLE |
+| L0.8 发布完整性/泄漏扫描 | 90 / 90 | 1.0 | PASS |
+
+采集能力：`{"application": "NOT_MEASURED", "system": "NOT_MEASURED", "network": "NOT_MEASURED", "real_email": "NOT_MEASURED"}`。
+
+## 失败与证据
+
+- L0.1: required event fields missing or invalid；`{"task_id": "t0001", "path": "study/workspaces/t0001/execution.log", "line": 1, "sha256": "64907eceeaefde3ec5f926dd1e288337554a940ad027e5cac084854d2479bf0d"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0001", "path": "study/workspaces/t0001/execution.log", "line": 1, "sha256": "64907eceeaefde3ec5f926dd1e288337554a940ad027e5cac084854d2479bf0d"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0001", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0001"}`
+- L0.5: timestamp missing；`{"task_id": "t0001", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0001", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0002", "path": "study/workspaces/t0002/execution.log", "line": 1, "sha256": "35bad451ac707cebdd7e1ef5fa807a9d00809ab6ebfb70a42017f2ef719fcf4f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0002", "path": "study/workspaces/t0002/execution.log", "line": 1, "sha256": "35bad451ac707cebdd7e1ef5fa807a9d00809ab6ebfb70a42017f2ef719fcf4f"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0002", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0002"}`
+- L0.5: timestamp missing；`{"task_id": "t0002", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0002", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0003", "path": "study/workspaces/t0003/execution.log", "line": 1, "sha256": "a6a72662fbb0efabc20de59ddecff76d55809ad3a25ece3e01f9786244b260e5"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0003", "path": "study/workspaces/t0003/execution.log", "line": 1, "sha256": "a6a72662fbb0efabc20de59ddecff76d55809ad3a25ece3e01f9786244b260e5"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0003", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0003"}`
+- L0.5: timestamp missing；`{"task_id": "t0003", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0003", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0004", "path": "study/workspaces/t0004/execution.log", "line": 1, "sha256": "9ac73849fdb1805bcfdc95c1f15b9f1a41b8f5986a2f428c7c501e68849646dc"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0004", "path": "study/workspaces/t0004/execution.log", "line": 1, "sha256": "9ac73849fdb1805bcfdc95c1f15b9f1a41b8f5986a2f428c7c501e68849646dc"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0004", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0004"}`
+- L0.5: timestamp missing；`{"task_id": "t0004", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0004", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0005", "path": "study/workspaces/t0005/execution.log", "line": 1, "sha256": "09bd68caf597cf16690056844caeb0d3c3063a2521827a6f0e3dc4bcead205f9"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0005", "path": "study/workspaces/t0005/execution.log", "line": 1, "sha256": "09bd68caf597cf16690056844caeb0d3c3063a2521827a6f0e3dc4bcead205f9"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0005", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0005"}`
+- L0.5: timestamp missing；`{"task_id": "t0005", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0005", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0006", "path": "study/workspaces/t0006/execution.log", "line": 1, "sha256": "efd5d2d4c670817ad32178a1563827d7e5b60dc557f567a80d5f9cf0b2c731e8"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0006", "path": "study/workspaces/t0006/execution.log", "line": 1, "sha256": "efd5d2d4c670817ad32178a1563827d7e5b60dc557f567a80d5f9cf0b2c731e8"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0006", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0006"}`
+- L0.5: timestamp missing；`{"task_id": "t0006", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0006", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0007", "path": "study/workspaces/t0007/execution.log", "line": 1, "sha256": "643ac4639a86ad84bac34396c0d2bb7d24418e483f5e1d8db398e53a46457c54"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0007", "path": "study/workspaces/t0007/execution.log", "line": 1, "sha256": "643ac4639a86ad84bac34396c0d2bb7d24418e483f5e1d8db398e53a46457c54"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0007", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0007"}`
+- L0.5: timestamp missing；`{"task_id": "t0007", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0007", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0008", "path": "study/workspaces/t0008/execution.log", "line": 1, "sha256": "10488e8e63bd89b1136adbaba7fd6a85a0e1fffb49e8efedd9edef975418aeac"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0008", "path": "study/workspaces/t0008/execution.log", "line": 1, "sha256": "10488e8e63bd89b1136adbaba7fd6a85a0e1fffb49e8efedd9edef975418aeac"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0008", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0008"}`
+- L0.5: timestamp missing；`{"task_id": "t0008", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0008", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0009", "path": "study/workspaces/t0009/execution.log", "line": 1, "sha256": "1fd27b44675fd205b60654e5bd8febcc3f853f74a512badb2a707c16cfeb33a1"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0009", "path": "study/workspaces/t0009/execution.log", "line": 1, "sha256": "1fd27b44675fd205b60654e5bd8febcc3f853f74a512badb2a707c16cfeb33a1"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0009", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0009"}`
+- L0.5: timestamp missing；`{"task_id": "t0009", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0009", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0010", "path": "study/workspaces/t0010/execution.log", "line": 1, "sha256": "1399f13ccdf632b582997a00131d388bed10270ba24746b231125d5e1443ff37"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0010", "path": "study/workspaces/t0010/execution.log", "line": 1, "sha256": "1399f13ccdf632b582997a00131d388bed10270ba24746b231125d5e1443ff37"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0010", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0010"}`
+- L0.5: timestamp missing；`{"task_id": "t0010", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0010", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0011", "path": "study/workspaces/t0011/execution.log", "line": 1, "sha256": "ad0ed8284b12fa46dca66b357b05a6b28a7e392c86dcda45a6a5d68bbf83f784"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0011", "path": "study/workspaces/t0011/execution.log", "line": 1, "sha256": "ad0ed8284b12fa46dca66b357b05a6b28a7e392c86dcda45a6a5d68bbf83f784"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0011", "path": "study/workspaces/t0011/execution.log", "line": 2, "sha256": "cd50841128c0ccb270b5dd728f8755560d6c9d547784f0a3b5aa0631b4eb43dd"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0011", "path": "study/workspaces/t0011/execution.log", "line": 2, "sha256": "cd50841128c0ccb270b5dd728f8755560d6c9d547784f0a3b5aa0631b4eb43dd"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0011", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0011"}`
+- L0.5: timestamp missing；`{"task_id": "t0011", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0011", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0011", "artifact_id": "d32a69793338"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0011", "artifact_id": "d32a69793338"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0011", "artifact_id": "d32a69793338"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0012", "path": "study/workspaces/t0012/execution.log", "line": 1, "sha256": "7240871bffec996f931bc1334ace97641d2c8832f9698904e65bc092c75f2ce3"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0012", "path": "study/workspaces/t0012/execution.log", "line": 1, "sha256": "7240871bffec996f931bc1334ace97641d2c8832f9698904e65bc092c75f2ce3"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0012", "path": "study/workspaces/t0012/execution.log", "line": 2, "sha256": "43d9c1fb56ff2137f0955f4d42b4686a61d92ed59b49cda260923ffcebf7c568"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0012", "path": "study/workspaces/t0012/execution.log", "line": 2, "sha256": "43d9c1fb56ff2137f0955f4d42b4686a61d92ed59b49cda260923ffcebf7c568"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0012", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0012"}`
+- L0.5: timestamp missing；`{"task_id": "t0012", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0012", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0012", "artifact_id": "77f8090cc487"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0012", "artifact_id": "77f8090cc487"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0012", "artifact_id": "77f8090cc487"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0013", "path": "study/workspaces/t0013/execution.log", "line": 1, "sha256": "81c88b681c012300f529813a55d7ecb56755182e2243259c0842ff28ea50d685"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0013", "path": "study/workspaces/t0013/execution.log", "line": 1, "sha256": "81c88b681c012300f529813a55d7ecb56755182e2243259c0842ff28ea50d685"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0013", "path": "study/workspaces/t0013/execution.log", "line": 2, "sha256": "55ca16a42c8663a489338c453b9bfad0b5dc4fdbade34d1b86d0e4d9f89dedab"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0013", "path": "study/workspaces/t0013/execution.log", "line": 2, "sha256": "55ca16a42c8663a489338c453b9bfad0b5dc4fdbade34d1b86d0e4d9f89dedab"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0013", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0013"}`
+- L0.5: timestamp missing；`{"task_id": "t0013", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0013", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0013", "artifact_id": "081df9376220"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0013", "artifact_id": "081df9376220"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0013", "artifact_id": "081df9376220"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0014", "path": "study/workspaces/t0014/execution.log", "line": 1, "sha256": "e8d96b7351449267e43e53a908ab3f406bdef799006e8ec85fca9e7c262e9513"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0014", "path": "study/workspaces/t0014/execution.log", "line": 1, "sha256": "e8d96b7351449267e43e53a908ab3f406bdef799006e8ec85fca9e7c262e9513"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0014", "path": "study/workspaces/t0014/execution.log", "line": 2, "sha256": "8dec3d2a56f288aa6b61c85101e6caaa67537266079089d056c8e90598f5863b"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0014", "path": "study/workspaces/t0014/execution.log", "line": 2, "sha256": "8dec3d2a56f288aa6b61c85101e6caaa67537266079089d056c8e90598f5863b"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0014", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0014"}`
+- L0.5: timestamp missing；`{"task_id": "t0014", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0014", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0014", "artifact_id": "5ae35d68ab32"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0014", "artifact_id": "5ae35d68ab32"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0014", "artifact_id": "5ae35d68ab32"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0015", "path": "study/workspaces/t0015/execution.log", "line": 1, "sha256": "e1fd17e206113f0f82ea385ed47fa0c10a7a78a865d2cdea4f53de3d9ac975b6"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0015", "path": "study/workspaces/t0015/execution.log", "line": 1, "sha256": "e1fd17e206113f0f82ea385ed47fa0c10a7a78a865d2cdea4f53de3d9ac975b6"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0015", "path": "study/workspaces/t0015/execution.log", "line": 2, "sha256": "5a2dfb53d98be603b2a96556661bb146bb66cbd40acc15b618b7922d9ac47167"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0015", "path": "study/workspaces/t0015/execution.log", "line": 2, "sha256": "5a2dfb53d98be603b2a96556661bb146bb66cbd40acc15b618b7922d9ac47167"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0015", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0015"}`
+- L0.5: timestamp missing；`{"task_id": "t0015", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0015", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0015", "artifact_id": "a6c7ab9a259c"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0015", "artifact_id": "a6c7ab9a259c"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0015", "artifact_id": "a6c7ab9a259c"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0016", "path": "study/workspaces/t0016/execution.log", "line": 1, "sha256": "6f53588b41e703cef2c4cca278994e2c287ec6e7e64fb59f89997f416df4f7e7"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0016", "path": "study/workspaces/t0016/execution.log", "line": 1, "sha256": "6f53588b41e703cef2c4cca278994e2c287ec6e7e64fb59f89997f416df4f7e7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0016", "path": "study/workspaces/t0016/execution.log", "line": 2, "sha256": "2d23a9dcc93b43db1abb7441e588bfc3ebe8f817a5cb3cf28a02673a0cc59668"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0016", "path": "study/workspaces/t0016/execution.log", "line": 2, "sha256": "2d23a9dcc93b43db1abb7441e588bfc3ebe8f817a5cb3cf28a02673a0cc59668"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0016", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0016"}`
+- L0.5: timestamp missing；`{"task_id": "t0016", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0016", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0016", "artifact_id": "99350d31a4b7"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0016", "artifact_id": "99350d31a4b7"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0016", "artifact_id": "99350d31a4b7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0017", "path": "study/workspaces/t0017/execution.log", "line": 1, "sha256": "736e72ec68f6b7d9a95462a457ea8609f10244b6cf96cf8fbdc19fa1c2efda9c"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0017", "path": "study/workspaces/t0017/execution.log", "line": 1, "sha256": "736e72ec68f6b7d9a95462a457ea8609f10244b6cf96cf8fbdc19fa1c2efda9c"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0017", "path": "study/workspaces/t0017/execution.log", "line": 2, "sha256": "eb028ef306c22ecd0fd1f1c460d39e2541eb7892f7089cb16b7241929fafb3be"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0017", "path": "study/workspaces/t0017/execution.log", "line": 2, "sha256": "eb028ef306c22ecd0fd1f1c460d39e2541eb7892f7089cb16b7241929fafb3be"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0017", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0017"}`
+- L0.5: timestamp missing；`{"task_id": "t0017", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0017", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0017", "artifact_id": "53cf7be04912"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0017", "artifact_id": "53cf7be04912"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0017", "artifact_id": "53cf7be04912"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0018", "path": "study/workspaces/t0018/execution.log", "line": 1, "sha256": "12b1bb3465798ffabd76895646a59cf89825c554c1ceb952947b9da31369d8c4"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0018", "path": "study/workspaces/t0018/execution.log", "line": 1, "sha256": "12b1bb3465798ffabd76895646a59cf89825c554c1ceb952947b9da31369d8c4"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0018", "path": "study/workspaces/t0018/execution.log", "line": 2, "sha256": "bb2d6af979856619ca7bd5392d997355a334c3e8dcb5b65ff1064f7b66b9cd71"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0018", "path": "study/workspaces/t0018/execution.log", "line": 2, "sha256": "bb2d6af979856619ca7bd5392d997355a334c3e8dcb5b65ff1064f7b66b9cd71"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0018", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0018"}`
+- L0.5: timestamp missing；`{"task_id": "t0018", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0018", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0018", "artifact_id": "b6b408689b96"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0018", "artifact_id": "b6b408689b96"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0018", "artifact_id": "b6b408689b96"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0019", "path": "study/workspaces/t0019/execution.log", "line": 1, "sha256": "dfda76ebf865d2f3b108e176facda35393271c50da33bcc30ce6357e49a50742"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0019", "path": "study/workspaces/t0019/execution.log", "line": 1, "sha256": "dfda76ebf865d2f3b108e176facda35393271c50da33bcc30ce6357e49a50742"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0019", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0019"}`
+- L0.5: timestamp missing；`{"task_id": "t0019", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0019", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0020", "path": "study/workspaces/t0020/execution.log", "line": 1, "sha256": "809fddefa4a2ce60477c19138e68fe0206f2c9495a1110876698c4caa39585a6"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0020", "path": "study/workspaces/t0020/execution.log", "line": 1, "sha256": "809fddefa4a2ce60477c19138e68fe0206f2c9495a1110876698c4caa39585a6"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0020", "path": "study/workspaces/t0020/execution.log", "line": 2, "sha256": "a22f62a4160726551dbb714c2dd5e66015c33576efc8911935224389616f18d4"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0020", "path": "study/workspaces/t0020/execution.log", "line": 2, "sha256": "a22f62a4160726551dbb714c2dd5e66015c33576efc8911935224389616f18d4"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0020", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0020"}`
+- L0.5: timestamp missing；`{"task_id": "t0020", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0020", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0020", "artifact_id": "bea3700e4434"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0020", "artifact_id": "bea3700e4434"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0020", "artifact_id": "bea3700e4434"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 1, "sha256": "66f1888822a4586493ea6cf663232b677765b9afa58625bc3311876a50c7e6dc"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 1, "sha256": "66f1888822a4586493ea6cf663232b677765b9afa58625bc3311876a50c7e6dc"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 2, "sha256": "990c935a08b1dac8b73b93901080c84437ae13baa5b588caaddad008028821ee"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 2, "sha256": "990c935a08b1dac8b73b93901080c84437ae13baa5b588caaddad008028821ee"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 3, "sha256": "952845b3b8f30f1441f9ed33af6d74bbada2bf52b43b6f33eb620aa158973101"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 3, "sha256": "952845b3b8f30f1441f9ed33af6d74bbada2bf52b43b6f33eb620aa158973101"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 4, "sha256": "dbd1dc28c0d080dd27f45bd7592f7752025c02fbc12e5235f7243f4ca37b8158"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 4, "sha256": "dbd1dc28c0d080dd27f45bd7592f7752025c02fbc12e5235f7243f4ca37b8158"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 5, "sha256": "41428feca8b5d68003718c631244123850557a85859678e59a52af54177c2282"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 5, "sha256": "41428feca8b5d68003718c631244123850557a85859678e59a52af54177c2282"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 6, "sha256": "db913f488482687805ef89b05ad6fdda78095b8fad7c65c4cc047801c3be6ef5"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 6, "sha256": "db913f488482687805ef89b05ad6fdda78095b8fad7c65c4cc047801c3be6ef5"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 7, "sha256": "0eaab15fb001878740bf50b720c935ba5a96e296392378141db86f6910b4ec35"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0021", "path": "study/workspaces/t0021/execution.log", "line": 7, "sha256": "0eaab15fb001878740bf50b720c935ba5a96e296392378141db86f6910b4ec35"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0021", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0021"}`
+- L0.5: timestamp missing；`{"task_id": "t0021", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0021", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0021", "artifact_id": "4c68dea4f9d5"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0021", "artifact_id": "4c68dea4f9d5"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0021", "artifact_id": "4c68dea4f9d5"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0021", "artifact_id": "cebaf0f3c120"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0021", "artifact_id": "cebaf0f3c120"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0021", "artifact_id": "460a4afed137"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0021", "artifact_id": "460a4afed137"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0021", "artifact_id": "460a4afed137"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0021", "artifact_id": "c0c6bba61a66"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0021", "artifact_id": "c0c6bba61a66"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0021", "artifact_id": "c0c6bba61a66"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0021", "artifact_id": "8b5c6953c0b9"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0021", "artifact_id": "8b5c6953c0b9"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0021", "artifact_id": "997d5ead6d74"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0021", "artifact_id": "997d5ead6d74"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 1, "sha256": "d0151de559df6e6050d5ab65cc44f3471b448b78673b1c99673ab82967594e1f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 1, "sha256": "d0151de559df6e6050d5ab65cc44f3471b448b78673b1c99673ab82967594e1f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 2, "sha256": "a1d18e46a84811fff6d39090f3b80ab6b7c8ad0e55086c279c1624b842ed5c39"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 2, "sha256": "a1d18e46a84811fff6d39090f3b80ab6b7c8ad0e55086c279c1624b842ed5c39"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 3, "sha256": "e453efa4390f0efdda87e6d908db97482106d32fabfdecbcfd2c95eb6f6e3252"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 3, "sha256": "e453efa4390f0efdda87e6d908db97482106d32fabfdecbcfd2c95eb6f6e3252"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 4, "sha256": "984fe40a0738a434b641d09dd2b7f21c2802b48a833b9aae7ee82a6fc6c9a529"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 4, "sha256": "984fe40a0738a434b641d09dd2b7f21c2802b48a833b9aae7ee82a6fc6c9a529"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 5, "sha256": "716fbd7d7b1fe01b62a05f1e7ad08c677fe587e76a94434f7f74f1d58e9ccd26"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 5, "sha256": "716fbd7d7b1fe01b62a05f1e7ad08c677fe587e76a94434f7f74f1d58e9ccd26"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 6, "sha256": "b871884204dbb887f117f03c4a0b2688cc8b4d2f9b938e0b49b95d704a7e8c94"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 6, "sha256": "b871884204dbb887f117f03c4a0b2688cc8b4d2f9b938e0b49b95d704a7e8c94"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 7, "sha256": "4e72c9edca7632dbde9f5992bf6e9698f554c04e7f7043d9587e53780ca72bcb"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0022", "path": "study/workspaces/t0022/execution.log", "line": 7, "sha256": "4e72c9edca7632dbde9f5992bf6e9698f554c04e7f7043d9587e53780ca72bcb"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0022", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0022"}`
+- L0.5: timestamp missing；`{"task_id": "t0022", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0022", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0022", "artifact_id": "07d5ce9a1a2b"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0022", "artifact_id": "07d5ce9a1a2b"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0022", "artifact_id": "07d5ce9a1a2b"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0022", "artifact_id": "d0335cfe7aac"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0022", "artifact_id": "d0335cfe7aac"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0022", "artifact_id": "c0b11c2db6e5"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0022", "artifact_id": "c0b11c2db6e5"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0022", "artifact_id": "c0b11c2db6e5"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0022", "artifact_id": "6532d0f88638"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0022", "artifact_id": "6532d0f88638"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0022", "artifact_id": "6532d0f88638"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0022", "artifact_id": "f19da9f8bb48"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0022", "artifact_id": "f19da9f8bb48"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0022", "artifact_id": "d56d09a6f1c1"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0022", "artifact_id": "d56d09a6f1c1"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 1, "sha256": "e78a578ab0cac166822fec8ced92d35ce74f36a26e8ef4c2289bb5351150f922"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 1, "sha256": "e78a578ab0cac166822fec8ced92d35ce74f36a26e8ef4c2289bb5351150f922"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 2, "sha256": "bb447b58fee181fa35491e718400ec2272c1dd166dd84a872fe4435a4589ec1d"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 2, "sha256": "bb447b58fee181fa35491e718400ec2272c1dd166dd84a872fe4435a4589ec1d"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 3, "sha256": "4b09cb91fd3fdbfacac1aa572e0073707ea27a436949e845aeb14d4df0302abe"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 3, "sha256": "4b09cb91fd3fdbfacac1aa572e0073707ea27a436949e845aeb14d4df0302abe"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 4, "sha256": "d0fbec3127a44b58de23eeb94acb0c243430c1c3b03cbb5479367fd8eaca4dfc"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 4, "sha256": "d0fbec3127a44b58de23eeb94acb0c243430c1c3b03cbb5479367fd8eaca4dfc"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 5, "sha256": "bed972faffd512daae0c8378ad555cd0e89483ce2c3e1503e8ba1c6b66d8b32a"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 5, "sha256": "bed972faffd512daae0c8378ad555cd0e89483ce2c3e1503e8ba1c6b66d8b32a"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 6, "sha256": "a9c946caaec83626dfc7b454acd17f9f8e8d2df871b43aae73f8b6e176d50839"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 6, "sha256": "a9c946caaec83626dfc7b454acd17f9f8e8d2df871b43aae73f8b6e176d50839"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 7, "sha256": "7a2e9b4127bc7973b0276a7a073c421af46fc62da48f6a884e0af71ad2ce5da4"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0023", "path": "study/workspaces/t0023/execution.log", "line": 7, "sha256": "7a2e9b4127bc7973b0276a7a073c421af46fc62da48f6a884e0af71ad2ce5da4"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0023", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0023"}`
+- L0.5: timestamp missing；`{"task_id": "t0023", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0023", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0023", "artifact_id": "019d1a6f6b9b"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0023", "artifact_id": "019d1a6f6b9b"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0023", "artifact_id": "019d1a6f6b9b"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0023", "artifact_id": "514ef8f7b53e"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0023", "artifact_id": "514ef8f7b53e"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0023", "artifact_id": "b49bf2a0174e"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0023", "artifact_id": "b49bf2a0174e"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0023", "artifact_id": "b49bf2a0174e"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0023", "artifact_id": "4b41e2e77939"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0023", "artifact_id": "4b41e2e77939"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0023", "artifact_id": "4b41e2e77939"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0023", "artifact_id": "727f85baecfe"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0023", "artifact_id": "727f85baecfe"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0023", "artifact_id": "58810eea8946"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0023", "artifact_id": "58810eea8946"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 1, "sha256": "60bc837c7b02e6b332d24512e01e82a7f0365fa8bce4dfe7f2f56090aa19b9f3"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 1, "sha256": "60bc837c7b02e6b332d24512e01e82a7f0365fa8bce4dfe7f2f56090aa19b9f3"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 2, "sha256": "4da7a69cbcd91dac60eeafa93cc22897b26a8823e239fefe8c81c1751a505c08"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 2, "sha256": "4da7a69cbcd91dac60eeafa93cc22897b26a8823e239fefe8c81c1751a505c08"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 3, "sha256": "c76e836643f900cd95e59d9b907815ef13b584c2e18f9f0987c6d309895bc327"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 3, "sha256": "c76e836643f900cd95e59d9b907815ef13b584c2e18f9f0987c6d309895bc327"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 4, "sha256": "be8000759662acdebe74fd98527890a90a116346189c9717043f906447027e9a"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 4, "sha256": "be8000759662acdebe74fd98527890a90a116346189c9717043f906447027e9a"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 5, "sha256": "fa24ed8237c7b72204eb0037cb372dd6fff784d3ddbe5168631158ee852bfb64"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 5, "sha256": "fa24ed8237c7b72204eb0037cb372dd6fff784d3ddbe5168631158ee852bfb64"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 6, "sha256": "2b642f2c950a9bb2a95897ce29800f8d434e66c9e837bacf3dacb22e13e37382"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 6, "sha256": "2b642f2c950a9bb2a95897ce29800f8d434e66c9e837bacf3dacb22e13e37382"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 7, "sha256": "391bd681059a5e4fa205d04b4d0df8a14ad9f26c84d8a610d456f8ca17a0cb1b"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0024", "path": "study/workspaces/t0024/execution.log", "line": 7, "sha256": "391bd681059a5e4fa205d04b4d0df8a14ad9f26c84d8a610d456f8ca17a0cb1b"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0024", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0024"}`
+- L0.5: timestamp missing；`{"task_id": "t0024", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0024", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0024", "artifact_id": "deced5acd8ae"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0024", "artifact_id": "deced5acd8ae"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0024", "artifact_id": "deced5acd8ae"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0024", "artifact_id": "09131c6f74ea"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0024", "artifact_id": "09131c6f74ea"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0024", "artifact_id": "62f3ffb22197"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0024", "artifact_id": "62f3ffb22197"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0024", "artifact_id": "62f3ffb22197"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0024", "artifact_id": "1a92eef94f9c"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0024", "artifact_id": "1a92eef94f9c"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0024", "artifact_id": "1a92eef94f9c"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0024", "artifact_id": "a444ee3dbb4a"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0024", "artifact_id": "a444ee3dbb4a"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0024", "artifact_id": "e46e55089a0b"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0024", "artifact_id": "e46e55089a0b"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 1, "sha256": "3a0289637592294f77e721ee9533115352ced50ffa10a9d68bcc8dcc70de6768"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 1, "sha256": "3a0289637592294f77e721ee9533115352ced50ffa10a9d68bcc8dcc70de6768"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 2, "sha256": "ef790a6d2da12ad18b98d91fd97063b92dc7410d2bf5417e18493f2d9487e2b9"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 2, "sha256": "ef790a6d2da12ad18b98d91fd97063b92dc7410d2bf5417e18493f2d9487e2b9"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 3, "sha256": "21cb856ab4f01ada5bddcc4274268f14feb2da7994fe5098ad140e3951177d92"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 3, "sha256": "21cb856ab4f01ada5bddcc4274268f14feb2da7994fe5098ad140e3951177d92"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 4, "sha256": "de36ee2b70aecad2317bfda6839a4a2ecc410c7d00ef914a0ca902d9726d95eb"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 4, "sha256": "de36ee2b70aecad2317bfda6839a4a2ecc410c7d00ef914a0ca902d9726d95eb"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 5, "sha256": "0317cb19058900a01fdb49f241500187dadce56b0297b340563e153d1b196bc2"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 5, "sha256": "0317cb19058900a01fdb49f241500187dadce56b0297b340563e153d1b196bc2"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 6, "sha256": "fbbfcad1227ddbee2ec0dfef8044a33f1784c5834b95d391f7bfc6cf504be385"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 6, "sha256": "fbbfcad1227ddbee2ec0dfef8044a33f1784c5834b95d391f7bfc6cf504be385"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 7, "sha256": "39476fffa09116da2a83b8a21d00c426bcad85b17675a9c51b42e483b3ee285c"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0025", "path": "study/workspaces/t0025/execution.log", "line": 7, "sha256": "39476fffa09116da2a83b8a21d00c426bcad85b17675a9c51b42e483b3ee285c"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0025", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0025"}`
+- L0.5: timestamp missing；`{"task_id": "t0025", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0025", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0025", "artifact_id": "63a8b5dfd960"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0025", "artifact_id": "63a8b5dfd960"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0025", "artifact_id": "63a8b5dfd960"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0025", "artifact_id": "85c02db4c355"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0025", "artifact_id": "85c02db4c355"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0025", "artifact_id": "f5790a48b935"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0025", "artifact_id": "f5790a48b935"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0025", "artifact_id": "f5790a48b935"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0025", "artifact_id": "f979b2a55825"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0025", "artifact_id": "f979b2a55825"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0025", "artifact_id": "f979b2a55825"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0025", "artifact_id": "2ce09417c7b9"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0025", "artifact_id": "2ce09417c7b9"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0025", "artifact_id": "ec48f4de6c9c"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0025", "artifact_id": "ec48f4de6c9c"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 1, "sha256": "c30efa27017fddb971494db3fbc9a0856a54335b11be70a5e12ff9d42095fc11"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 1, "sha256": "c30efa27017fddb971494db3fbc9a0856a54335b11be70a5e12ff9d42095fc11"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 2, "sha256": "b0a076ab79369bdc25087107a7ce383ce4aea159e28e4f9e072fe47a7ef3809f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 2, "sha256": "b0a076ab79369bdc25087107a7ce383ce4aea159e28e4f9e072fe47a7ef3809f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 3, "sha256": "ba1c50fe00c70923df01a15b56b1cf50eb976a777bc4342cc87fcd87ff02e06b"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 3, "sha256": "ba1c50fe00c70923df01a15b56b1cf50eb976a777bc4342cc87fcd87ff02e06b"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 4, "sha256": "8f8243a4712071c5e49171e093ad1db813e211861e9be2004ca9ef2f10818a8e"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 4, "sha256": "8f8243a4712071c5e49171e093ad1db813e211861e9be2004ca9ef2f10818a8e"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 5, "sha256": "78c3db0c3b27f4f2db59d65ef4c197b207019316f1714f0f18e80d59ede5225d"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 5, "sha256": "78c3db0c3b27f4f2db59d65ef4c197b207019316f1714f0f18e80d59ede5225d"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 6, "sha256": "240b632770d34c9939dc968b8c87d1b33424131193096ea9578fec5bbc42a21b"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 6, "sha256": "240b632770d34c9939dc968b8c87d1b33424131193096ea9578fec5bbc42a21b"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 7, "sha256": "fc87870b3aa9d38f73a145f373abe4d7e318044e508f6e561b4457b90e962d7c"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0026", "path": "study/workspaces/t0026/execution.log", "line": 7, "sha256": "fc87870b3aa9d38f73a145f373abe4d7e318044e508f6e561b4457b90e962d7c"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0026", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0026"}`
+- L0.5: timestamp missing；`{"task_id": "t0026", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0026", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0026", "artifact_id": "437d05c37dbd"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0026", "artifact_id": "437d05c37dbd"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0026", "artifact_id": "437d05c37dbd"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0026", "artifact_id": "198852bb8818"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0026", "artifact_id": "198852bb8818"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0026", "artifact_id": "14b278251a38"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0026", "artifact_id": "14b278251a38"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0026", "artifact_id": "14b278251a38"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0026", "artifact_id": "fc6980a64d23"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0026", "artifact_id": "fc6980a64d23"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0026", "artifact_id": "fc6980a64d23"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0026", "artifact_id": "c3af88a2c420"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0026", "artifact_id": "c3af88a2c420"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0026", "artifact_id": "cad0b2204f85"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0026", "artifact_id": "cad0b2204f85"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0027", "path": "study/workspaces/t0027/execution.log", "line": 1, "sha256": "aa1bb83fef86e7d4d013c27cfe23824e9c4ff54a2e113ae92c013dd8ede1f5f0"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0027", "path": "study/workspaces/t0027/execution.log", "line": 1, "sha256": "aa1bb83fef86e7d4d013c27cfe23824e9c4ff54a2e113ae92c013dd8ede1f5f0"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0027", "path": "study/workspaces/t0027/execution.log", "line": 2, "sha256": "ada9384866f1ccf0c793c7bc70c456a6116b41936b81b8d4ef26fc7da2b06fd1"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0027", "path": "study/workspaces/t0027/execution.log", "line": 2, "sha256": "ada9384866f1ccf0c793c7bc70c456a6116b41936b81b8d4ef26fc7da2b06fd1"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0027", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0027"}`
+- L0.5: timestamp missing；`{"task_id": "t0027", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0027", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0027", "artifact_id": "8243f9a03998"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0027", "artifact_id": "8243f9a03998"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0027", "artifact_id": "8243f9a03998"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 1, "sha256": "7afbd0ec0841b4e748b54ddca3b085e07ddba274fa061732510542dc6f337d4b"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 1, "sha256": "7afbd0ec0841b4e748b54ddca3b085e07ddba274fa061732510542dc6f337d4b"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 2, "sha256": "096b16449711a88d80d562d22263b1f38ef98de8cc57e8de225d5f3e0a8d0a59"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 2, "sha256": "096b16449711a88d80d562d22263b1f38ef98de8cc57e8de225d5f3e0a8d0a59"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 3, "sha256": "3b93d3b7c37545d1e46048ac7b086fbfcf488dbacff9b998d95c5dcc991ee590"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 3, "sha256": "3b93d3b7c37545d1e46048ac7b086fbfcf488dbacff9b998d95c5dcc991ee590"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 4, "sha256": "9f3621574df73d0d1e274848a05b1600aaf5578475d549d95eb6e3645417c041"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 4, "sha256": "9f3621574df73d0d1e274848a05b1600aaf5578475d549d95eb6e3645417c041"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 5, "sha256": "6fa5c467bdc264f2ab037916b4c7eb5747e51325f7a1f43d52334da79470b00f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 5, "sha256": "6fa5c467bdc264f2ab037916b4c7eb5747e51325f7a1f43d52334da79470b00f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 6, "sha256": "fb5ba0e5b17a20ccda089e4e0d0fb92da1da5d7c1eee779befeedbbe3138d0c5"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 6, "sha256": "fb5ba0e5b17a20ccda089e4e0d0fb92da1da5d7c1eee779befeedbbe3138d0c5"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 7, "sha256": "595348cb0875a02588dd00c4ac55e452522bf94295814860434815a3040c628a"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0028", "path": "study/workspaces/t0028/execution.log", "line": 7, "sha256": "595348cb0875a02588dd00c4ac55e452522bf94295814860434815a3040c628a"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0028", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0028"}`
+- L0.5: timestamp missing；`{"task_id": "t0028", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0028", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0028", "artifact_id": "0d07520adfe9"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0028", "artifact_id": "0d07520adfe9"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0028", "artifact_id": "0d07520adfe9"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0028", "artifact_id": "0ae59f5b4498"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0028", "artifact_id": "0ae59f5b4498"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0028", "artifact_id": "887a14158695"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0028", "artifact_id": "887a14158695"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0028", "artifact_id": "887a14158695"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0028", "artifact_id": "5e646648eef8"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0028", "artifact_id": "5e646648eef8"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0028", "artifact_id": "5e646648eef8"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0028", "artifact_id": "a86074aa8a2a"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0028", "artifact_id": "a86074aa8a2a"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0028", "artifact_id": "4008e151964e"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0028", "artifact_id": "4008e151964e"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0029", "path": "study/workspaces/t0029/execution.log", "line": 1, "sha256": "3022ab3b4d3b25b2d99acd3b6cb74e871f1c40464ecf1cf3af2bcaeeeed9cfde"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0029", "path": "study/workspaces/t0029/execution.log", "line": 1, "sha256": "3022ab3b4d3b25b2d99acd3b6cb74e871f1c40464ecf1cf3af2bcaeeeed9cfde"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0029", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0029"}`
+- L0.5: timestamp missing；`{"task_id": "t0029", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0029", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 1, "sha256": "7743637284bcc0d4cd7859d342065fec67fdc71084e47cc65d1416d1064a1334"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 1, "sha256": "7743637284bcc0d4cd7859d342065fec67fdc71084e47cc65d1416d1064a1334"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 2, "sha256": "48bce48063596f740b8429dbcc003f6a0c8aee15cb9a6b0bd77488ddc872bfc0"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 2, "sha256": "48bce48063596f740b8429dbcc003f6a0c8aee15cb9a6b0bd77488ddc872bfc0"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 3, "sha256": "86046b6e4d457eaeeb0f8094b61ba85a4cfdd575aac471cdffb980f74b62fa90"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 3, "sha256": "86046b6e4d457eaeeb0f8094b61ba85a4cfdd575aac471cdffb980f74b62fa90"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 4, "sha256": "e32f3d78c9c738d312670ffbb96c9b3c1993a1a0a3d0b42d148005d8036d7c50"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 4, "sha256": "e32f3d78c9c738d312670ffbb96c9b3c1993a1a0a3d0b42d148005d8036d7c50"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 5, "sha256": "3d9525005f91bb5bef35573724caeab5216f344c5c622d5d5965b872bf9b3d6f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 5, "sha256": "3d9525005f91bb5bef35573724caeab5216f344c5c622d5d5965b872bf9b3d6f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 6, "sha256": "57be64ef131063fd9d79df938b23c540f2e79bf3ce788fac3415f6fbc02901b7"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 6, "sha256": "57be64ef131063fd9d79df938b23c540f2e79bf3ce788fac3415f6fbc02901b7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 7, "sha256": "51b096bcff76b18b3ce28b9b79fccb6f58fa41e94fa56e1f1bdae1d12a2bf247"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0030", "path": "study/workspaces/t0030/execution.log", "line": 7, "sha256": "51b096bcff76b18b3ce28b9b79fccb6f58fa41e94fa56e1f1bdae1d12a2bf247"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0030", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0030"}`
+- L0.5: timestamp missing；`{"task_id": "t0030", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0030", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0030", "artifact_id": "41a6947659b3"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0030", "artifact_id": "41a6947659b3"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0030", "artifact_id": "41a6947659b3"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0030", "artifact_id": "f30298846357"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0030", "artifact_id": "f30298846357"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0030", "artifact_id": "6ac6206fb509"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0030", "artifact_id": "6ac6206fb509"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0030", "artifact_id": "6ac6206fb509"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0030", "artifact_id": "e287c4486a8a"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0030", "artifact_id": "e287c4486a8a"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0030", "artifact_id": "e287c4486a8a"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0030", "artifact_id": "90a68440f33c"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0030", "artifact_id": "90a68440f33c"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0030", "artifact_id": "15495f134108"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0030", "artifact_id": "15495f134108"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0031", "path": "study/workspaces/t0031/execution.log", "line": 1, "sha256": "3e3299d39be992d260bf325e9b49f304c3b153ebd1f97783cfed9762edf2f06f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0031", "path": "study/workspaces/t0031/execution.log", "line": 1, "sha256": "3e3299d39be992d260bf325e9b49f304c3b153ebd1f97783cfed9762edf2f06f"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0031", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0031"}`
+- L0.5: timestamp missing；`{"task_id": "t0031", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0031", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0032", "path": "study/workspaces/t0032/execution.log", "line": 1, "sha256": "3b09324ad095d08812133d99ec3933ed504e95895944a6524aa60c90a2740e6b"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0032", "path": "study/workspaces/t0032/execution.log", "line": 1, "sha256": "3b09324ad095d08812133d99ec3933ed504e95895944a6524aa60c90a2740e6b"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0032", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0032"}`
+- L0.5: timestamp missing；`{"task_id": "t0032", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0032", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0033", "path": "study/workspaces/t0033/execution.log", "line": 1, "sha256": "a43060958950ee84b59f8301f1b61356b983ea31ef0a36facba496cac9c1a813"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0033", "path": "study/workspaces/t0033/execution.log", "line": 1, "sha256": "a43060958950ee84b59f8301f1b61356b983ea31ef0a36facba496cac9c1a813"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0033", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0033"}`
+- L0.5: timestamp missing；`{"task_id": "t0033", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0033", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0034", "path": "study/workspaces/t0034/execution.log", "line": 1, "sha256": "08506cfd508ffae89eab01f98af55f9aaa5eae33703cb97e10c558b02986956b"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0034", "path": "study/workspaces/t0034/execution.log", "line": 1, "sha256": "08506cfd508ffae89eab01f98af55f9aaa5eae33703cb97e10c558b02986956b"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0034", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0034"}`
+- L0.5: timestamp missing；`{"task_id": "t0034", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0034", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0035", "path": "study/workspaces/t0035/execution.log", "line": 1, "sha256": "d3e960f67db8d2944ac1e966ca7e8f065691e6b2b2d77cdbbfb9849f8d9f23c0"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0035", "path": "study/workspaces/t0035/execution.log", "line": 1, "sha256": "d3e960f67db8d2944ac1e966ca7e8f065691e6b2b2d77cdbbfb9849f8d9f23c0"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0035", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0035"}`
+- L0.5: timestamp missing；`{"task_id": "t0035", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0035", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0036", "path": "study/workspaces/t0036/execution.log", "line": 1, "sha256": "48d9988babc491c248a2305ea6c3a430e82dd062f388371dd045ac09a73e6f2e"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0036", "path": "study/workspaces/t0036/execution.log", "line": 1, "sha256": "48d9988babc491c248a2305ea6c3a430e82dd062f388371dd045ac09a73e6f2e"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0036", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0036"}`
+- L0.5: timestamp missing；`{"task_id": "t0036", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0036", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0037", "path": "study/workspaces/t0037/execution.log", "line": 1, "sha256": "93695c604ef0edfae1fb2750e44b5dfced4e8b2e52a32436c1435916066f89da"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0037", "path": "study/workspaces/t0037/execution.log", "line": 1, "sha256": "93695c604ef0edfae1fb2750e44b5dfced4e8b2e52a32436c1435916066f89da"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0037", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0037"}`
+- L0.5: timestamp missing；`{"task_id": "t0037", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0037", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0038", "path": "study/workspaces/t0038/execution.log", "line": 1, "sha256": "b01543621d800c8ebc6da59c9048f62f8a77406c8d82a6a04790fc7a6ab5e472"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0038", "path": "study/workspaces/t0038/execution.log", "line": 1, "sha256": "b01543621d800c8ebc6da59c9048f62f8a77406c8d82a6a04790fc7a6ab5e472"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0038", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0038"}`
+- L0.5: timestamp missing；`{"task_id": "t0038", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0038", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0039", "path": "study/workspaces/t0039/execution.log", "line": 1, "sha256": "ad9b50ac96c84f1883bca46ac087fc98cee2a49bd8d20c47163adf89b4af525b"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0039", "path": "study/workspaces/t0039/execution.log", "line": 1, "sha256": "ad9b50ac96c84f1883bca46ac087fc98cee2a49bd8d20c47163adf89b4af525b"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0039", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0039"}`
+- L0.5: timestamp missing；`{"task_id": "t0039", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0039", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0040", "path": "study/workspaces/t0040/execution.log", "line": 1, "sha256": "056fe2ecb2c9734005bea64bf3087d9d28d4779e265a12d52376a7ab740acaac"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0040", "path": "study/workspaces/t0040/execution.log", "line": 1, "sha256": "056fe2ecb2c9734005bea64bf3087d9d28d4779e265a12d52376a7ab740acaac"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0040", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0040"}`
+- L0.5: timestamp missing；`{"task_id": "t0040", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0040", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0041", "path": "study/workspaces/t0041/execution.log", "line": 1, "sha256": "dd4af7eb6c47017220128d830e381eb20a079221a796a5370b3ef98977292574"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0041", "path": "study/workspaces/t0041/execution.log", "line": 1, "sha256": "dd4af7eb6c47017220128d830e381eb20a079221a796a5370b3ef98977292574"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0041", "path": "study/workspaces/t0041/execution.log", "line": 2, "sha256": "d501e9c6ddfa8297762628f7394b22ccbb9a65dcb4910995ebc4f42a402d5c74"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0041", "path": "study/workspaces/t0041/execution.log", "line": 2, "sha256": "d501e9c6ddfa8297762628f7394b22ccbb9a65dcb4910995ebc4f42a402d5c74"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0041", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0041"}`
+- L0.5: timestamp missing；`{"task_id": "t0041", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0041", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0041", "artifact_id": "0f324455b763"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0041", "artifact_id": "0f324455b763"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0041", "artifact_id": "0f324455b763"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0042", "path": "study/workspaces/t0042/execution.log", "line": 1, "sha256": "b9ee5fa507bd2c62277f22c4c8e1bf4118a7f0100874db5c67405781ed076955"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0042", "path": "study/workspaces/t0042/execution.log", "line": 1, "sha256": "b9ee5fa507bd2c62277f22c4c8e1bf4118a7f0100874db5c67405781ed076955"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0042", "path": "study/workspaces/t0042/execution.log", "line": 2, "sha256": "40511e0d64cfa78871e6c16a62053148343a1c40257af1471e4b70342d1f6edd"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0042", "path": "study/workspaces/t0042/execution.log", "line": 2, "sha256": "40511e0d64cfa78871e6c16a62053148343a1c40257af1471e4b70342d1f6edd"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0042", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0042"}`
+- L0.5: timestamp missing；`{"task_id": "t0042", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0042", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0042", "artifact_id": "02978c6f2a87"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0042", "artifact_id": "02978c6f2a87"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0042", "artifact_id": "02978c6f2a87"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0043", "path": "study/workspaces/t0043/execution.log", "line": 1, "sha256": "84d25a4a75f55df5ad4455d4e1c05fce6ee7b7db42530b0c0acea74b458235ee"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0043", "path": "study/workspaces/t0043/execution.log", "line": 1, "sha256": "84d25a4a75f55df5ad4455d4e1c05fce6ee7b7db42530b0c0acea74b458235ee"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0043", "path": "study/workspaces/t0043/execution.log", "line": 2, "sha256": "de0f7effb5047fe7514bd5e2804f06768c5131ab7ac8f4f3460a765c10d4d5fa"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0043", "path": "study/workspaces/t0043/execution.log", "line": 2, "sha256": "de0f7effb5047fe7514bd5e2804f06768c5131ab7ac8f4f3460a765c10d4d5fa"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0043", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0043"}`
+- L0.5: timestamp missing；`{"task_id": "t0043", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0043", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0043", "artifact_id": "3e8809ace048"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0043", "artifact_id": "3e8809ace048"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0043", "artifact_id": "3e8809ace048"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0044", "path": "study/workspaces/t0044/execution.log", "line": 1, "sha256": "1f3600e975fab4d736d8ad98c3c9da7b1fab5a2240c87523e15f692767fb46d7"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0044", "path": "study/workspaces/t0044/execution.log", "line": 1, "sha256": "1f3600e975fab4d736d8ad98c3c9da7b1fab5a2240c87523e15f692767fb46d7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0044", "path": "study/workspaces/t0044/execution.log", "line": 2, "sha256": "849a39937703a5e07285f6934358ddeb78179c5c7fa692e7c169fe32dc28d670"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0044", "path": "study/workspaces/t0044/execution.log", "line": 2, "sha256": "849a39937703a5e07285f6934358ddeb78179c5c7fa692e7c169fe32dc28d670"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0044", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0044"}`
+- L0.5: timestamp missing；`{"task_id": "t0044", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0044", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0044", "artifact_id": "3a14cf59271d"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0044", "artifact_id": "3a14cf59271d"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0044", "artifact_id": "3a14cf59271d"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0045", "path": "study/workspaces/t0045/execution.log", "line": 1, "sha256": "4c02d23f24067c7dd5c18e69efaa78db9f494e78a633f05fa3a8ad62c0f98cda"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0045", "path": "study/workspaces/t0045/execution.log", "line": 1, "sha256": "4c02d23f24067c7dd5c18e69efaa78db9f494e78a633f05fa3a8ad62c0f98cda"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0045", "path": "study/workspaces/t0045/execution.log", "line": 2, "sha256": "b40514ac86c15815736c179285b603f3b5943de4900b1224c27c026e0233bf23"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0045", "path": "study/workspaces/t0045/execution.log", "line": 2, "sha256": "b40514ac86c15815736c179285b603f3b5943de4900b1224c27c026e0233bf23"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0045", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0045"}`
+- L0.5: timestamp missing；`{"task_id": "t0045", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0045", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0045", "artifact_id": "ad49b8ec212b"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0045", "artifact_id": "ad49b8ec212b"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0045", "artifact_id": "ad49b8ec212b"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0046", "path": "study/workspaces/t0046/execution.log", "line": 1, "sha256": "7defa16a000ba6d7b1fef50b9ffe72ead49f067230c9c52364f1765faabe9243"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0046", "path": "study/workspaces/t0046/execution.log", "line": 1, "sha256": "7defa16a000ba6d7b1fef50b9ffe72ead49f067230c9c52364f1765faabe9243"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0046", "path": "study/workspaces/t0046/execution.log", "line": 2, "sha256": "b145f3bad39d7228e82ab16f00018eb1b28bbc3c642532d07410c1e7f4c5b17f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0046", "path": "study/workspaces/t0046/execution.log", "line": 2, "sha256": "b145f3bad39d7228e82ab16f00018eb1b28bbc3c642532d07410c1e7f4c5b17f"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0046", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0046"}`
+- L0.5: timestamp missing；`{"task_id": "t0046", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0046", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0046", "artifact_id": "f08c2c9fe48d"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0046", "artifact_id": "f08c2c9fe48d"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0046", "artifact_id": "f08c2c9fe48d"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0047", "path": "study/workspaces/t0047/execution.log", "line": 1, "sha256": "57fb48d204b1eca79add78c1c1ed3636ffff01b45107123fbdb0c704b00e1266"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0047", "path": "study/workspaces/t0047/execution.log", "line": 1, "sha256": "57fb48d204b1eca79add78c1c1ed3636ffff01b45107123fbdb0c704b00e1266"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0047", "path": "study/workspaces/t0047/execution.log", "line": 2, "sha256": "3e158ee9bf7d05db30496526ed726deb34965490c3ecdfbbec02f59ebd46faf9"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0047", "path": "study/workspaces/t0047/execution.log", "line": 2, "sha256": "3e158ee9bf7d05db30496526ed726deb34965490c3ecdfbbec02f59ebd46faf9"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0047", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0047"}`
+- L0.5: timestamp missing；`{"task_id": "t0047", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0047", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0047", "artifact_id": "d1642ec336a7"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0047", "artifact_id": "d1642ec336a7"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0047", "artifact_id": "d1642ec336a7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0048", "path": "study/workspaces/t0048/execution.log", "line": 1, "sha256": "be9463bd6c5c782ea3024e24f1d3821da0b7b1691ea6602a574d068fc11af355"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0048", "path": "study/workspaces/t0048/execution.log", "line": 1, "sha256": "be9463bd6c5c782ea3024e24f1d3821da0b7b1691ea6602a574d068fc11af355"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0048", "path": "study/workspaces/t0048/execution.log", "line": 2, "sha256": "e4badf23bb4c1440f1be329a0dd5b4f69021befe0d5a7f2dc17ef37d41f27159"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0048", "path": "study/workspaces/t0048/execution.log", "line": 2, "sha256": "e4badf23bb4c1440f1be329a0dd5b4f69021befe0d5a7f2dc17ef37d41f27159"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0048", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0048"}`
+- L0.5: timestamp missing；`{"task_id": "t0048", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0048", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0048", "artifact_id": "fd51ee70ec62"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0048", "artifact_id": "fd51ee70ec62"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0048", "artifact_id": "fd51ee70ec62"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0049", "path": "study/workspaces/t0049/execution.log", "line": 1, "sha256": "d028334b17fdaa3b18260bd366f95f3a03ff4f7b56b6023b19006fedde5c03a1"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0049", "path": "study/workspaces/t0049/execution.log", "line": 1, "sha256": "d028334b17fdaa3b18260bd366f95f3a03ff4f7b56b6023b19006fedde5c03a1"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0049", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0049"}`
+- L0.5: timestamp missing；`{"task_id": "t0049", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0049", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0050", "path": "study/workspaces/t0050/execution.log", "line": 1, "sha256": "87f8a911cdb9f1673b678ce7b09acfe61c65c66329db9d3cfa8ba49f5e876067"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0050", "path": "study/workspaces/t0050/execution.log", "line": 1, "sha256": "87f8a911cdb9f1673b678ce7b09acfe61c65c66329db9d3cfa8ba49f5e876067"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0050", "path": "study/workspaces/t0050/execution.log", "line": 2, "sha256": "f03783886cc26fd29a8d53a55d940f2559b822341378f8822dc394bba8b5a30f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0050", "path": "study/workspaces/t0050/execution.log", "line": 2, "sha256": "f03783886cc26fd29a8d53a55d940f2559b822341378f8822dc394bba8b5a30f"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0050", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0050"}`
+- L0.5: timestamp missing；`{"task_id": "t0050", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0050", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0050", "artifact_id": "ffae0bc15ee9"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0050", "artifact_id": "ffae0bc15ee9"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0050", "artifact_id": "ffae0bc15ee9"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 1, "sha256": "1d96bd82cb6198a62fa7742501187b1f53281dc61ec2220ef500fee728d23c64"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 1, "sha256": "1d96bd82cb6198a62fa7742501187b1f53281dc61ec2220ef500fee728d23c64"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 2, "sha256": "cc290cb06dadf7ed11bd4ea01a2c22eb7a05f860a01d1c6b5c4828670fc5a704"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 2, "sha256": "cc290cb06dadf7ed11bd4ea01a2c22eb7a05f860a01d1c6b5c4828670fc5a704"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 3, "sha256": "f66245d5b1c279b46f215d563dba873f5688fdece849c8c0ebf52f216a4ad514"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 3, "sha256": "f66245d5b1c279b46f215d563dba873f5688fdece849c8c0ebf52f216a4ad514"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 4, "sha256": "d16750ff5b6eeefdd4d5c3f29a471d6f9b684125c2cba2ce43525e70189997a9"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 4, "sha256": "d16750ff5b6eeefdd4d5c3f29a471d6f9b684125c2cba2ce43525e70189997a9"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 5, "sha256": "4edce936f880a78c8ccdfe603d07331e9af9f55cb41af2c1c13e53c0d4233d7e"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 5, "sha256": "4edce936f880a78c8ccdfe603d07331e9af9f55cb41af2c1c13e53c0d4233d7e"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 6, "sha256": "4ac0f24cc7da3881cbcc4745a43e68b9eedce8c83dd40e6fa025fa877c83f149"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 6, "sha256": "4ac0f24cc7da3881cbcc4745a43e68b9eedce8c83dd40e6fa025fa877c83f149"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 7, "sha256": "afadcaee66a5bbd9734f6572b8c296ab1882c1ec301c08de0d16ffee81b0a0ae"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0051", "path": "study/workspaces/t0051/execution.log", "line": 7, "sha256": "afadcaee66a5bbd9734f6572b8c296ab1882c1ec301c08de0d16ffee81b0a0ae"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0051", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0051"}`
+- L0.5: timestamp missing；`{"task_id": "t0051", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0051", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0051", "artifact_id": "2bfb6f363e79"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0051", "artifact_id": "2bfb6f363e79"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0051", "artifact_id": "2bfb6f363e79"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0051", "artifact_id": "ac495eeb88b4"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0051", "artifact_id": "ac495eeb88b4"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0051", "artifact_id": "68bf288c7b7e"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0051", "artifact_id": "68bf288c7b7e"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0051", "artifact_id": "68bf288c7b7e"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0051", "artifact_id": "32fb52e799ec"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0051", "artifact_id": "32fb52e799ec"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0051", "artifact_id": "32fb52e799ec"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0051", "artifact_id": "bf7b53847c26"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0051", "artifact_id": "bf7b53847c26"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0051", "artifact_id": "2a9f3b06609d"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0051", "artifact_id": "2a9f3b06609d"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 1, "sha256": "4b36d95abf4b275c3eb07ea8be82b7f3a70ba0f059f7827efba10dece258cba1"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 1, "sha256": "4b36d95abf4b275c3eb07ea8be82b7f3a70ba0f059f7827efba10dece258cba1"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 2, "sha256": "6c0655a1369b4e3eb63d2c7118b12a318049025826dffa90aa95dd7a56832568"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 2, "sha256": "6c0655a1369b4e3eb63d2c7118b12a318049025826dffa90aa95dd7a56832568"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 3, "sha256": "9c980016fc379643386398b9804ec8706c64fdc4e1651bc314ffee3b2867f8a4"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 3, "sha256": "9c980016fc379643386398b9804ec8706c64fdc4e1651bc314ffee3b2867f8a4"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 4, "sha256": "a49dea617864d345cbd7728e3f3bf23e523f20e829c21b4d92cbbacddf6cc566"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 4, "sha256": "a49dea617864d345cbd7728e3f3bf23e523f20e829c21b4d92cbbacddf6cc566"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 5, "sha256": "9b2da2356fd8871430e4fba4b446887aabd9dc39615282f21e7b75d2132c1533"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 5, "sha256": "9b2da2356fd8871430e4fba4b446887aabd9dc39615282f21e7b75d2132c1533"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 6, "sha256": "1eee4d0f4d58cd1231bffb87ac692700b39ac8e8b9b65ebfa14a853d679404de"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 6, "sha256": "1eee4d0f4d58cd1231bffb87ac692700b39ac8e8b9b65ebfa14a853d679404de"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 7, "sha256": "53afc837f280a855d6131e80e5367ba6f13f2ea64b740ba40a87a92df94ebfb4"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0052", "path": "study/workspaces/t0052/execution.log", "line": 7, "sha256": "53afc837f280a855d6131e80e5367ba6f13f2ea64b740ba40a87a92df94ebfb4"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0052", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0052"}`
+- L0.5: timestamp missing；`{"task_id": "t0052", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0052", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0052", "artifact_id": "4a6b7b25a61e"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0052", "artifact_id": "4a6b7b25a61e"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0052", "artifact_id": "4a6b7b25a61e"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0052", "artifact_id": "1ae4a16f574d"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0052", "artifact_id": "1ae4a16f574d"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0052", "artifact_id": "30b2a9629efc"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0052", "artifact_id": "30b2a9629efc"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0052", "artifact_id": "30b2a9629efc"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0052", "artifact_id": "fb64d6794ceb"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0052", "artifact_id": "fb64d6794ceb"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0052", "artifact_id": "fb64d6794ceb"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0052", "artifact_id": "86e1bf63f728"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0052", "artifact_id": "86e1bf63f728"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0052", "artifact_id": "ddd1cae479d7"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0052", "artifact_id": "ddd1cae479d7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 1, "sha256": "94cd4d08654d2ff7592acad17e99992808927b62ec6e3a4e94e388bfe3c19cec"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 1, "sha256": "94cd4d08654d2ff7592acad17e99992808927b62ec6e3a4e94e388bfe3c19cec"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 2, "sha256": "372eeb22ad81fb9e020518f7a054075b9789f7e7ce259b706b4140d34d63ac5f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 2, "sha256": "372eeb22ad81fb9e020518f7a054075b9789f7e7ce259b706b4140d34d63ac5f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 3, "sha256": "7fb83a2d787deb0e907368f6e64e79b077fa7a97fe06fcf3e71e7e0c4237a4e0"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 3, "sha256": "7fb83a2d787deb0e907368f6e64e79b077fa7a97fe06fcf3e71e7e0c4237a4e0"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 4, "sha256": "57223bad7300506ea8ab77ca47227d9850d8b3c1347667a73317e399d2b7647e"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 4, "sha256": "57223bad7300506ea8ab77ca47227d9850d8b3c1347667a73317e399d2b7647e"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 5, "sha256": "c4e7c5a508d82dc2ef34c0ee69adb44f1119476f39bf0d48396ceb7c5e9dfbff"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 5, "sha256": "c4e7c5a508d82dc2ef34c0ee69adb44f1119476f39bf0d48396ceb7c5e9dfbff"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 6, "sha256": "db59dd3f74cc8336e6219868240acc017a6e7988e0d2e132949f8843134b8cbe"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 6, "sha256": "db59dd3f74cc8336e6219868240acc017a6e7988e0d2e132949f8843134b8cbe"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 7, "sha256": "f5d949129219a47f59dddc5c9ceae4fc88ef2368b2657919b1589f4166d1d792"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0053", "path": "study/workspaces/t0053/execution.log", "line": 7, "sha256": "f5d949129219a47f59dddc5c9ceae4fc88ef2368b2657919b1589f4166d1d792"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0053", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0053"}`
+- L0.5: timestamp missing；`{"task_id": "t0053", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0053", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0053", "artifact_id": "887a42eab301"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0053", "artifact_id": "887a42eab301"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0053", "artifact_id": "887a42eab301"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0053", "artifact_id": "19057fa6c249"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0053", "artifact_id": "19057fa6c249"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0053", "artifact_id": "67bf604be7f1"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0053", "artifact_id": "67bf604be7f1"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0053", "artifact_id": "67bf604be7f1"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0053", "artifact_id": "e4f1ae6a856b"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0053", "artifact_id": "e4f1ae6a856b"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0053", "artifact_id": "e4f1ae6a856b"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0053", "artifact_id": "851ce3835ac4"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0053", "artifact_id": "851ce3835ac4"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0053", "artifact_id": "8578d7a49191"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0053", "artifact_id": "8578d7a49191"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 1, "sha256": "95869a9a435bca6d61b8ec92b46c17a21df8025da4fbd902b69d25a0a9831cd2"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 1, "sha256": "95869a9a435bca6d61b8ec92b46c17a21df8025da4fbd902b69d25a0a9831cd2"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 2, "sha256": "35070cb5bc7e072cd264ec949dc178de5af774f15c6d30bf2e3fd97f93ef131a"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 2, "sha256": "35070cb5bc7e072cd264ec949dc178de5af774f15c6d30bf2e3fd97f93ef131a"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 3, "sha256": "341be5c3682566b16d04140df184e13da3d6630062df7c1f26431b77dc827883"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 3, "sha256": "341be5c3682566b16d04140df184e13da3d6630062df7c1f26431b77dc827883"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 4, "sha256": "01703a42feae88da9dc65cfd2a32ee8860583be45721a028e119b76821fda338"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 4, "sha256": "01703a42feae88da9dc65cfd2a32ee8860583be45721a028e119b76821fda338"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 5, "sha256": "e18cdd73496726ea4799422c1c69e9bdafda839cf04bf7b31df2d125b2c21223"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 5, "sha256": "e18cdd73496726ea4799422c1c69e9bdafda839cf04bf7b31df2d125b2c21223"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 6, "sha256": "e9a06ce3e8703b595492c953eb26767f2199cb10b860eee94a232c4a4079233f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 6, "sha256": "e9a06ce3e8703b595492c953eb26767f2199cb10b860eee94a232c4a4079233f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 7, "sha256": "b12212adb14875843b22aba0d1d8792e8687632122bc8a53eb7cd9d5466ef035"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0054", "path": "study/workspaces/t0054/execution.log", "line": 7, "sha256": "b12212adb14875843b22aba0d1d8792e8687632122bc8a53eb7cd9d5466ef035"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0054", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0054"}`
+- L0.5: timestamp missing；`{"task_id": "t0054", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0054", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0054", "artifact_id": "8a248c7343f2"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0054", "artifact_id": "8a248c7343f2"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0054", "artifact_id": "8a248c7343f2"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0054", "artifact_id": "03bbfa3ffdb7"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0054", "artifact_id": "03bbfa3ffdb7"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0054", "artifact_id": "1a9dd7911087"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0054", "artifact_id": "1a9dd7911087"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0054", "artifact_id": "1a9dd7911087"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0054", "artifact_id": "bfa982dbdb87"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0054", "artifact_id": "bfa982dbdb87"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0054", "artifact_id": "bfa982dbdb87"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0054", "artifact_id": "e5fd25b99f1b"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0054", "artifact_id": "e5fd25b99f1b"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0054", "artifact_id": "40719b11af73"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0054", "artifact_id": "40719b11af73"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 1, "sha256": "5d6a43e4e579b7012c686c5a206d6bc5fad41693b7647eea172f719dc44ef8cc"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 1, "sha256": "5d6a43e4e579b7012c686c5a206d6bc5fad41693b7647eea172f719dc44ef8cc"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 2, "sha256": "10fdc796fa5e4292dbacf9b73aea1b04cf1d04608f3bc5b22b5e1a00fe7db6f8"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 2, "sha256": "10fdc796fa5e4292dbacf9b73aea1b04cf1d04608f3bc5b22b5e1a00fe7db6f8"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 3, "sha256": "f69ba4310d50dbd831f46aa4b99d6ed3f2c596490c6a875c6ed35a9855d36611"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 3, "sha256": "f69ba4310d50dbd831f46aa4b99d6ed3f2c596490c6a875c6ed35a9855d36611"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 4, "sha256": "34119b8aed3145ad5d917ae874a038acb6e3b78567d9ea3ed1c8c3090de63998"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 4, "sha256": "34119b8aed3145ad5d917ae874a038acb6e3b78567d9ea3ed1c8c3090de63998"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 5, "sha256": "c99714443a5f877dc4546462dea333386b4528fb6cafae23ecc03f780a783cd7"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 5, "sha256": "c99714443a5f877dc4546462dea333386b4528fb6cafae23ecc03f780a783cd7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 6, "sha256": "09e49e50eed0190d741d14f3b2889dcca50fd5f300dea2dfdbe5341fae649805"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 6, "sha256": "09e49e50eed0190d741d14f3b2889dcca50fd5f300dea2dfdbe5341fae649805"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 7, "sha256": "6b26537e3fe3b62206117035023ef82f98914d83215ac64fa69291209768fa37"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0055", "path": "study/workspaces/t0055/execution.log", "line": 7, "sha256": "6b26537e3fe3b62206117035023ef82f98914d83215ac64fa69291209768fa37"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0055", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0055"}`
+- L0.5: timestamp missing；`{"task_id": "t0055", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0055", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0055", "artifact_id": "c35426910fd0"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0055", "artifact_id": "c35426910fd0"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0055", "artifact_id": "c35426910fd0"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0055", "artifact_id": "3bae2589b7a2"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0055", "artifact_id": "3bae2589b7a2"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0055", "artifact_id": "cb6585bbfd56"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0055", "artifact_id": "cb6585bbfd56"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0055", "artifact_id": "cb6585bbfd56"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0055", "artifact_id": "c6c9902aa424"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0055", "artifact_id": "c6c9902aa424"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0055", "artifact_id": "c6c9902aa424"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0055", "artifact_id": "3a5719b86042"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0055", "artifact_id": "3a5719b86042"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0055", "artifact_id": "5070ec41a552"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0055", "artifact_id": "5070ec41a552"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 1, "sha256": "5d89b2384bc81b23737939bde237e1b5b795cfd8b790bfadb0026419f6848cb7"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 1, "sha256": "5d89b2384bc81b23737939bde237e1b5b795cfd8b790bfadb0026419f6848cb7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 2, "sha256": "6a8450d15e201084985e34579cbc5707a85b9b6ed43c041b0c7da65d28ecb381"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 2, "sha256": "6a8450d15e201084985e34579cbc5707a85b9b6ed43c041b0c7da65d28ecb381"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 3, "sha256": "2b988885aecf1b47d7f68bf5a1f98bc351faca2edf32c6f863a5082fbf012ce8"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 3, "sha256": "2b988885aecf1b47d7f68bf5a1f98bc351faca2edf32c6f863a5082fbf012ce8"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 4, "sha256": "32a0b68cd317188a1939bf49cefc3cb19463c787e8b9b5b47a07283d5a1b283d"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 4, "sha256": "32a0b68cd317188a1939bf49cefc3cb19463c787e8b9b5b47a07283d5a1b283d"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 5, "sha256": "f6f38bfebfea5ee8c169393556bfc766ec54b59b9a6b64bcf482596dacbec115"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 5, "sha256": "f6f38bfebfea5ee8c169393556bfc766ec54b59b9a6b64bcf482596dacbec115"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 6, "sha256": "42817e33f2d85a8feed32343c95726664874f10710ead291c38264fc5e1eae52"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 6, "sha256": "42817e33f2d85a8feed32343c95726664874f10710ead291c38264fc5e1eae52"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 7, "sha256": "032b444324896e701c1d8841fb510de0cd0273579085c99f7286e4ca82c52fcf"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0056", "path": "study/workspaces/t0056/execution.log", "line": 7, "sha256": "032b444324896e701c1d8841fb510de0cd0273579085c99f7286e4ca82c52fcf"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0056", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0056"}`
+- L0.5: timestamp missing；`{"task_id": "t0056", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0056", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0056", "artifact_id": "7aa57330413c"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0056", "artifact_id": "7aa57330413c"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0056", "artifact_id": "7aa57330413c"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0056", "artifact_id": "02edd8c599ff"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0056", "artifact_id": "02edd8c599ff"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0056", "artifact_id": "22902a9800b3"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0056", "artifact_id": "22902a9800b3"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0056", "artifact_id": "22902a9800b3"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0056", "artifact_id": "664156cf921a"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0056", "artifact_id": "664156cf921a"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0056", "artifact_id": "664156cf921a"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0056", "artifact_id": "0d8e1fe8451a"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0056", "artifact_id": "0d8e1fe8451a"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0056", "artifact_id": "ce0a82c15f9a"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0056", "artifact_id": "ce0a82c15f9a"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0057", "path": "study/workspaces/t0057/execution.log", "line": 1, "sha256": "cd76488ea6d9a93a2b5772ed527df6c67c2872835a0e9e866a2db6147fe773e4"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0057", "path": "study/workspaces/t0057/execution.log", "line": 1, "sha256": "cd76488ea6d9a93a2b5772ed527df6c67c2872835a0e9e866a2db6147fe773e4"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0057", "path": "study/workspaces/t0057/execution.log", "line": 2, "sha256": "1c5c36b579982348bae0dbc51f24e66fe174b8cb24d9f0931320d5b16ecbb3a8"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0057", "path": "study/workspaces/t0057/execution.log", "line": 2, "sha256": "1c5c36b579982348bae0dbc51f24e66fe174b8cb24d9f0931320d5b16ecbb3a8"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0057", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0057"}`
+- L0.5: timestamp missing；`{"task_id": "t0057", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0057", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0057", "artifact_id": "82447c16d695"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0057", "artifact_id": "82447c16d695"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0057", "artifact_id": "82447c16d695"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 1, "sha256": "df903ac8011ec49d95668e9992bb2371430baebbd33b240d4cc4e7fe04fc68ff"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 1, "sha256": "df903ac8011ec49d95668e9992bb2371430baebbd33b240d4cc4e7fe04fc68ff"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 2, "sha256": "207ce766a6c07fdce2ed1ba80c7c01142674c469fbfd1f038aa5e00a97a6ea3d"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 2, "sha256": "207ce766a6c07fdce2ed1ba80c7c01142674c469fbfd1f038aa5e00a97a6ea3d"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 3, "sha256": "a50dffd96d420b6bb9af1581e212392c5da738895a41f188965ed3a4b567e338"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 3, "sha256": "a50dffd96d420b6bb9af1581e212392c5da738895a41f188965ed3a4b567e338"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 4, "sha256": "43e71b56e07f68cce20f25c375bf3adfce1ad06b6f4c5354e86d04e9b41abb1b"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 4, "sha256": "43e71b56e07f68cce20f25c375bf3adfce1ad06b6f4c5354e86d04e9b41abb1b"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 5, "sha256": "2802f4975757a71c4c27d1d1925680f2ae56f141c1e2e578585abed1678e8587"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 5, "sha256": "2802f4975757a71c4c27d1d1925680f2ae56f141c1e2e578585abed1678e8587"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 6, "sha256": "87f24deb6a9be7f89e82781fe05dc0a0fea7f148709826952a7af6e451d2dafd"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 6, "sha256": "87f24deb6a9be7f89e82781fe05dc0a0fea7f148709826952a7af6e451d2dafd"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 7, "sha256": "39093d91cc9f4a96f979746defe4a1987423501775814bad06099007f3e2537d"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0058", "path": "study/workspaces/t0058/execution.log", "line": 7, "sha256": "39093d91cc9f4a96f979746defe4a1987423501775814bad06099007f3e2537d"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0058", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0058"}`
+- L0.5: timestamp missing；`{"task_id": "t0058", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0058", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0058", "artifact_id": "c9b5922b73bc"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0058", "artifact_id": "c9b5922b73bc"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0058", "artifact_id": "c9b5922b73bc"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0058", "artifact_id": "dcb11c5f5054"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0058", "artifact_id": "dcb11c5f5054"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0058", "artifact_id": "9ad1496ca5d1"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0058", "artifact_id": "9ad1496ca5d1"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0058", "artifact_id": "9ad1496ca5d1"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0058", "artifact_id": "c5534a4b0536"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0058", "artifact_id": "c5534a4b0536"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0058", "artifact_id": "c5534a4b0536"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0058", "artifact_id": "733c8226c651"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0058", "artifact_id": "733c8226c651"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0058", "artifact_id": "d43cd0a6adce"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0058", "artifact_id": "d43cd0a6adce"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0059", "path": "study/workspaces/t0059/execution.log", "line": 1, "sha256": "9fb8d1d6114ad9f7944e3b888e05e866ccec89b2bd436119d145f512ab858653"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0059", "path": "study/workspaces/t0059/execution.log", "line": 1, "sha256": "9fb8d1d6114ad9f7944e3b888e05e866ccec89b2bd436119d145f512ab858653"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0059", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0059"}`
+- L0.5: timestamp missing；`{"task_id": "t0059", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0059", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 1, "sha256": "535a0e11f3db8cd40bc32b5e954ac02bacd216e48dd5b3fc620f8cecad00d0f7"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 1, "sha256": "535a0e11f3db8cd40bc32b5e954ac02bacd216e48dd5b3fc620f8cecad00d0f7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 2, "sha256": "5534b29d198e6200d82bffba334af70400a71752a963733dfe54a3908c999b6a"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 2, "sha256": "5534b29d198e6200d82bffba334af70400a71752a963733dfe54a3908c999b6a"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 3, "sha256": "47981c2a2c0f9356bb77890eeaa96939c3e25e7015dded71fd8887820695df4c"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 3, "sha256": "47981c2a2c0f9356bb77890eeaa96939c3e25e7015dded71fd8887820695df4c"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 4, "sha256": "c04d6fe1d2e811e0bf275c10d83f74114097a92e5101836e38a29a2aedce8603"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 4, "sha256": "c04d6fe1d2e811e0bf275c10d83f74114097a92e5101836e38a29a2aedce8603"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 5, "sha256": "2f0060be35b0fbde33e3e32ce90c52ed0b9a427f1d54b2a23282ac4069bf6150"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 5, "sha256": "2f0060be35b0fbde33e3e32ce90c52ed0b9a427f1d54b2a23282ac4069bf6150"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 6, "sha256": "50b2bd3716dac6657fb2745b85d801be53c6f18f68f4be5432f718fc7d0dfcb2"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 6, "sha256": "50b2bd3716dac6657fb2745b85d801be53c6f18f68f4be5432f718fc7d0dfcb2"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 7, "sha256": "9b66d09e23b1aae8323159f2af91505a2bbca79613a19cd2a054d1255850f804"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0060", "path": "study/workspaces/t0060/execution.log", "line": 7, "sha256": "9b66d09e23b1aae8323159f2af91505a2bbca79613a19cd2a054d1255850f804"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0060", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0060"}`
+- L0.5: timestamp missing；`{"task_id": "t0060", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0060", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0060", "artifact_id": "d601afaea9d3"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0060", "artifact_id": "d601afaea9d3"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0060", "artifact_id": "d601afaea9d3"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0060", "artifact_id": "c4a1d6618571"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0060", "artifact_id": "c4a1d6618571"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0060", "artifact_id": "8668caf4b903"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0060", "artifact_id": "8668caf4b903"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0060", "artifact_id": "8668caf4b903"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0060", "artifact_id": "b4513cdda272"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0060", "artifact_id": "b4513cdda272"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0060", "artifact_id": "b4513cdda272"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0060", "artifact_id": "4a67f69a19ee"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0060", "artifact_id": "4a67f69a19ee"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0060", "artifact_id": "4acf8bf478a6"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0060", "artifact_id": "4acf8bf478a6"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0061", "path": "study/workspaces/t0061/execution.log", "line": 1, "sha256": "1c1ecfba6c72b9d68444270d06ffbe53fdd59735f49f39701f215e99cd3cf73c"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0061", "path": "study/workspaces/t0061/execution.log", "line": 1, "sha256": "1c1ecfba6c72b9d68444270d06ffbe53fdd59735f49f39701f215e99cd3cf73c"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0061", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0061"}`
+- L0.5: timestamp missing；`{"task_id": "t0061", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0061", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0062", "path": "study/workspaces/t0062/execution.log", "line": 1, "sha256": "b95ad6051a1a2bc9c047fe4cf27246a41e87ce92c594f4c18d5f6992cc3671d5"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0062", "path": "study/workspaces/t0062/execution.log", "line": 1, "sha256": "b95ad6051a1a2bc9c047fe4cf27246a41e87ce92c594f4c18d5f6992cc3671d5"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0062", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0062"}`
+- L0.5: timestamp missing；`{"task_id": "t0062", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0062", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0063", "path": "study/workspaces/t0063/execution.log", "line": 1, "sha256": "9f2034be897f3742f9bb459fb63f7aa53911cecbe926de86968b3664668793f9"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0063", "path": "study/workspaces/t0063/execution.log", "line": 1, "sha256": "9f2034be897f3742f9bb459fb63f7aa53911cecbe926de86968b3664668793f9"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0063", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0063"}`
+- L0.5: timestamp missing；`{"task_id": "t0063", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0063", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0064", "path": "study/workspaces/t0064/execution.log", "line": 1, "sha256": "3cb380b61889fc46295dea3f70311bfc3a9cdc95cab059f7e004c4eac773289a"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0064", "path": "study/workspaces/t0064/execution.log", "line": 1, "sha256": "3cb380b61889fc46295dea3f70311bfc3a9cdc95cab059f7e004c4eac773289a"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0064", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0064"}`
+- L0.5: timestamp missing；`{"task_id": "t0064", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0064", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0065", "path": "study/workspaces/t0065/execution.log", "line": 1, "sha256": "6baa29105ad676e14a87d81e8466304d31eb495737dccfbf505928da38a0b5e6"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0065", "path": "study/workspaces/t0065/execution.log", "line": 1, "sha256": "6baa29105ad676e14a87d81e8466304d31eb495737dccfbf505928da38a0b5e6"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0065", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0065"}`
+- L0.5: timestamp missing；`{"task_id": "t0065", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0065", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0066", "path": "study/workspaces/t0066/execution.log", "line": 1, "sha256": "620bbb305a8835a4ccb432b36445d5e1dfc252d53a37ba779e32c251e23985b8"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0066", "path": "study/workspaces/t0066/execution.log", "line": 1, "sha256": "620bbb305a8835a4ccb432b36445d5e1dfc252d53a37ba779e32c251e23985b8"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0066", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0066"}`
+- L0.5: timestamp missing；`{"task_id": "t0066", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0066", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0067", "path": "study/workspaces/t0067/execution.log", "line": 1, "sha256": "3e094f0f1dc669ab2e623886f95686203d5e7e7442a49e5b36d04beafc8d2a03"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0067", "path": "study/workspaces/t0067/execution.log", "line": 1, "sha256": "3e094f0f1dc669ab2e623886f95686203d5e7e7442a49e5b36d04beafc8d2a03"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0067", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0067"}`
+- L0.5: timestamp missing；`{"task_id": "t0067", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0067", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0068", "path": "study/workspaces/t0068/execution.log", "line": 1, "sha256": "05ff18332cc150fdb15a97eafcc5f9c2494a3288ac44659dd41d85cac134e83a"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0068", "path": "study/workspaces/t0068/execution.log", "line": 1, "sha256": "05ff18332cc150fdb15a97eafcc5f9c2494a3288ac44659dd41d85cac134e83a"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0068", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0068"}`
+- L0.5: timestamp missing；`{"task_id": "t0068", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0068", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0069", "path": "study/workspaces/t0069/execution.log", "line": 1, "sha256": "939ef4a87f08a70b3577dd1efc83c35b2eb51d781c95f1edec2257fcddd10eef"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0069", "path": "study/workspaces/t0069/execution.log", "line": 1, "sha256": "939ef4a87f08a70b3577dd1efc83c35b2eb51d781c95f1edec2257fcddd10eef"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0069", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0069"}`
+- L0.5: timestamp missing；`{"task_id": "t0069", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0069", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0070", "path": "study/workspaces/t0070/execution.log", "line": 1, "sha256": "ce4a9aaed90ba2137fce39d10b59c4e99a1526ff54a8647fde690ff872996a10"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0070", "path": "study/workspaces/t0070/execution.log", "line": 1, "sha256": "ce4a9aaed90ba2137fce39d10b59c4e99a1526ff54a8647fde690ff872996a10"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0070", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0070"}`
+- L0.5: timestamp missing；`{"task_id": "t0070", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0070", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0071", "path": "study/workspaces/t0071/execution.log", "line": 1, "sha256": "41ecdb065786e4be9b56e15829cc44fcd8cb8c63ab5bbcfe8f228af828dba45c"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0071", "path": "study/workspaces/t0071/execution.log", "line": 1, "sha256": "41ecdb065786e4be9b56e15829cc44fcd8cb8c63ab5bbcfe8f228af828dba45c"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0071", "path": "study/workspaces/t0071/execution.log", "line": 2, "sha256": "1f683249f6dcfd0496f73006f2690442884b5cb448bf3c5327cda3ed50f5e863"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0071", "path": "study/workspaces/t0071/execution.log", "line": 2, "sha256": "1f683249f6dcfd0496f73006f2690442884b5cb448bf3c5327cda3ed50f5e863"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0071", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0071"}`
+- L0.5: timestamp missing；`{"task_id": "t0071", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0071", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0071", "artifact_id": "51bedc483349"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0071", "artifact_id": "51bedc483349"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0071", "artifact_id": "51bedc483349"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0072", "path": "study/workspaces/t0072/execution.log", "line": 1, "sha256": "7cca641e0a04394fd61984b7307d7e88d9fba8158316f6f2f7eb81d2005298fd"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0072", "path": "study/workspaces/t0072/execution.log", "line": 1, "sha256": "7cca641e0a04394fd61984b7307d7e88d9fba8158316f6f2f7eb81d2005298fd"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0072", "path": "study/workspaces/t0072/execution.log", "line": 2, "sha256": "0b46cf0bdca2e2e1a71f2e363b37ef03652666d4bf91fa0f13bee37e0eed7bc4"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0072", "path": "study/workspaces/t0072/execution.log", "line": 2, "sha256": "0b46cf0bdca2e2e1a71f2e363b37ef03652666d4bf91fa0f13bee37e0eed7bc4"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0072", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0072"}`
+- L0.5: timestamp missing；`{"task_id": "t0072", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0072", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0072", "artifact_id": "7ee11d2f7efa"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0072", "artifact_id": "7ee11d2f7efa"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0072", "artifact_id": "7ee11d2f7efa"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0073", "path": "study/workspaces/t0073/execution.log", "line": 1, "sha256": "b5bce0e0d51e22d000091bf78d741eec57f6955c923098298a2fc2a55a21c0d2"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0073", "path": "study/workspaces/t0073/execution.log", "line": 1, "sha256": "b5bce0e0d51e22d000091bf78d741eec57f6955c923098298a2fc2a55a21c0d2"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0073", "path": "study/workspaces/t0073/execution.log", "line": 2, "sha256": "a105f6de0e4d24455a8eaf50793b80b45c71e10f2e4c89ea027712668fd1c9ab"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0073", "path": "study/workspaces/t0073/execution.log", "line": 2, "sha256": "a105f6de0e4d24455a8eaf50793b80b45c71e10f2e4c89ea027712668fd1c9ab"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0073", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0073"}`
+- L0.5: timestamp missing；`{"task_id": "t0073", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0073", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0073", "artifact_id": "b59a87df1c3d"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0073", "artifact_id": "b59a87df1c3d"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0073", "artifact_id": "b59a87df1c3d"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0074", "path": "study/workspaces/t0074/execution.log", "line": 1, "sha256": "70e735d40bf59a13961b3e6cd7eca803aacb48a5d34d90aa8b9a8c749e4035c5"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0074", "path": "study/workspaces/t0074/execution.log", "line": 1, "sha256": "70e735d40bf59a13961b3e6cd7eca803aacb48a5d34d90aa8b9a8c749e4035c5"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0074", "path": "study/workspaces/t0074/execution.log", "line": 2, "sha256": "fdbcbc65a5e48c3789d8e2e52e41227176e0699c2bf6140dae4dcd2e28ad44f6"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0074", "path": "study/workspaces/t0074/execution.log", "line": 2, "sha256": "fdbcbc65a5e48c3789d8e2e52e41227176e0699c2bf6140dae4dcd2e28ad44f6"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0074", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0074"}`
+- L0.5: timestamp missing；`{"task_id": "t0074", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0074", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0074", "artifact_id": "650564a038b0"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0074", "artifact_id": "650564a038b0"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0074", "artifact_id": "650564a038b0"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0075", "path": "study/workspaces/t0075/execution.log", "line": 1, "sha256": "e4572471320e04c999ee6cbf2471b796c95b2909f98f15f0a3932e233110cf33"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0075", "path": "study/workspaces/t0075/execution.log", "line": 1, "sha256": "e4572471320e04c999ee6cbf2471b796c95b2909f98f15f0a3932e233110cf33"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0075", "path": "study/workspaces/t0075/execution.log", "line": 2, "sha256": "e0c7bda60a2ed01b2dd7a3c14d8968e578958da7d856a99b80bc94584a596387"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0075", "path": "study/workspaces/t0075/execution.log", "line": 2, "sha256": "e0c7bda60a2ed01b2dd7a3c14d8968e578958da7d856a99b80bc94584a596387"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0075", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0075"}`
+- L0.5: timestamp missing；`{"task_id": "t0075", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0075", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0075", "artifact_id": "3ca86b213d76"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0075", "artifact_id": "3ca86b213d76"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0075", "artifact_id": "3ca86b213d76"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0076", "path": "study/workspaces/t0076/execution.log", "line": 1, "sha256": "d2622b043ee7185dc82ed21b5b4abd02ea72aba95a39eabacf7563882fd6e9df"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0076", "path": "study/workspaces/t0076/execution.log", "line": 1, "sha256": "d2622b043ee7185dc82ed21b5b4abd02ea72aba95a39eabacf7563882fd6e9df"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0076", "path": "study/workspaces/t0076/execution.log", "line": 2, "sha256": "bf015e5944a4b142cfef35cdd50999f977a335c5d0378d200e7f684612005b3e"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0076", "path": "study/workspaces/t0076/execution.log", "line": 2, "sha256": "bf015e5944a4b142cfef35cdd50999f977a335c5d0378d200e7f684612005b3e"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0076", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0076"}`
+- L0.5: timestamp missing；`{"task_id": "t0076", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0076", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0076", "artifact_id": "f407de4e87fb"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0076", "artifact_id": "f407de4e87fb"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0076", "artifact_id": "f407de4e87fb"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0077", "path": "study/workspaces/t0077/execution.log", "line": 1, "sha256": "571e2dcf322273f734dfb691b9fc3dd0999c9d90e650fc554fcac30f27738e2c"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0077", "path": "study/workspaces/t0077/execution.log", "line": 1, "sha256": "571e2dcf322273f734dfb691b9fc3dd0999c9d90e650fc554fcac30f27738e2c"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0077", "path": "study/workspaces/t0077/execution.log", "line": 2, "sha256": "21c5386b7be6e1e531635da09d55ee1454ff850bbb472629867934d2d0c254a2"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0077", "path": "study/workspaces/t0077/execution.log", "line": 2, "sha256": "21c5386b7be6e1e531635da09d55ee1454ff850bbb472629867934d2d0c254a2"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0077", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0077"}`
+- L0.5: timestamp missing；`{"task_id": "t0077", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0077", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0077", "artifact_id": "1d2e0c616973"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0077", "artifact_id": "1d2e0c616973"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0077", "artifact_id": "1d2e0c616973"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0078", "path": "study/workspaces/t0078/execution.log", "line": 1, "sha256": "ff4dbc015907324db6326ac83757c5fab9e38251f9110366cccf60d470eb4468"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0078", "path": "study/workspaces/t0078/execution.log", "line": 1, "sha256": "ff4dbc015907324db6326ac83757c5fab9e38251f9110366cccf60d470eb4468"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0078", "path": "study/workspaces/t0078/execution.log", "line": 2, "sha256": "56623c7c4cc76484031724e8161aa86de65c6e685cbcde8ad807f9dc9fb03cae"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0078", "path": "study/workspaces/t0078/execution.log", "line": 2, "sha256": "56623c7c4cc76484031724e8161aa86de65c6e685cbcde8ad807f9dc9fb03cae"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0078", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0078"}`
+- L0.5: timestamp missing；`{"task_id": "t0078", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0078", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0078", "artifact_id": "d0319ba62580"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0078", "artifact_id": "d0319ba62580"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0078", "artifact_id": "d0319ba62580"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0079", "path": "study/workspaces/t0079/execution.log", "line": 1, "sha256": "90079f12845e20fe9528c10d98c3b496bf99b871d36678294e463503d4b49cdb"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0079", "path": "study/workspaces/t0079/execution.log", "line": 1, "sha256": "90079f12845e20fe9528c10d98c3b496bf99b871d36678294e463503d4b49cdb"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0079", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0079"}`
+- L0.5: timestamp missing；`{"task_id": "t0079", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0079", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0080", "path": "study/workspaces/t0080/execution.log", "line": 1, "sha256": "2c9732794d290551a4d15dd9bf5a6cf866470fda9eae986d703ff6243a93fb83"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0080", "path": "study/workspaces/t0080/execution.log", "line": 1, "sha256": "2c9732794d290551a4d15dd9bf5a6cf866470fda9eae986d703ff6243a93fb83"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0080", "path": "study/workspaces/t0080/execution.log", "line": 2, "sha256": "512d5e7bfc6a4da55b042dcd5a82918dd76e24600c8f53a26f9abc10bb35fa2a"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0080", "path": "study/workspaces/t0080/execution.log", "line": 2, "sha256": "512d5e7bfc6a4da55b042dcd5a82918dd76e24600c8f53a26f9abc10bb35fa2a"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0080", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0080"}`
+- L0.5: timestamp missing；`{"task_id": "t0080", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0080", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0080", "artifact_id": "b129d9927f8a"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0080", "artifact_id": "b129d9927f8a"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0080", "artifact_id": "b129d9927f8a"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 1, "sha256": "d0777ce04256891edd6a1a6795e4a4c128ded4d6cfa9736bd5fb0ab41d938605"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 1, "sha256": "d0777ce04256891edd6a1a6795e4a4c128ded4d6cfa9736bd5fb0ab41d938605"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 2, "sha256": "09f4a0294d23d38e7c6ff3a4aafac6cf3528c2ef96a5b637ebd2c9aea74a98fe"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 2, "sha256": "09f4a0294d23d38e7c6ff3a4aafac6cf3528c2ef96a5b637ebd2c9aea74a98fe"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 3, "sha256": "374c0e94ede68f7937a5cffc30378a2a274114e8d67e827d5cc04b63e4e34e8a"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 3, "sha256": "374c0e94ede68f7937a5cffc30378a2a274114e8d67e827d5cc04b63e4e34e8a"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 4, "sha256": "0e24ea7b67b6bf434f8a7131d4dca940208b426a6eddd20d663685fb1eb4c1a0"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 4, "sha256": "0e24ea7b67b6bf434f8a7131d4dca940208b426a6eddd20d663685fb1eb4c1a0"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 5, "sha256": "9309d69c3b490e10c390d25463a78c484d808113e0a7308f04e2ab13bb4abbc1"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 5, "sha256": "9309d69c3b490e10c390d25463a78c484d808113e0a7308f04e2ab13bb4abbc1"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 6, "sha256": "3e89593c0fdde0c1a0d1678a0947f568087199b62ed57859f25487ffe727d29f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 6, "sha256": "3e89593c0fdde0c1a0d1678a0947f568087199b62ed57859f25487ffe727d29f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 7, "sha256": "0ffd027e88e15e840f7d71870c44f21801ae06ccb1b55c14b8610339ee4da43b"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0081", "path": "study/workspaces/t0081/execution.log", "line": 7, "sha256": "0ffd027e88e15e840f7d71870c44f21801ae06ccb1b55c14b8610339ee4da43b"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0081", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0081"}`
+- L0.5: timestamp missing；`{"task_id": "t0081", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0081", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0081", "artifact_id": "a19013239bf2"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0081", "artifact_id": "a19013239bf2"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0081", "artifact_id": "a19013239bf2"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0081", "artifact_id": "8a4d3d6d43b6"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0081", "artifact_id": "8a4d3d6d43b6"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0081", "artifact_id": "159ca42518e0"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0081", "artifact_id": "159ca42518e0"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0081", "artifact_id": "159ca42518e0"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0081", "artifact_id": "44f69d517227"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0081", "artifact_id": "44f69d517227"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0081", "artifact_id": "44f69d517227"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0081", "artifact_id": "68ecddf97b9e"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0081", "artifact_id": "68ecddf97b9e"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0081", "artifact_id": "c13aba425d09"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0081", "artifact_id": "c13aba425d09"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 1, "sha256": "cd33f23ac481a3a2e6e9eb241f581fb4eaeca3bf87268a11dde2ca44bd1029cb"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 1, "sha256": "cd33f23ac481a3a2e6e9eb241f581fb4eaeca3bf87268a11dde2ca44bd1029cb"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 2, "sha256": "0b97e74ee23bb5300498f52ed28723ce427fbd1796a3b413fcde595a2543b411"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 2, "sha256": "0b97e74ee23bb5300498f52ed28723ce427fbd1796a3b413fcde595a2543b411"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 3, "sha256": "1384cd51bd719739470e5e64b38b7f1da7ac7ebd65006cad858feefdc64d2697"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 3, "sha256": "1384cd51bd719739470e5e64b38b7f1da7ac7ebd65006cad858feefdc64d2697"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 4, "sha256": "1fcfa0b61ce622a20ef42d8059b4e6574d531e88676249ef70c92cad1f354dbb"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 4, "sha256": "1fcfa0b61ce622a20ef42d8059b4e6574d531e88676249ef70c92cad1f354dbb"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 5, "sha256": "c288181dffa1a5dbd22c75d34f111ef8604c36d32c5bb9a17e29d476478776bd"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 5, "sha256": "c288181dffa1a5dbd22c75d34f111ef8604c36d32c5bb9a17e29d476478776bd"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 6, "sha256": "84c5adb593ddace6c2a4261ff7f07033135b59959e49d9ecfc9e73e2e26a388f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 6, "sha256": "84c5adb593ddace6c2a4261ff7f07033135b59959e49d9ecfc9e73e2e26a388f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 7, "sha256": "3524037b864dcc75d87b91b1a336b8842a890ac8c80ae2e880dbeca9f5a4b3ec"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0082", "path": "study/workspaces/t0082/execution.log", "line": 7, "sha256": "3524037b864dcc75d87b91b1a336b8842a890ac8c80ae2e880dbeca9f5a4b3ec"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0082", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0082"}`
+- L0.5: timestamp missing；`{"task_id": "t0082", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0082", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0082", "artifact_id": "cab10b73c37c"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0082", "artifact_id": "cab10b73c37c"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0082", "artifact_id": "cab10b73c37c"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0082", "artifact_id": "cd82e4c19dad"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0082", "artifact_id": "cd82e4c19dad"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0082", "artifact_id": "983e7ea756ed"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0082", "artifact_id": "983e7ea756ed"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0082", "artifact_id": "983e7ea756ed"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0082", "artifact_id": "f7691bb8fc54"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0082", "artifact_id": "f7691bb8fc54"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0082", "artifact_id": "f7691bb8fc54"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0082", "artifact_id": "a1632148d116"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0082", "artifact_id": "a1632148d116"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0082", "artifact_id": "e8dd4074bcdd"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0082", "artifact_id": "e8dd4074bcdd"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 1, "sha256": "7d2a36e6dfdd9e39885e3baa0e74aaf39f583f535d35da463740dea209623bcc"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 1, "sha256": "7d2a36e6dfdd9e39885e3baa0e74aaf39f583f535d35da463740dea209623bcc"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 2, "sha256": "08148c5564183f6c5cf56171caf5a52eee14670c9aadbae5ce1b81e7ca585324"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 2, "sha256": "08148c5564183f6c5cf56171caf5a52eee14670c9aadbae5ce1b81e7ca585324"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 3, "sha256": "0edb8ccd228672b28d26bbf8092456f6f752dfd5a7b372029fd49cf41ebaccdd"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 3, "sha256": "0edb8ccd228672b28d26bbf8092456f6f752dfd5a7b372029fd49cf41ebaccdd"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 4, "sha256": "60df2950632d030c987466d6a0e77d9a3b83fc8452770ef7d26b8d4a0e3f9ada"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 4, "sha256": "60df2950632d030c987466d6a0e77d9a3b83fc8452770ef7d26b8d4a0e3f9ada"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 5, "sha256": "bb3397a866af73ed89e1252f47630830439023fda2365fcb8b15ccc6a3ea1e58"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 5, "sha256": "bb3397a866af73ed89e1252f47630830439023fda2365fcb8b15ccc6a3ea1e58"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 6, "sha256": "1034db40254641ce05333244923db94766c100531ad2331e37f28084a2b0026a"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 6, "sha256": "1034db40254641ce05333244923db94766c100531ad2331e37f28084a2b0026a"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 7, "sha256": "5c89bd9d4349ef85ae1fd8408e5147b1dc989707bb1d1c870f28b39555b34780"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0083", "path": "study/workspaces/t0083/execution.log", "line": 7, "sha256": "5c89bd9d4349ef85ae1fd8408e5147b1dc989707bb1d1c870f28b39555b34780"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0083", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0083"}`
+- L0.5: timestamp missing；`{"task_id": "t0083", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0083", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0083", "artifact_id": "d26d4e76d5d5"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0083", "artifact_id": "d26d4e76d5d5"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0083", "artifact_id": "d26d4e76d5d5"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0083", "artifact_id": "d306fc5f693e"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0083", "artifact_id": "d306fc5f693e"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0083", "artifact_id": "2a6a765adf54"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0083", "artifact_id": "2a6a765adf54"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0083", "artifact_id": "2a6a765adf54"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0083", "artifact_id": "2911c07fc678"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0083", "artifact_id": "2911c07fc678"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0083", "artifact_id": "2911c07fc678"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0083", "artifact_id": "3745cf57e066"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0083", "artifact_id": "3745cf57e066"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0083", "artifact_id": "eeb110d1802c"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0083", "artifact_id": "eeb110d1802c"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 1, "sha256": "6e989115b3cd9c32fb174e85e094c4f4eae9f56a444028c7bb0b8e8ea80ec003"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 1, "sha256": "6e989115b3cd9c32fb174e85e094c4f4eae9f56a444028c7bb0b8e8ea80ec003"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 2, "sha256": "29322bb1fb365276db9a5b84dbac7ea7f072a355ba3549eb3594276b8332a751"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 2, "sha256": "29322bb1fb365276db9a5b84dbac7ea7f072a355ba3549eb3594276b8332a751"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 3, "sha256": "970e662f6ba64c27d06677e56fc27c78c5ed02461490b89968cf0ef624ecf303"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 3, "sha256": "970e662f6ba64c27d06677e56fc27c78c5ed02461490b89968cf0ef624ecf303"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 4, "sha256": "2634e796b211203879cb75315335b4c8a531726b1a32110825c22afdf247686f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 4, "sha256": "2634e796b211203879cb75315335b4c8a531726b1a32110825c22afdf247686f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 5, "sha256": "0cf0115305ae3653ab35ef795c8efe21712429b28cd4c425ef18336b4e6d2a4f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 5, "sha256": "0cf0115305ae3653ab35ef795c8efe21712429b28cd4c425ef18336b4e6d2a4f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 6, "sha256": "d965df2a8a2955c12de10e4766b3d3f04e79e374a9972c1dd1034e03dd933087"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 6, "sha256": "d965df2a8a2955c12de10e4766b3d3f04e79e374a9972c1dd1034e03dd933087"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 7, "sha256": "e36eb47ec620bee26ed9c9dacab39969953abeb638af2fbb755041d404b4f58c"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0084", "path": "study/workspaces/t0084/execution.log", "line": 7, "sha256": "e36eb47ec620bee26ed9c9dacab39969953abeb638af2fbb755041d404b4f58c"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0084", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0084"}`
+- L0.5: timestamp missing；`{"task_id": "t0084", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0084", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0084", "artifact_id": "a7831ddcfb77"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0084", "artifact_id": "a7831ddcfb77"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0084", "artifact_id": "a7831ddcfb77"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0084", "artifact_id": "9245015ec6cf"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0084", "artifact_id": "9245015ec6cf"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0084", "artifact_id": "3367047dc986"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0084", "artifact_id": "3367047dc986"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0084", "artifact_id": "3367047dc986"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0084", "artifact_id": "6f7e31a43584"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0084", "artifact_id": "6f7e31a43584"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0084", "artifact_id": "6f7e31a43584"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0084", "artifact_id": "a2673ce7d718"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0084", "artifact_id": "a2673ce7d718"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0084", "artifact_id": "a8cfaab269e8"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0084", "artifact_id": "a8cfaab269e8"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 1, "sha256": "789c2d2d0c1e61d5122485b853611214b251eaccd5685ce4add6c3131baca126"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 1, "sha256": "789c2d2d0c1e61d5122485b853611214b251eaccd5685ce4add6c3131baca126"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 2, "sha256": "65ba5e92118139e4dff8001e7622cc4362cfd8c4a5353368c742b396a4da4881"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 2, "sha256": "65ba5e92118139e4dff8001e7622cc4362cfd8c4a5353368c742b396a4da4881"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 3, "sha256": "b902d4ad24d2bee126035239a816b8f799ebcc47e4e18592b4e369ca108d2885"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 3, "sha256": "b902d4ad24d2bee126035239a816b8f799ebcc47e4e18592b4e369ca108d2885"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 4, "sha256": "6fb1e975b151c2b8d069e556f267e428d3269d266c6889d891fa830067255a3e"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 4, "sha256": "6fb1e975b151c2b8d069e556f267e428d3269d266c6889d891fa830067255a3e"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 5, "sha256": "b96225e545f1bd4be54d667b0e81728b240c01569f665df26d970da18162b88f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 5, "sha256": "b96225e545f1bd4be54d667b0e81728b240c01569f665df26d970da18162b88f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 6, "sha256": "c92d51b0d7c617cbc0313dc183d5d50ed74f408ca5ad75f1a7d73a51c390e5e5"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 6, "sha256": "c92d51b0d7c617cbc0313dc183d5d50ed74f408ca5ad75f1a7d73a51c390e5e5"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 7, "sha256": "b3e74864cf5f8fcbac3ae41beea7a95d4c6f85c3fa0675b362926173b64e853d"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0085", "path": "study/workspaces/t0085/execution.log", "line": 7, "sha256": "b3e74864cf5f8fcbac3ae41beea7a95d4c6f85c3fa0675b362926173b64e853d"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0085", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0085"}`
+- L0.5: timestamp missing；`{"task_id": "t0085", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0085", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0085", "artifact_id": "3a9e6f54cffb"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0085", "artifact_id": "3a9e6f54cffb"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0085", "artifact_id": "3a9e6f54cffb"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0085", "artifact_id": "19656ae1f537"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0085", "artifact_id": "19656ae1f537"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0085", "artifact_id": "88332827ccc3"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0085", "artifact_id": "88332827ccc3"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0085", "artifact_id": "88332827ccc3"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0085", "artifact_id": "9901d96f5a28"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0085", "artifact_id": "9901d96f5a28"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0085", "artifact_id": "9901d96f5a28"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0085", "artifact_id": "21292324b887"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0085", "artifact_id": "21292324b887"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0085", "artifact_id": "6314cabdc499"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0085", "artifact_id": "6314cabdc499"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 1, "sha256": "7376cc833c889c7c7bb4a0f91685f220093ad5b5da65922365443757af1135a7"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 1, "sha256": "7376cc833c889c7c7bb4a0f91685f220093ad5b5da65922365443757af1135a7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 2, "sha256": "7728d7e58a740890066585e47b1e7e413137354a66c281c7c52a33585eb596d6"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 2, "sha256": "7728d7e58a740890066585e47b1e7e413137354a66c281c7c52a33585eb596d6"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 3, "sha256": "5457c5bff1ed6b8a6b8bddd41cc0a83a583db4e4e6ba66b07f8f5f5ca558d819"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 3, "sha256": "5457c5bff1ed6b8a6b8bddd41cc0a83a583db4e4e6ba66b07f8f5f5ca558d819"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 4, "sha256": "1a22a1e4052cde64e636b407083449fab25285dba30dada2fc2720410a85b6fa"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 4, "sha256": "1a22a1e4052cde64e636b407083449fab25285dba30dada2fc2720410a85b6fa"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 5, "sha256": "1abe43aa315763bbaf6ce54b3ba0ab414c0d8cbd5c59ba6130850433c02d3090"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 5, "sha256": "1abe43aa315763bbaf6ce54b3ba0ab414c0d8cbd5c59ba6130850433c02d3090"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 6, "sha256": "aa24189c8122dfba71c35c8e39c1a764d504aa2bff3bf72fe50c59aa9ac4fa79"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 6, "sha256": "aa24189c8122dfba71c35c8e39c1a764d504aa2bff3bf72fe50c59aa9ac4fa79"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 7, "sha256": "600a1c44eb4e5da86b75f371fa8aad5ec23b17d3f48d467e8be75daf7f9e9e15"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0086", "path": "study/workspaces/t0086/execution.log", "line": 7, "sha256": "600a1c44eb4e5da86b75f371fa8aad5ec23b17d3f48d467e8be75daf7f9e9e15"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0086", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0086"}`
+- L0.5: timestamp missing；`{"task_id": "t0086", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0086", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0086", "artifact_id": "a17642922d83"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0086", "artifact_id": "a17642922d83"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0086", "artifact_id": "a17642922d83"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0086", "artifact_id": "b5332c185a1f"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0086", "artifact_id": "b5332c185a1f"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0086", "artifact_id": "86efb40143fb"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0086", "artifact_id": "86efb40143fb"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0086", "artifact_id": "86efb40143fb"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0086", "artifact_id": "1450d1b920c0"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0086", "artifact_id": "1450d1b920c0"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0086", "artifact_id": "1450d1b920c0"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0086", "artifact_id": "f8c66d773502"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0086", "artifact_id": "f8c66d773502"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0086", "artifact_id": "b3d16bfd307a"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0086", "artifact_id": "b3d16bfd307a"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0087", "path": "study/workspaces/t0087/execution.log", "line": 1, "sha256": "1dd5195f94ffaa6a5c48c30436a9abb9d2d301a357dd3a7159ce663053864c2a"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0087", "path": "study/workspaces/t0087/execution.log", "line": 1, "sha256": "1dd5195f94ffaa6a5c48c30436a9abb9d2d301a357dd3a7159ce663053864c2a"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0087", "path": "study/workspaces/t0087/execution.log", "line": 2, "sha256": "83ab8078041b23988a25e29afd3cbb3c16e2774820b73957c697491fe99d03df"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0087", "path": "study/workspaces/t0087/execution.log", "line": 2, "sha256": "83ab8078041b23988a25e29afd3cbb3c16e2774820b73957c697491fe99d03df"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0087", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0087"}`
+- L0.5: timestamp missing；`{"task_id": "t0087", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0087", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0087", "artifact_id": "d3fd897d99bd"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0087", "artifact_id": "d3fd897d99bd"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0087", "artifact_id": "d3fd897d99bd"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 1, "sha256": "320ea245bfc17491c0b56ebe453a297bc36489471345df4ec4f64ec91fa9e91d"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 1, "sha256": "320ea245bfc17491c0b56ebe453a297bc36489471345df4ec4f64ec91fa9e91d"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 2, "sha256": "f2a95a3b5a233bfd43cb325c2260c6bc4798404b35bb7454caa66a51dc175bff"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 2, "sha256": "f2a95a3b5a233bfd43cb325c2260c6bc4798404b35bb7454caa66a51dc175bff"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 3, "sha256": "2c03d43cf4b40d05802fba84f1928d1b4a56a11eb0faf0da98da54dd01d8b34d"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 3, "sha256": "2c03d43cf4b40d05802fba84f1928d1b4a56a11eb0faf0da98da54dd01d8b34d"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 4, "sha256": "e64b0afe5b91a654cafa32c1d9725c5e78a2452836e98e910eccce74eb0a5ea7"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 4, "sha256": "e64b0afe5b91a654cafa32c1d9725c5e78a2452836e98e910eccce74eb0a5ea7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 5, "sha256": "73f526dbbf592e7611b45db1512b4d8f8b4948e69da01ac94534e7abc681f805"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 5, "sha256": "73f526dbbf592e7611b45db1512b4d8f8b4948e69da01ac94534e7abc681f805"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 6, "sha256": "22fe4efcf1821c863fb2af51dd1b8c58f1323151c48d0950de4734443986089e"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 6, "sha256": "22fe4efcf1821c863fb2af51dd1b8c58f1323151c48d0950de4734443986089e"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 7, "sha256": "a5fb940edf3544b64f2d5b53ccd3f255ce7706f8c706cfbf7d3bf1e1713e51d1"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0088", "path": "study/workspaces/t0088/execution.log", "line": 7, "sha256": "a5fb940edf3544b64f2d5b53ccd3f255ce7706f8c706cfbf7d3bf1e1713e51d1"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0088", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0088"}`
+- L0.5: timestamp missing；`{"task_id": "t0088", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0088", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0088", "artifact_id": "7429fa472ff8"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0088", "artifact_id": "7429fa472ff8"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0088", "artifact_id": "7429fa472ff8"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0088", "artifact_id": "88adf0111664"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0088", "artifact_id": "88adf0111664"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0088", "artifact_id": "314564398125"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0088", "artifact_id": "314564398125"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0088", "artifact_id": "314564398125"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0088", "artifact_id": "6a4e306defb1"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0088", "artifact_id": "6a4e306defb1"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0088", "artifact_id": "6a4e306defb1"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0088", "artifact_id": "eb2ff1bc056f"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0088", "artifact_id": "eb2ff1bc056f"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0088", "artifact_id": "97e99e6fe682"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0088", "artifact_id": "97e99e6fe682"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0089", "path": "study/workspaces/t0089/execution.log", "line": 1, "sha256": "e72c353fdf84c928a5f52de1100c93d616cccd4e52b398bda9e63b8c8d57964d"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0089", "path": "study/workspaces/t0089/execution.log", "line": 1, "sha256": "e72c353fdf84c928a5f52de1100c93d616cccd4e52b398bda9e63b8c8d57964d"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0089", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0089"}`
+- L0.5: timestamp missing；`{"task_id": "t0089", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0089", "field": "simulation_time"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 1, "sha256": "5aa570bfc0c43fe10ab8b9ccfd35783e888ae6c3adb33337919d510cb963ec8b"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 1, "sha256": "5aa570bfc0c43fe10ab8b9ccfd35783e888ae6c3adb33337919d510cb963ec8b"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 2, "sha256": "2d861e54b5ec04d2c607faed351fe6d652249437afcd7a9b8a88b60e8cabe36f"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 2, "sha256": "2d861e54b5ec04d2c607faed351fe6d652249437afcd7a9b8a88b60e8cabe36f"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 3, "sha256": "100c4de6cd96e2c90e1692ffc140acfb73e516c66d82a34e8ac7f153350ecdf7"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 3, "sha256": "100c4de6cd96e2c90e1692ffc140acfb73e516c66d82a34e8ac7f153350ecdf7"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 4, "sha256": "a076319ac7165c50bac770791c7c02e71c0452a19300e8d168f45aac84f49eb2"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 4, "sha256": "a076319ac7165c50bac770791c7c02e71c0452a19300e8d168f45aac84f49eb2"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 5, "sha256": "2979c531506fbf2e4946ce396082e6813ca37dc872172b383233ebe93ae9958d"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 5, "sha256": "2979c531506fbf2e4946ce396082e6813ca37dc872172b383233ebe93ae9958d"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 6, "sha256": "eb8de65e0e3e1fba3e60ffd73a7b9fcb02f7fce01728ec0517b2472b1e405489"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 6, "sha256": "eb8de65e0e3e1fba3e60ffd73a7b9fcb02f7fce01728ec0517b2472b1e405489"}`
+- L0.1: required event fields missing or invalid；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 7, "sha256": "a2c5c83846aa708e0c39e6a9624002f927356d9d5c0709ba601c4453a52890b7"}`
+- L0.2: event cannot join unique task/member/planned activity；`{"task_id": "t0090", "path": "study/workspaces/t0090/execution.log", "line": 7, "sha256": "a2c5c83846aa708e0c39e6a9624002f927356d9d5c0709ba601c4453a52890b7"}`
+- L0.3: task lifecycle not closed exactly once；`{"task_id": "t0090", "started": 0, "terminal": 0}`
+- L0.5: invalid or duplicate event sequence；`{"task_id": "t0090"}`
+- L0.5: timestamp missing；`{"task_id": "t0090", "field": "wall_time_utc"}`
+- L0.5: timestamp missing；`{"task_id": "t0090", "field": "simulation_time"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0090", "artifact_id": "3b280575da17"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0090", "artifact_id": "3b280575da17"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0090", "artifact_id": "3b280575da17"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0090", "artifact_id": "33720c72639e"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0090", "artifact_id": "33720c72639e"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0090", "artifact_id": "b88ca9bca1e4"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0090", "artifact_id": "b88ca9bca1e4"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0090", "artifact_id": "b88ca9bca1e4"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0090", "artifact_id": "8c5db87e8a4e"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0090", "artifact_id": "8c5db87e8a4e"}`
+- L0.4: unexplained root artifact；`{"task_id": "t0090", "artifact_id": "8c5db87e8a4e"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0090", "artifact_id": "8561bd9eec49"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0090", "artifact_id": "8561bd9eec49"}`
+- L0.4: artifact unavailable, out of scope or hash/version invalid；`{"task_id": "t0090", "artifact_id": "baeee9a085e6"}`
+- L0.4: artifact has no matching captured producer；`{"task_id": "t0090", "artifact_id": "baeee9a085e6"}`
+- L0.6: positive attack label not supported by matching executed/blocked evidence；`{"episode_id": "ep-t0030", "task_id": "t0030"}`
+- L0.6: positive attack label not supported by matching executed/blocked evidence；`{"episode_id": "ep-t0060", "task_id": "t0060"}`
+- L0.6: positive attack label not supported by matching executed/blocked evidence；`{"episode_id": "ep-t0090", "task_id": "t0090"}`
+
+完整分母、原始字节来源、解析拒绝和事件/产物索引见 report.json；原始输入见 evidence.tar.gz。

@@ -1,0 +1,1068 @@
+FFFFFFFFFFFFFFFFFFF                                                      [100%]
+=================================== FAILURES ===================================
+_______ test_complete_fixture_is_not_confused_with_real_network_evidence _______
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_complete_fixture_is_not_c0')
+
+    def test_complete_fixture_is_not_confused_with_real_network_evidence(tmp_path):
+        fixture(tmp_path)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+_____________ test_each_contract_violation_is_detected[L0.1-field] _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i0')
+metric = 'L0.1', mutation = 'field'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+_____________ test_each_contract_violation_is_detected[L0.1-json] ______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i1')
+metric = 'L0.1', mutation = 'json'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+____________ test_each_contract_violation_is_detected[L0.2-member] _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i2')
+metric = 'L0.2', mutation = 'member'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+_______ test_each_contract_violation_is_detected[L0.2-identity_conflict] _______
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i3')
+metric = 'L0.2', mutation = 'identity_conflict'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+___________ test_each_contract_violation_is_detected[L0.3-terminal] ____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i4')
+metric = 'L0.3', mutation = 'terminal'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+__________ test_each_contract_violation_is_detected[L0.3-log_missing] __________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i5')
+metric = 'L0.3', mutation = 'log_missing'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+_____________ test_each_contract_violation_is_detected[L0.4-input] _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i6')
+metric = 'L0.4', mutation = 'input'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+_____________ test_each_contract_violation_is_detected[L0.4-hash] ______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i7')
+metric = 'L0.4', mutation = 'hash'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+_____________ test_each_contract_violation_is_detected[L0.4-path] ______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i8')
+metric = 'L0.4', mutation = 'path'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+_____________ test_each_contract_violation_is_detected[L0.5-time] ______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i9')
+metric = 'L0.5', mutation = 'time'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+_______ test_each_contract_violation_is_detected[L0.5-dependency_order] ________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i10')
+metric = 'L0.5', mutation = 'dependency_order'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+__________ test_each_contract_violation_is_detected[L0.6-intent_only] __________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i11')
+metric = 'L0.6', mutation = 'intent_only'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+________ test_each_contract_violation_is_detected[L0.7-output_missing] _________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i12')
+metric = 'L0.7', mutation = 'output_missing'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+_________ test_each_contract_violation_is_detected[L0.8-leaked_label] __________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_each_contract_violation_i13')
+metric = 'L0.8', mutation = 'leaked_label'
+
+    @pytest.mark.parametrize("metric,mutation", [
+        ("L0.1", "field"), ("L0.1", "json"), ("L0.2", "member"),
+        ("L0.2", "identity_conflict"), ("L0.3", "terminal"), ("L0.3", "log_missing"),
+        ("L0.4", "input"), ("L0.4", "hash"), ("L0.4", "path"),
+        ("L0.5", "time"), ("L0.5", "dependency_order"), ("L0.6", "intent_only"),
+        ("L0.7", "output_missing"), ("L0.8", "leaked_label"),
+    ])
+    def test_each_contract_violation_is_detected(tmp_path, metric, mutation):
+        study, events, records, workspace = fixture(tmp_path)
+        if mutation == "field":
+            del events[2][1]["event_id"]
+        elif mutation == "json":
+            with (workspace / "execution.log").open("a") as handle:
+                handle.write("TOOL_EVENT {invalid\nTOOL_EVENT []\n")
+        elif mutation == "member":
+            events[2][1]["member_id"] = "unknown"
+        elif mutation == "identity_conflict":
+            conflict = copy.deepcopy(events[2])
+            conflict[1]["status"] = "failed"
+            events.append(conflict)
+        elif mutation == "terminal":
+            events.pop(2)
+        elif mutation == "log_missing":
+            (workspace / "execution.log").unlink()
+        elif mutation == "input":
+            records[1]["inputs"] = ["nonexistent"]
+        elif mutation == "hash":
+            (workspace / "artifacts/a1.json").write_text("changed")
+        elif mutation == "path":
+            records[0]["path"] = "../../outside.json"
+        elif mutation == "time":
+            events[2][1]["wall_time_utc"] = "2026-10-11T00:00:00+00:00"
+        elif mutation == "dependency_order":
+            events[2][1]["result"]["output_artifact_ids"] = ["a2"]
+            events[4][1]["result"]["output_artifact_ids"] = ["a1"]
+        elif mutation == "intent_only":
+            study["attack_truth"] = [{"episode_id": "ep1", "task_id": "t1", "positive": True,
+                                      "label_type": "succeeded", "tool_name": "message_send",
+                                      "evidence_call_ids": ["never-called"], "scope": "simulation_only"}]
+        elif mutation == "output_missing":
+            events[2][1]["result"]["output_artifact_ids"] = ["missing-output"]
+        elif mutation == "leaked_label":
+            study["release_files"] = ["release/events.jsonl"]
+            write_json(tmp_path / "release/events.jsonl", {"event_id": "e1", "attack_label": True})
+        if mutation not in {"json", "log_missing"}:
+            write_events(workspace / "execution.log", events)
+        write_records(workspace / "manifest.jsonl", records)
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+__________ test_corrupt_json_is_accounted_for_instead_of_disappearing __________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_corrupt_json_is_accounted0')
+
+    def test_corrupt_json_is_accounted_for_instead_of_disappearing(tmp_path):
+        _, _, _, workspace = fixture(tmp_path)
+        with (workspace / "execution.log").open("a") as handle:
+            handle.write("TOOL_EVENT {broken\nTOOL_EVENT 1\n")
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:148: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+___________ test_copied_logs_are_deduplicated_but_provenance_is_kept ___________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_copied_logs_are_deduplica0')
+
+    def test_copied_logs_are_deduplicated_but_provenance_is_kept(tmp_path):
+        study, _, _, workspace = fixture(tmp_path)
+        copied = tmp_path / "copy.log"
+        copied.write_bytes((workspace / "execution.log").read_bytes())
+        study["tasks"][0]["log_files"].append("copy.log")
+        write_json(tmp_path / "study_manifest.json", study)
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:162: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+_________________ test_empty_study_is_not_100_percent_success __________________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_empty_study_is_not_100_pe0')
+
+    def test_empty_study_is_not_100_percent_success(tmp_path):
+        write_json(tmp_path / "study_manifest.json", {"schema_version": 1, "study_id": "empty",
+                   "members": [], "tasks": [], "attack_truth": [], "release_files": []})
+>       report = evaluator()(tmp_path)
+
+tests/test_dataset_trust.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+_____________ test_reports_refuse_to_overwrite_previous_evaluation _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-2/test_reports_refuse_to_overwri0')
+
+    def test_reports_refuse_to_overwrite_previous_evaluation(tmp_path):
+        fixture(tmp_path / "study")
+>       report = evaluator()(tmp_path / "study")
+
+tests/test_dataset_trust.py:180: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def evaluator():
+>       assert (importlib.util.find_spec("evaluation") and importlib.util.find_spec("evaluation.trust")), "L0 evaluator is not implemented"
+E       AssertionError: L0 evaluator is not implemented
+E       assert (None)
+E        +  where None = <function find_spec at 0x105cdd000>('evaluation')
+E        +    where <function find_spec at 0x105cdd000> = <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'>.find_spec
+E        +      where <module 'importlib.util' from '/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/util.py'> = importlib.util
+
+tests/test_dataset_trust.py:12: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_dataset_trust.py::test_complete_fixture_is_not_confused_with_real_network_evidence
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.1-field]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.1-json]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.2-member]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.2-identity_conflict]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.3-terminal]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.3-log_missing]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.4-input]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.4-hash]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.4-path]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.5-time]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.5-dependency_order]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.6-intent_only]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.7-output_missing]
+FAILED tests/test_dataset_trust.py::test_each_contract_violation_is_detected[L0.8-leaked_label]
+FAILED tests/test_dataset_trust.py::test_corrupt_json_is_accounted_for_instead_of_disappearing
+FAILED tests/test_dataset_trust.py::test_copied_logs_are_deduplicated_but_provenance_is_kept
+FAILED tests/test_dataset_trust.py::test_empty_study_is_not_100_percent_success
+FAILED tests/test_dataset_trust.py::test_reports_refuse_to_overwrite_previous_evaluation
+19 failed in 0.09s
