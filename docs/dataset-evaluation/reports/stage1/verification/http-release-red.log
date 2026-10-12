@@ -1,0 +1,60 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+____ test_real_http_client_caps_output_records_usage_and_rejects_truncation ____
+
+    def test_real_http_client_caps_output_records_usage_and_rejects_truncation():
+        seen = []
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+            def do_POST(self):
+                seen.append(json.loads(self.rfile.read(int(self.headers['Content-Length']))))
+                body = {'id': 'request1', 'model': 'returned-model', 'usage': {'prompt_tokens': 100, 'completion_tokens': 20},
+                        'choices': [{'finish_reason': 'length' if len(seen) == 2 else 'stop', 'message': {'content': 'done'}}]}
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(json.dumps(body).encode())
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+>           client = OpenAICompatibleChatClient(api_key='test-only', base_url=f'http://127.0.0.1:{server.server_port}',
+                                               model='deepseek-flash', max_tokens=4096, thinking=False)
+E                                              TypeError: OpenAICompatibleChatClient.__init__() got an unexpected keyword argument 'model'
+
+tests/test_stage1_boundaries.py:29: TypeError
+__________ test_artifact_credential_is_scanned_even_when_hash_matches __________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-11/test_artifact_credential_is_sc0')
+
+    def test_artifact_credential_is_scanned_even_when_hash_matches(tmp_path):
+        generate_study(tmp_path / 'study', cases=golden_cases()[:1], repetitions=1)
+        root = tmp_path / 'study'
+        manifest = root / 'workspaces/t0001/manifest.jsonl'
+        rows = [json.loads(line) for line in manifest.read_text().splitlines()]
+        artifact = root / 'workspaces/t0001' / rows[0]['path']
+        artifact.write_text(json.dumps({'content': 'sk-' + 'x' * 32}))
+        rows[0]['sha256'] = hashlib.sha256(artifact.read_bytes()).hexdigest()
+        manifest.write_text(''.join(json.dumps(row) + '\n' for row in rows))
+>       assert evaluate_study(root)['metrics']['L0.8']['status'] == 'FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_stage1_boundaries.py:54: AssertionError
+____________ test_campaign_release_is_observable_only_and_complete _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-11/test_campaign_release_is_obser0')
+
+    def test_campaign_release_is_observable_only_and_complete(tmp_path):
+        study = generate_study(tmp_path / 'study', cases=golden_cases()[:1], repetitions=1)
+>       assert study['release_files']
+E       assert []
+
+tests/test_stage1_boundaries.py:59: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_stage1_boundaries.py::test_real_http_client_caps_output_records_usage_and_rejects_truncation
+FAILED tests/test_stage1_boundaries.py::test_artifact_credential_is_scanned_even_when_hash_matches
+FAILED tests/test_stage1_boundaries.py::test_campaign_release_is_observable_only_and_complete
+3 failed in 0.59s

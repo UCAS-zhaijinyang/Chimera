@@ -1,6 +1,6 @@
 # ChimeraLog+ 评测体系：从数据可信到检测效用
 
-状态：设计规格，未执行实验。基于 `f218ca5` 的真实接口，沿用用户图中的 L0–L5 编号。论文编号见 [调研](literature-review.md)；落地顺序见 [实施计划](implementation-plan.md)。
+状态：三阶段设计规格；2026-10-12已完成第一阶段L0应用仿真验收，第二/三阶段仍未执行。[第一阶段实测报告](reports/stage1/README.md)。基于 `f218ca5` 的真实接口，沿用用户图中的 L0–L5 编号。论文编号见 [调研](literature-review.md)；落地顺序见 [实施计划](implementation-plan.md)。
 
 ## 评测主线
 

@@ -26,10 +26,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 import json
+import hashlib
 import os
 from pathlib import Path
+import re
 import tempfile
 import uuid
+from datetime import datetime, timezone
 
 try:
     import fcntl
@@ -144,7 +147,7 @@ class FilesystemArtifactBus:
     """
 
     def __init__(self, root_dir: str | os.PathLike[str]):
-        self.root = Path(root_dir)
+        self.root = Path(root_dir).resolve()
         self.artifacts_dir = self.root / "artifacts"
         self.manifest_path = self.root / "manifest.jsonl"
         self.lock_path = self.root / "manifest.lock"
@@ -154,16 +157,18 @@ class FilesystemArtifactBus:
         if not self.manifest_path.exists():
             return []
         records: list[dict[str, Any]] = []
-        for line in self.manifest_path.read_text(encoding="utf-8").splitlines():
+        for number, line in enumerate(self.manifest_path.read_text(encoding="utf-8").splitlines(), 1):
             if not line.strip():
                 continue
             try:
-                records.append(json.loads(line))
-            except json.JSONDecodeError:
-                # A partially written line should never be produced by this
-                # class, but ignoring it makes reads tolerant of interrupted
-                # external writers instead of crashing every later task.
-                continue
+                record = json.loads(line)
+                if not isinstance(record, dict) or not record.get("artifact_id"):
+                    raise ValueError("manifest row must identify an artifact")
+                if any(r["artifact_id"] == record["artifact_id"] for r in records):
+                    raise ValueError("duplicate artifact ID in manifest")
+                records.append(record)
+            except ValueError as exc:
+                raise ValueError(f"invalid manifest row {number}") from exc
         return records
 
     def _record(self, artifact_id: str) -> dict[str, Any]:
@@ -213,12 +218,17 @@ class FilesystemArtifactBus:
         artifact_id: Optional[str] = None,
         trace_id: str = "",
         inputs: Sequence[str] = (),
+        root_type: Optional[str] = None,
     ) -> Artifact:
         if artifact_type not in ARTIFACT_TYPES:
             raise ValueError(f"unknown artifact type: {artifact_type}")
         for input_id in inputs:
             self._record(input_id)
         artifact_id = artifact_id or uuid.uuid4().hex[:12]
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", artifact_id):
+            raise ValueError("invalid artifact ID")
+        if any(r["artifact_id"] == artifact_id for r in self._records()):
+            raise ValueError("artifact ID already exists; create a new immutable version")
         encoding = self._payload_encoding(payload)
         suffix = self._suffix(name, encoding)
         relative_path = Path("artifacts") / f"{artifact_id}{suffix}"
@@ -238,7 +248,12 @@ class FilesystemArtifactBus:
                 handle.write(data)
                 handle.flush()
                 os.fsync(handle.fileno())
-            os.replace(temporary_name, destination)
+            # A hard link atomically publishes without replacing an existing ID,
+            # including two concurrent writers that passed the manifest check.
+            try:
+                os.link(temporary_name, destination)
+            except FileExistsError as exc:
+                raise ValueError("artifact ID payload already exists") from exc
         finally:
             if os.path.exists(temporary_name):
                 os.unlink(temporary_name)
@@ -253,6 +268,11 @@ class FilesystemArtifactBus:
             "path": str(relative_path),
             "encoding": encoding,
             "inputs": list(inputs),
+            "version": 1,
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "root_type": (root_type or "declared_external_input") if not inputs else None,
+            "input_versions": {i: self._record(i).get("version", 1) for i in inputs},
         }
         self._append_manifest(record)
         return Artifact(
@@ -270,14 +290,19 @@ class FilesystemArtifactBus:
 
     def path_for(self, artifact_id: str) -> Path:
         record = self._record(artifact_id)
-        return self.root / record["path"]
+        path = (self.root / record["path"]).resolve()
+        if self.root not in path.parents:
+            raise ValueError("artifact path escapes workspace")
+        return path
 
     def get(self, artifact_id: str) -> Artifact:
         record = self._record(artifact_id)
-        path = self.root / record["path"]
+        path = self.path_for(artifact_id)
         if not path.exists():
             raise FileNotFoundError(f"artifact payload missing: {artifact_id}")
         raw = path.read_bytes()
+        if record.get("sha256") and hashlib.sha256(raw).hexdigest() != record["sha256"]:
+            raise ValueError(f"artifact hash mismatch: {artifact_id}")
         encoding = record.get("encoding", "text")
         if encoding == "json":
             payload: Any = json.loads(raw.decode("utf-8"))

@@ -1,0 +1,531 @@
+FFFFFFFFFFF..FFFFF                                                       [100%]
+=================================== FAILURES ===================================
+__ test_malformed_inputs_return_detailed_failure_instead_of_crash[task_null] ___
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_malformed_inputs_return_d0')
+mutation = 'task_null'
+
+    @pytest.mark.parametrize('mutation', ['task_null','seq_string','inputs_null','id_list','workspace_null'])
+    def test_malformed_inputs_return_detailed_failure_instead_of_crash(tmp_path,mutation):
+        root=tmp_path/'study';log,rows=setup(root)
+        p=root/'study_manifest.json';study=json.loads(p.read_text())
+        if mutation=='task_null': study['tasks']=[None]
+        elif mutation=='workspace_null': study['tasks'][0]['workspace']=None
+        elif mutation=='seq_string': rows[0][1]['event_seq']='1'
+        elif mutation=='id_list': rows[0][1]['event_id']=[]
+        elif mutation=='inputs_null':
+            mp=root/'workspaces/t0001/manifest.jsonl'
+            records=[json.loads(s) for s in mp.read_text().splitlines()]
+            records[1]['inputs']=None
+            mp.write_text(''.join(json.dumps(r)+'\n' for r in records))
+        p.write_text(json.dumps(study))
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       report=evaluate_study(root)
+
+tests/test_stage1_review_regressions.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/evaluation/trust.py:125: in evaluate_study
+    ids = [t.get("task_id") for t in tasks]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <list_iterator object at 0x108c8ae00>
+
+>   ids = [t.get("task_id") for t in tasks]
+E   AttributeError: 'NoneType' object has no attribute 'get'
+
+src/evaluation/trust.py:125: AttributeError
+__ test_malformed_inputs_return_detailed_failure_instead_of_crash[seq_string] __
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_malformed_inputs_return_d1')
+mutation = 'seq_string'
+
+    @pytest.mark.parametrize('mutation', ['task_null','seq_string','inputs_null','id_list','workspace_null'])
+    def test_malformed_inputs_return_detailed_failure_instead_of_crash(tmp_path,mutation):
+        root=tmp_path/'study';log,rows=setup(root)
+        p=root/'study_manifest.json';study=json.loads(p.read_text())
+        if mutation=='task_null': study['tasks']=[None]
+        elif mutation=='workspace_null': study['tasks'][0]['workspace']=None
+        elif mutation=='seq_string': rows[0][1]['event_seq']='1'
+        elif mutation=='id_list': rows[0][1]['event_id']=[]
+        elif mutation=='inputs_null':
+            mp=root/'workspaces/t0001/manifest.jsonl'
+            records=[json.loads(s) for s in mp.read_text().splitlines()]
+            records[1]['inputs']=None
+            mp.write_text(''.join(json.dumps(r)+'\n' for r in records))
+        p.write_text(json.dumps(study))
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       report=evaluate_study(root)
+
+tests/test_stage1_review_regressions.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+study_dir = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_malformed_inputs_return_d1/study')
+
+    def evaluate_study(study_dir: str | Path) -> dict:
+        root = Path(study_dir).resolve()
+        failures: list[dict] = []
+        metrics = {key: {"name": name, "value": None, "numerator": 0, "denominator": 0,
+                         "status": "NOT_MEASURED", "evidence_refs": []} for key, name in NAMES.items()}
+    
+        def fail(metric, reason, **evidence):
+            failures.append({"metric_id": metric, "reason": reason, "evidence": evidence})
+            metrics[metric]["evidence_refs"].append(evidence)
+    
+        def measure(metric, good, total, *, na=False):
+            item = metrics[metric]
+            item.update(numerator=good, denominator=total, value=good / total if total else None)
+            item["status"] = ("FAIL" if any(f["metric_id"] == metric for f in failures) else
+                              "PASS" if total else "NOT_APPLICABLE" if na else "NOT_MEASURED")
+    
+        inventory = {"raw_marked_rows": 0, "parsed_rows": 0, "rejected_rows": 0,
+                     "unique_events": 0, "copied_rows": 0, "tasks": 0, "artifacts": 0}
+        parse_rejections, normalized, artifacts = [], [], []
+        coverage = {kind: "NOT_MEASURED" for kind in ("application", "system", "network", "real_email")}
+        try:
+            study = json.loads((root / "study_manifest.json").read_text(encoding="utf-8"))
+            if study.get("schema_version") != 1 or not isinstance(study.get("tasks"), list):
+                raise ValueError("unsupported or incomplete study manifest")
+        except (OSError, ValueError, AttributeError) as exc:
+            fail("L0.1", "study manifest unavailable or invalid", exception=type(exc).__name__)
+            metrics["L0.1"]["status"] = "FAIL"
+            return {"status": "FAIL", "metrics": metrics, "failures": failures,
+                    "inventory": inventory, "coverage": coverage, "parse_rejections": [], "events": [], "artifacts": []}
+    
+        tasks = study["tasks"]
+        inventory["tasks"] = len(tasks)
+        ids = [t.get("task_id") for t in tasks]
+        if len(set(ids)) != len(ids):
+            fail("L0.2", "duplicate task IDs in study inventory")
+        plans = {p["id"]: p for p in study.get("planned_activities", [])}
+        seen = {}
+        fields_good = links_good = closed = artifacts_good = edges_good = edges_total = 0
+        positive_good = outputs_good = outputs_total = 0
+        task_events = {}
+        for task in tasks:
+            task_id = task.get("task_id")
+            selected = []
+            for relative in task.get("log_files", []):
+                try:
+                    path = within(root, relative)
+                    rows, rejections, count = read_marked(path)
+                    inventory["raw_marked_rows"] += count
+                    inventory["parsed_rows"] += len(rows)
+                    parse_rejections.extend(rejections)
+                except (OSError, ValueError) as exc:
+                    fail("L0.3", "expected log missing or outside workspace", task_id=task_id,
+                         path=relative, exception=type(exc).__name__)
+                    continue
+                for row in rows:
+                    event, source = row["payload"], row["source"]
+                    identity = (event.get("run_id"), event.get("event_id"))
+                    if event.get("event_id") and identity in seen:
+                        previous = seen[identity]
+                        if previous["payload"] == event and previous["source"]["path"] != source["path"]:
+                            inventory["copied_rows"] += 1
+                            previous.setdefault("copies", []).append(source)
+                            continue
+                        fail("L0.2", "duplicate or conflicting event identity", task_id=task_id, **source)
+                    if event.get("event_id"):
+                        seen[identity] = row
+                    normalized.append(row)
+                    selected.append(event)
+                    valid = all(key in event and event[key] is not None for key in CORE_FIELDS)
+                    valid &= event.get("schema_version") == "chimera-event/1" and EXPECTED_MARKER.get(event.get("event_type")) == row["marker"]
+                    valid &= type(event.get("event_seq")) is int and event.get("event_seq", 0) > 0
+                    if not valid:
+                        fail("L0.1", "required event fields missing or invalid", task_id=task_id, **source)
+                    else:
+                        fields_good += 1
+                    link = all(event.get(key) == task.get(key) for key in
+                               ("run_id", "task_id", "trace_id", "member_id"))
+                    link &= event.get("member_id") in study.get("members", [])
+                    planned = event.get("planned_activity_id")
+                    if task.get("planned_activity_id"):
+                        plan = plans.get(planned, {})
+                        link &= planned == task["planned_activity_id"] and all(
+                            plan.get(p) == task.get(p) for p in ("task_id", "member_id", "phase_id", "workday"))
+                    if not link:
+                        fail("L0.2", "event cannot join unique task/member/planned activity", task_id=task_id, **source)
+                    else:
+                        links_good += 1
+            if not task.get("log_files"):
+                fail("L0.3", "task has no declared logs", task_id=task_id)
+            task_events[task_id] = selected
+            starts = [e for e in selected if e.get("event_type") == "task_started"]
+            endings = [e for e in selected if e.get("event_type") in ("final_answer", "task_terminal")]
+            if len(starts) != 1 or len(endings) != 1:
+                fail("L0.3", "task lifecycle not closed exactly once", task_id=task_id,
+                     started=len(starts), terminal=len(endings))
+            else:
+                closed += 1
+>               if starts[0].get("event_seq", 0) >= endings[0].get("event_seq", 0):
+E               TypeError: '>=' not supported between instances of 'str' and 'int'
+
+src/evaluation/trust.py:190: TypeError
+_ test_malformed_inputs_return_detailed_failure_instead_of_crash[inputs_null] __
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_malformed_inputs_return_d2')
+mutation = 'inputs_null'
+
+    @pytest.mark.parametrize('mutation', ['task_null','seq_string','inputs_null','id_list','workspace_null'])
+    def test_malformed_inputs_return_detailed_failure_instead_of_crash(tmp_path,mutation):
+        root=tmp_path/'study';log,rows=setup(root)
+        p=root/'study_manifest.json';study=json.loads(p.read_text())
+        if mutation=='task_null': study['tasks']=[None]
+        elif mutation=='workspace_null': study['tasks'][0]['workspace']=None
+        elif mutation=='seq_string': rows[0][1]['event_seq']='1'
+        elif mutation=='id_list': rows[0][1]['event_id']=[]
+        elif mutation=='inputs_null':
+            mp=root/'workspaces/t0001/manifest.jsonl'
+            records=[json.loads(s) for s in mp.read_text().splitlines()]
+            records[1]['inputs']=None
+            mp.write_text(''.join(json.dumps(r)+'\n' for r in records))
+        p.write_text(json.dumps(study))
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       report=evaluate_study(root)
+
+tests/test_stage1_review_regressions.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/evaluation/trust.py:310: in evaluate_study
+    if any(visit(identifier, set()) for identifier in index):
+src/evaluation/trust.py:310: in <genexpr>
+    if any(visit(identifier, set()) for identifier in index):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+identifier = '42c823fe06fc', ancestors = set()
+
+    def visit(identifier, ancestors):
+        if identifier in ancestors:
+            return True
+>       return any(visit(parent, ancestors | {identifier}) for parent in index.get(identifier, {}).get("inputs", [])
+                   if parent in index)
+E       TypeError: 'NoneType' object is not iterable
+
+src/evaluation/trust.py:308: TypeError
+___ test_malformed_inputs_return_detailed_failure_instead_of_crash[id_list] ____
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_malformed_inputs_return_d3')
+mutation = 'id_list'
+
+    @pytest.mark.parametrize('mutation', ['task_null','seq_string','inputs_null','id_list','workspace_null'])
+    def test_malformed_inputs_return_detailed_failure_instead_of_crash(tmp_path,mutation):
+        root=tmp_path/'study';log,rows=setup(root)
+        p=root/'study_manifest.json';study=json.loads(p.read_text())
+        if mutation=='task_null': study['tasks']=[None]
+        elif mutation=='workspace_null': study['tasks'][0]['workspace']=None
+        elif mutation=='seq_string': rows[0][1]['event_seq']='1'
+        elif mutation=='id_list': rows[0][1]['event_id']=[]
+        elif mutation=='inputs_null':
+            mp=root/'workspaces/t0001/manifest.jsonl'
+            records=[json.loads(s) for s in mp.read_text().splitlines()]
+            records[1]['inputs']=None
+            mp.write_text(''.join(json.dumps(r)+'\n' for r in records))
+        p.write_text(json.dumps(study))
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+        report=evaluate_study(root)
+>       assert report['status']=='FAIL' and report['failures']
+E       AssertionError: assert ('PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS)
+
+tests/test_stage1_review_regressions.py:32: AssertionError
+_ test_malformed_inputs_return_detailed_failure_instead_of_crash[workspace_null] _
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_malformed_inputs_return_d4')
+mutation = 'workspace_null'
+
+    @pytest.mark.parametrize('mutation', ['task_null','seq_string','inputs_null','id_list','workspace_null'])
+    def test_malformed_inputs_return_detailed_failure_instead_of_crash(tmp_path,mutation):
+        root=tmp_path/'study';log,rows=setup(root)
+        p=root/'study_manifest.json';study=json.loads(p.read_text())
+        if mutation=='task_null': study['tasks']=[None]
+        elif mutation=='workspace_null': study['tasks'][0]['workspace']=None
+        elif mutation=='seq_string': rows[0][1]['event_seq']='1'
+        elif mutation=='id_list': rows[0][1]['event_id']=[]
+        elif mutation=='inputs_null':
+            mp=root/'workspaces/t0001/manifest.jsonl'
+            records=[json.loads(s) for s in mp.read_text().splitlines()]
+            records[1]['inputs']=None
+            mp.write_text(''.join(json.dumps(r)+'\n' for r in records))
+        p.write_text(json.dumps(study))
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       report=evaluate_study(root)
+
+tests/test_stage1_review_regressions.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/evaluation/trust.py:219: in evaluate_study
+    workspace = within(root, task["workspace"])
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_malformed_inputs_return_d4/study')
+relative = None
+
+    def within(root: Path, relative: str) -> Path:
+>       path = (root / relative).resolve()
+E       TypeError: unsupported operand type(s) for /: 'PosixPath' and 'NoneType'
+
+src/evaluation/trust.py:47: TypeError
+_______________ test_review_false_pass_paths[outside_task-L0.5] ________________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_review_false_pass_paths_o0')
+mutation = 'outside_task', metric = 'L0.5'
+
+    @pytest.mark.parametrize('mutation,metric', [('outside_task','L0.5'),('event_phase','L0.2'),('missing_arguments','L0.4'),('empty_release','L0.8')])
+    def test_review_false_pass_paths(tmp_path,mutation,metric):
+        root=tmp_path/'study';log,rows=setup(root)
+        if mutation=='outside_task':
+            final=rows.pop();rows.insert(1,final)
+            for seq,(_,event) in enumerate(rows,1):
+                event['event_seq']=seq
+                event['wall_time_utc']=f'2026-10-12T00:00:{seq:02d}+00:00'
+                event['simulation_time']=f'2025-05-05T09:00:{seq:02d}+08:00'
+        elif mutation=='event_phase':
+            for _,e in rows: e.update(phase_id='wrong',workday=99)
+        elif mutation=='missing_arguments':
+            call=next(e for _,e in rows if e.get('tool_name')=='data_transform' and e['event_type']=='tool_call')
+            call.pop('arguments')
+            mp=root/'workspaces/t0001/manifest.jsonl'
+            records=[json.loads(s) for s in mp.read_text().splitlines()]
+            records[1].update(inputs=[],input_versions={},root_type='standalone_generated_input')
+            mp.write_text(''.join(json.dumps(r)+'\n' for r in records))
+        else: (root/'release/events.jsonl').write_text('')
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       assert evaluate_study(root)['metrics'][metric]['status']=='FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_stage1_review_regressions.py:55: AssertionError
+________________ test_review_false_pass_paths[event_phase-L0.2] ________________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_review_false_pass_paths_e0')
+mutation = 'event_phase', metric = 'L0.2'
+
+    @pytest.mark.parametrize('mutation,metric', [('outside_task','L0.5'),('event_phase','L0.2'),('missing_arguments','L0.4'),('empty_release','L0.8')])
+    def test_review_false_pass_paths(tmp_path,mutation,metric):
+        root=tmp_path/'study';log,rows=setup(root)
+        if mutation=='outside_task':
+            final=rows.pop();rows.insert(1,final)
+            for seq,(_,event) in enumerate(rows,1):
+                event['event_seq']=seq
+                event['wall_time_utc']=f'2026-10-12T00:00:{seq:02d}+00:00'
+                event['simulation_time']=f'2025-05-05T09:00:{seq:02d}+08:00'
+        elif mutation=='event_phase':
+            for _,e in rows: e.update(phase_id='wrong',workday=99)
+        elif mutation=='missing_arguments':
+            call=next(e for _,e in rows if e.get('tool_name')=='data_transform' and e['event_type']=='tool_call')
+            call.pop('arguments')
+            mp=root/'workspaces/t0001/manifest.jsonl'
+            records=[json.loads(s) for s in mp.read_text().splitlines()]
+            records[1].update(inputs=[],input_versions={},root_type='standalone_generated_input')
+            mp.write_text(''.join(json.dumps(r)+'\n' for r in records))
+        else: (root/'release/events.jsonl').write_text('')
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       assert evaluate_study(root)['metrics'][metric]['status']=='FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_stage1_review_regressions.py:55: AssertionError
+_____________ test_review_false_pass_paths[missing_arguments-L0.4] _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_review_false_pass_paths_m0')
+mutation = 'missing_arguments', metric = 'L0.4'
+
+    @pytest.mark.parametrize('mutation,metric', [('outside_task','L0.5'),('event_phase','L0.2'),('missing_arguments','L0.4'),('empty_release','L0.8')])
+    def test_review_false_pass_paths(tmp_path,mutation,metric):
+        root=tmp_path/'study';log,rows=setup(root)
+        if mutation=='outside_task':
+            final=rows.pop();rows.insert(1,final)
+            for seq,(_,event) in enumerate(rows,1):
+                event['event_seq']=seq
+                event['wall_time_utc']=f'2026-10-12T00:00:{seq:02d}+00:00'
+                event['simulation_time']=f'2025-05-05T09:00:{seq:02d}+08:00'
+        elif mutation=='event_phase':
+            for _,e in rows: e.update(phase_id='wrong',workday=99)
+        elif mutation=='missing_arguments':
+            call=next(e for _,e in rows if e.get('tool_name')=='data_transform' and e['event_type']=='tool_call')
+            call.pop('arguments')
+            mp=root/'workspaces/t0001/manifest.jsonl'
+            records=[json.loads(s) for s in mp.read_text().splitlines()]
+            records[1].update(inputs=[],input_versions={},root_type='standalone_generated_input')
+            mp.write_text(''.join(json.dumps(r)+'\n' for r in records))
+        else: (root/'release/events.jsonl').write_text('')
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       assert evaluate_study(root)['metrics'][metric]['status']=='FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_stage1_review_regressions.py:55: AssertionError
+_______________ test_review_false_pass_paths[empty_release-L0.8] _______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_review_false_pass_paths_e1')
+mutation = 'empty_release', metric = 'L0.8'
+
+    @pytest.mark.parametrize('mutation,metric', [('outside_task','L0.5'),('event_phase','L0.2'),('missing_arguments','L0.4'),('empty_release','L0.8')])
+    def test_review_false_pass_paths(tmp_path,mutation,metric):
+        root=tmp_path/'study';log,rows=setup(root)
+        if mutation=='outside_task':
+            final=rows.pop();rows.insert(1,final)
+            for seq,(_,event) in enumerate(rows,1):
+                event['event_seq']=seq
+                event['wall_time_utc']=f'2026-10-12T00:00:{seq:02d}+00:00'
+                event['simulation_time']=f'2025-05-05T09:00:{seq:02d}+08:00'
+        elif mutation=='event_phase':
+            for _,e in rows: e.update(phase_id='wrong',workday=99)
+        elif mutation=='missing_arguments':
+            call=next(e for _,e in rows if e.get('tool_name')=='data_transform' and e['event_type']=='tool_call')
+            call.pop('arguments')
+            mp=root/'workspaces/t0001/manifest.jsonl'
+            records=[json.loads(s) for s in mp.read_text().splitlines()]
+            records[1].update(inputs=[],input_versions={},root_type='standalone_generated_input')
+            mp.write_text(''.join(json.dumps(r)+'\n' for r in records))
+        else: (root/'release/events.jsonl').write_text('')
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       assert evaluate_study(root)['metrics'][metric]['status']=='FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_stage1_review_regressions.py:55: AssertionError
+_______________ test_code_edit_cannot_overwrite_capture_evidence _______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_code_edit_cannot_overwrit0')
+
+    def test_code_edit_cannot_overwrite_capture_evidence(tmp_path):
+        runtime=FilesystemToolRuntime(tmp_path,member_id='m',trace_id='t')
+        original=runtime.execute('source_query',{'query':'fixture'})
+        artifact_id=original['output_artifact_ids'][0]
+        record=next(json.loads(s) for s in (tmp_path/'manifest.jsonl').read_text().splitlines())
+        before=(tmp_path/record['path']).read_bytes()
+>       with pytest.raises(PermissionError):
+E       Failed: DID NOT RAISE PermissionError
+
+tests/test_stage1_review_regressions.py:64: Failed
+_______________ test_manifest_symlink_cannot_read_outside_study ________________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_manifest_symlink_cannot_r0')
+
+    def test_manifest_symlink_cannot_read_outside_study(tmp_path):
+        root=tmp_path/'study';setup(root)
+        manifest=root/'workspaces/t0001/manifest.jsonl'
+        outside=tmp_path/'outside.jsonl'
+        manifest.rename(outside)
+        manifest.symlink_to(outside)
+>       assert evaluate_study(root)['status']=='FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_stage1_review_regressions.py:77: AssertionError
+_____________ test_invalid_usage_cannot_refund_reservation[usage0] _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_invalid_usage_cannot_refu0')
+usage = {'prompt_tokens': 1, 'completion_tokens': -1000000}
+
+    @pytest.mark.parametrize('usage',[{'prompt_tokens':1,'completion_tokens':-1000000},
+        {'prompt_tokens':10,'completion_tokens':2,'prompt_cache_hit_tokens':11},
+        {'prompt_tokens':True,'completion_tokens':2},
+        {'prompt_tokens':10,'completion_tokens':2,'prompt_cache_hit_tokens':4,'prompt_cache_miss_tokens':9}])
+    def test_invalid_usage_cannot_refund_reservation(tmp_path,usage):
+        ledger=PaidLedger(tmp_path/'costs.jsonl')
+        client=SimpleNamespace(model='deepseek-flash',last_model='deepseek-flash',last_request_id='r',last_finish_reason='stop',last_usage=usage)
+        number=ledger.begin()
+        ledger.finish(number,client,{'task_id':'t','run_id':'r'},None)
+>       assert ledger.spent==REQUEST_RESERVE
+E       assert -1.1999997 == 0.3049152
+E        +  where -1.1999997 = <evaluation.live.PaidLedger object at 0x108dc0cd0>.spent
+
+tests/test_paid_ledger.py:40: AssertionError
+_____________ test_invalid_usage_cannot_refund_reservation[usage1] _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_invalid_usage_cannot_refu1')
+usage = {'prompt_tokens': 10, 'completion_tokens': 2, 'prompt_cache_hit_tokens': 11}
+
+    @pytest.mark.parametrize('usage',[{'prompt_tokens':1,'completion_tokens':-1000000},
+        {'prompt_tokens':10,'completion_tokens':2,'prompt_cache_hit_tokens':11},
+        {'prompt_tokens':True,'completion_tokens':2},
+        {'prompt_tokens':10,'completion_tokens':2,'prompt_cache_hit_tokens':4,'prompt_cache_miss_tokens':9}])
+    def test_invalid_usage_cannot_refund_reservation(tmp_path,usage):
+        ledger=PaidLedger(tmp_path/'costs.jsonl')
+        client=SimpleNamespace(model='deepseek-flash',last_model='deepseek-flash',last_request_id='r',last_finish_reason='stop',last_usage=usage)
+        number=ledger.begin()
+        ledger.finish(number,client,{'task_id':'t','run_id':'r'},None)
+>       assert ledger.spent==REQUEST_RESERVE
+E       assert 2.166e-06 == 0.3049152
+E        +  where 2.166e-06 = <evaluation.live.PaidLedger object at 0x108dddcc0>.spent
+
+tests/test_paid_ledger.py:40: AssertionError
+_____________ test_invalid_usage_cannot_refund_reservation[usage2] _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_invalid_usage_cannot_refu2')
+usage = {'prompt_tokens': True, 'completion_tokens': 2}
+
+    @pytest.mark.parametrize('usage',[{'prompt_tokens':1,'completion_tokens':-1000000},
+        {'prompt_tokens':10,'completion_tokens':2,'prompt_cache_hit_tokens':11},
+        {'prompt_tokens':True,'completion_tokens':2},
+        {'prompt_tokens':10,'completion_tokens':2,'prompt_cache_hit_tokens':4,'prompt_cache_miss_tokens':9}])
+    def test_invalid_usage_cannot_refund_reservation(tmp_path,usage):
+        ledger=PaidLedger(tmp_path/'costs.jsonl')
+        client=SimpleNamespace(model='deepseek-flash',last_model='deepseek-flash',last_request_id='r',last_finish_reason='stop',last_usage=usage)
+        number=ledger.begin()
+        ledger.finish(number,client,{'task_id':'t','run_id':'r'},None)
+>       assert ledger.spent==REQUEST_RESERVE
+E       assert 2.6999999999999996e-06 == 0.3049152
+E        +  where 2.6999999999999996e-06 = <evaluation.live.PaidLedger object at 0x108dfadd0>.spent
+
+tests/test_paid_ledger.py:40: AssertionError
+_____________ test_invalid_usage_cannot_refund_reservation[usage3] _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_invalid_usage_cannot_refu3')
+usage = {'prompt_tokens': 10, 'completion_tokens': 2, 'prompt_cache_hit_tokens': 4, 'prompt_cache_miss_tokens': 9}
+
+    @pytest.mark.parametrize('usage',[{'prompt_tokens':1,'completion_tokens':-1000000},
+        {'prompt_tokens':10,'completion_tokens':2,'prompt_cache_hit_tokens':11},
+        {'prompt_tokens':True,'completion_tokens':2},
+        {'prompt_tokens':10,'completion_tokens':2,'prompt_cache_hit_tokens':4,'prompt_cache_miss_tokens':9}])
+    def test_invalid_usage_cannot_refund_reservation(tmp_path,usage):
+        ledger=PaidLedger(tmp_path/'costs.jsonl')
+        client=SimpleNamespace(model='deepseek-flash',last_model='deepseek-flash',last_request_id='r',last_finish_reason='stop',last_usage=usage)
+        number=ledger.begin()
+        ledger.finish(number,client,{'task_id':'t','run_id':'r'},None)
+>       assert ledger.spent==REQUEST_RESERVE
+E       assert 5.1239999999999996e-06 == 0.3049152
+E        +  where 5.1239999999999996e-06 = <evaluation.live.PaidLedger object at 0x108dc1f30>.spent
+
+tests/test_paid_ledger.py:40: AssertionError
+______________ test_request_start_is_durable_before_provider_call ______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-21/test_request_start_is_durable_0')
+
+    def test_request_start_is_durable_before_provider_call(tmp_path):
+        ledger=PaidLedger(tmp_path/'costs.jsonl')
+>       number=ledger.begin({'task_id':'t','run_id':'r'})
+E       TypeError: PaidLedger.begin() takes 1 positional argument but 2 were given
+
+tests/test_paid_ledger.py:45: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_stage1_review_regressions.py::test_malformed_inputs_return_detailed_failure_instead_of_crash[task_null]
+FAILED tests/test_stage1_review_regressions.py::test_malformed_inputs_return_detailed_failure_instead_of_crash[seq_string]
+FAILED tests/test_stage1_review_regressions.py::test_malformed_inputs_return_detailed_failure_instead_of_crash[inputs_null]
+FAILED tests/test_stage1_review_regressions.py::test_malformed_inputs_return_detailed_failure_instead_of_crash[id_list]
+FAILED tests/test_stage1_review_regressions.py::test_malformed_inputs_return_detailed_failure_instead_of_crash[workspace_null]
+FAILED tests/test_stage1_review_regressions.py::test_review_false_pass_paths[outside_task-L0.5]
+FAILED tests/test_stage1_review_regressions.py::test_review_false_pass_paths[event_phase-L0.2]
+FAILED tests/test_stage1_review_regressions.py::test_review_false_pass_paths[missing_arguments-L0.4]
+FAILED tests/test_stage1_review_regressions.py::test_review_false_pass_paths[empty_release-L0.8]
+FAILED tests/test_stage1_review_regressions.py::test_code_edit_cannot_overwrite_capture_evidence
+FAILED tests/test_stage1_review_regressions.py::test_manifest_symlink_cannot_read_outside_study
+FAILED tests/test_paid_ledger.py::test_invalid_usage_cannot_refund_reservation[usage0]
+FAILED tests/test_paid_ledger.py::test_invalid_usage_cannot_refund_reservation[usage1]
+FAILED tests/test_paid_ledger.py::test_invalid_usage_cannot_refund_reservation[usage2]
+FAILED tests/test_paid_ledger.py::test_invalid_usage_cannot_refund_reservation[usage3]
+FAILED tests/test_paid_ledger.py::test_request_start_is_durable_before_provider_call
+16 failed, 2 passed in 0.15s

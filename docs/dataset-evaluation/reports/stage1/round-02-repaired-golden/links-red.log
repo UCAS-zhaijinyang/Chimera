@@ -1,0 +1,138 @@
+...................FF..FF........F......                                 [100%]
+=================================== FAILURES ===================================
+___________ test_failed_tool_artifacts_are_still_valid_observations ____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-9/test_failed_tool_artifacts_are0')
+
+    def test_failed_tool_artifacts_are_still_valid_observations(tmp_path):
+        _, events, _, workspace = fixture(tmp_path)
+        events[4][1]["status"] = "failed"
+        events[5][1]["status"] = "failed"
+        write_events(workspace / "execution.log", events)
+        report = evaluator()(tmp_path)
+>       assert report["status"] == "PASS", report["failures"]
+E       AssertionError: [{'metric_id': 'L0.4', 'reason': 'artifact has no matching captured producer', 'evidence': {'task_id': 't1', 'artifact_id': 'a2'}}]
+E       assert 'FAIL' == 'PASS'
+E         
+E         - PASS
+E         + FAIL
+
+tests/test_dataset_trust.py:196: AssertionError
+_______ test_count_metrics_report_actual_violations_not_a_success_ratio ________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-9/test_count_metrics_report_actu0')
+
+    def test_count_metrics_report_actual_violations_not_a_success_ratio(tmp_path):
+        fixture(tmp_path)
+        report = evaluator()(tmp_path)
+>       assert report["metrics"]["L0.5"]["value"] == 0
+E       assert 1.0 == 0
+
+tests/test_dataset_trust.py:203: AssertionError
+_______________ test_workflow_failure_keeps_a_copied_closed_log ________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106b1d570>
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-9/test_workflow_failure_keeps_a_0')
+
+    def test_workflow_failure_keeps_a_copied_closed_log(monkeypatch, tmp_path):
+        import task
+        import pytest
+        def unavailable(_request):
+            raise TimeoutError("network timeout")
+        monkeypatch.setattr(task, "OpenAICompatibleChatClient", lambda: unavailable)
+        logs = tmp_path / "logs"
+        with pytest.raises(TimeoutError):
+            task.run_workflow_task(week=1, date="Monday", task="Analyze data", member_id="m1",
+                                   log_dir=str(logs), event_index=0, output_dir=str(tmp_path / "output"))
+        import json
+        rows = [json.loads(line.split(" ", 1)[1]) for line in
+>               (logs / "m1_week_1_Monday_executio_task_0.log").read_text().splitlines()]
+
+tests/test_task_workflow_wiring.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py:1134: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-9/test_workflow_failure_keeps_a_0/logs/m1_week_1_Monday_executio_task_0.log')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return self._accessor.open(self, mode, buffering, encoding, errors,
+                                   newline)
+E       FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-9/test_workflow_failure_keeps_a_0/logs/m1_week_1_Monday_executio_task_0.log'
+
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py:1119: FileNotFoundError
+________ test_saved_plan_sidecar_is_joined_without_guessing_event_index ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106b93bb0>
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-9/test_saved_plan_sidecar_is_joi0')
+
+    def test_saved_plan_sidecar_is_joined_without_guessing_event_index(monkeypatch, tmp_path):
+        import config
+        import task
+        import json
+        schedules = tmp_path / "schedule"
+        sidecar = schedules / "activity_links/week_1/m1_week_1_Monday.json"
+        sidecar.parent.mkdir(parents=True)
+        sidecar.write_text(json.dumps([{"planned_activity_id": "p-stable", "member_id": "m1", "phase_id": "P1",
+                                      "workday": 1, "description": "Analyze data", "Time": "09:00:00"}]))
+        monkeypatch.setattr(config, "init_schedule_dir", str(schedules))
+        monkeypatch.setattr(task, "OpenAICompatibleChatClient", lambda: lambda r: {"content": "No actions"})
+        logs = tmp_path / "logs"
+        task.run_workflow_task(week=1, date="Monday", task="Analyze data", member_id="m1", log_dir=str(logs),
+                               event_index=42, output_dir=str(tmp_path / "output"))
+        row = json.loads((logs / "m1_week_1_Monday_executio_task_42.log").read_text().splitlines()[0].split(" ",1)[1])
+>       assert row["planned_activity_id"] == "p-stable"
+E       AssertionError: assert None == 'p-stable'
+
+tests/test_task_workflow_wiring.py:93: AssertionError
+___ test_daily_stage_works_from_bundle_alone_and_exports_execution_schedules ___
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-9/test_daily_stage_works_from_bu0')
+
+    def test_daily_stage_works_from_bundle_alone_and_exports_execution_schedules(tmp_path):
+        entry = module("daily_plan_generation_auto")
+        assert hasattr(entry, "generate_daily_plans"), "Daily entry still requires weekly goals"
+        saved = write(tmp_path / "phase_plans.json", bundle())
+        before = saved.read_bytes()
+        output = tmp_path / "init_schedule"
+        entry.generate_daily_plans(saved, output, generate=daily_reply, work_start="09:00", work_end="17:00")
+>       links = read_links = json.loads((output / "activity_links/week_1/des-1_week_1_Monday.json").read_text())
+
+tests/test_planning_pipeline.py:211: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py:1134: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-9/test_daily_stage_works_from_bu0/init_schedule/activity_links/week_1/des-1_week_1_Monday.json')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return self._accessor.open(self, mode, buffering, encoding, errors,
+                                   newline)
+E       FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-9/test_daily_stage_works_from_bu0/init_schedule/activity_links/week_1/des-1_week_1_Monday.json'
+
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py:1119: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_dataset_trust.py::test_failed_tool_artifacts_are_still_valid_observations
+FAILED tests/test_dataset_trust.py::test_count_metrics_report_actual_violations_not_a_success_ratio
+FAILED tests/test_task_workflow_wiring.py::test_workflow_failure_keeps_a_copied_closed_log
+FAILED tests/test_task_workflow_wiring.py::test_saved_plan_sidecar_is_joined_without_guessing_event_index
+FAILED tests/test_planning_pipeline.py::test_daily_stage_works_from_bundle_alone_and_exports_execution_schedules
+5 failed, 35 passed in 0.29s

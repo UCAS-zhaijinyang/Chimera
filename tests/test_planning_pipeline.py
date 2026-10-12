@@ -208,6 +208,11 @@ def test_daily_stage_works_from_bundle_alone_and_exports_execution_schedules(tmp
     before = saved.read_bytes()
     output = tmp_path / "init_schedule"
     entry.generate_daily_plans(saved, output, generate=daily_reply, work_start="09:00", work_end="17:00")
+    links = json.loads((output / "activity_links/week_1/des-1_week_1_Monday.json").read_text())
+    assert len(links) == 2
+    assert len({row["planned_activity_id"] for row in links}) == 2
+    assert links[0]["source_task_ids"] == ["P1-design"]
+    assert links[0]["workday"] == 1 and links[0]["Time"] == "09:00:00"
     assert saved.read_bytes() == before
     assert len(list(output.glob("week_*/*.json"))) == 21
     exported = json.loads((output / "week_2/des-1_week_2_Monday.json").read_text())

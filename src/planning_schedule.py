@@ -1,6 +1,8 @@
 """Map phase workdays to the existing Phase 2 schedule-file contract."""
 from datetime import datetime, timedelta
 import math
+import hashlib
+import json
 
 from phase_planning import phase_ranges, require
 
@@ -39,3 +41,19 @@ def execution_activities(row, work_start, work_end):
         current += timedelta(seconds=round(seconds))
         require(current <= end, "Activity extends beyond work_end")
     return exported
+
+
+def activity_links(row, work_start, work_end):
+    """Preserve plan identity separately from the legacy Time/Activity export."""
+    result = []
+    for index, (activity, exported) in enumerate(zip(row["activities"], execution_activities(row, work_start, work_end))):
+        identity = {"member_id": row["id"], "phase_id": row["phase_id"], "workday": row["workday"],
+                    "activity_index": index, "activity": activity}
+        fingerprint = hashlib.sha256(json.dumps(identity, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+        result.append({"planned_activity_id": "activity-" + fingerprint[:24], "activity_sha256": fingerprint,
+                       "member_id": row["id"], "phase_id": row["phase_id"], "workday": row["workday"],
+                       "description": activity["description"], "Time": exported["Time"],
+                       "hours": activity["hours"], "source_task_ids": activity["source_task_ids"],
+                       "requires_handoff_ids": activity.get("requires_handoff_ids", []),
+                       "uses_deliverable_ids": activity.get("uses_deliverable_ids", [])})
+    return result

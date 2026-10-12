@@ -1,6 +1,6 @@
 # 三阶段评测：详细实施与实验计划
 
-本文件是后续实现的任务规格，不是已运行记录。默认选择由本次研究提出，尚无实测样本量/方差/费用。涉及指标定义时以 [framework.md](framework.md) 为准；所有付费模型仅 DeepSeek。
+本文件保留完整三阶段任务规格。2026-10-12第一阶段L0应用仿真已实施，实际样本量、失败与费用见[第一阶段报告](reports/stage1/README.md)；第二/三阶段的样本量与预算仍为设计值。涉及指标定义时以 [framework.md](framework.md) 为准；所有付费模型仅 DeepSeek。
 
 ## 实施总览
 
@@ -253,7 +253,7 @@ python scripts/evaluate_dataset.py --manifest <study_manifest> --stage detection
 python scripts/evaluate_dataset.py --manifest <study_manifest> --stage report
 ```
 
-当前可以调用的只是现有程序：`scripts/extract_tool_calls.py`、`scripts/run_workflow_deepseek_smoke.py`、`src/planning_audit.py`。现有 smoke 会调用付费API，本次未运行。
+当前可以调用的只是现有程序：`scripts/extract_tool_calls.py`、`scripts/run_workflow_deepseek_smoke.py`、`src/planning_audit.py`。现有 smoke 会调用付费API；第一阶段现已增加并实际运行 `scripts/evaluate_dataset_trust.py`、`scripts/run_dataset_trust_campaign.py`、`scripts/combine_trust_studies.py`。本文后续第二/三阶段命令仍是规划接口。
 
 | 顺序 | 实现范围 | 完成证据 | 不通过时 |
 |---|---|---|---|
@@ -314,4 +314,4 @@ evaluation_output/<study_id>/
 
 真值目录与检测 feature builder 通过明确 allowlist 隔离。发布时可提供研究标签，但训练输入中不出现 `attack_truth`、oracle结果、文件路径中的 attack 标记、预定攻击描述等信息。
 
-本轮只交付研究和计划，不改 runner，不合并 `dev`，不默认购买数据、联系专家或启动付费仿真。
+研究阶段原本只交付计划；用户随后已授权第一阶段测评、修复与真实DeepSeek调用，实施与失败记录见[第一阶段报告](reports/stage1/README.md)。本轮未执行第二/三阶段，未合并 `dev`、购买外部数据或联系专家。

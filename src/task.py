@@ -21,6 +21,8 @@ import os
 import logging
 import json
 import inspect
+import hashlib
+import traceback
 from pathlib import Path
 import shutil
 from urllib.error import HTTPError, URLError
@@ -36,49 +38,65 @@ run_chimera_society = None
 class OpenAICompatibleChatClient:
     """Minimal OpenAI-compatible client for the filesystem workflow runner."""
 
-    def __init__(self, *, api_key: str | None = None, base_url: str | None = None):
+    def __init__(self, *, api_key: str | None = None, base_url: str | None = None,
+                 model: str | None = None, max_tokens: int = 4096,
+                 thinking: bool | None = None, timeout: float | None = None):
         self.api_key = api_key or getattr(config, "api_key", "")
         configured = base_url or getattr(config, "llm_base_url", "")
-        if configured:
-            self.base_url = configured.rstrip("/")
-        elif getattr(config, "foundation_corp", "") == "deepseek":
-            self.base_url = "https://api.deepseek.com"
-        else:
-            self.base_url = "https://api.openai.com/v1"
-        self.model = getattr(config, "foundation_model", "deepseek-chat")
+        self.base_url = (configured or ("https://api.deepseek.com" if
+                         getattr(config, "foundation_corp", "") == "deepseek" else
+                         "https://api.openai.com/v1")).rstrip("/")
+        self.model = model or getattr(config, "foundation_model", "deepseek-chat")
+        self.max_tokens = max_tokens
+        self.thinking = thinking
+        self.timeout = timeout or getattr(config, "workflow_api_timeout", 90)
+        self.last_usage = self.last_model = self.last_finish_reason = self.last_request_id = None
+        self.last_error_metadata = None
 
     def __call__(self, request_payload: dict) -> dict:
-        payload = {
-            "model": self.model,
-            "messages": request_payload["messages"],
-            "tools": request_payload.get("tools", []),
-            "tool_choice": "auto",
-            "temperature": 0,
-        }
+        self.last_usage = self.last_model = self.last_finish_reason = self.last_request_id = None
+        self.last_error_metadata = None
+        payload = {"model": self.model, "messages": request_payload["messages"],
+                   "temperature": request_payload.get("temperature", 0), "max_tokens": self.max_tokens}
+        if request_payload.get("tools"):
+            payload.update(tools=request_payload["tools"], tool_choice="auto")
+        if self.thinking is not None:
+            payload["thinking"] = {"type": "enabled" if self.thinking else "disabled"}
         endpoint = self.base_url
         if not endpoint.endswith("/chat/completions"):
             endpoint += "/chat/completions"
-        request = Request(
-            endpoint,
-            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
+        request = Request(endpoint, data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                          headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
+                          method="POST")
         try:
-            with urlopen(request, timeout=getattr(config, "workflow_api_timeout", 90)) as response:
+            with urlopen(request, timeout=self.timeout) as response:
                 body = json.loads(response.read().decode("utf-8"))
-        except (HTTPError, URLError, TimeoutError) as exc:
-            detail = ""
-            if isinstance(exc, HTTPError):
-                detail = exc.read().decode("utf-8", errors="replace")
-            raise RuntimeError(f"workflow LLM request failed: {exc}; {detail}") from exc
+        except TimeoutError:
+            self.last_error_metadata = {"type":"TimeoutError"}
+            raise TimeoutError("workflow LLM request timed out") from None
+        except (HTTPError, URLError, ValueError) as exc:
+            # Never include response bodies, URLs, or credentials in public exceptions.
+            code = getattr(exc, "code", None)
+            reason = getattr(exc, "reason", None)
+            frames = [frame.name for frame in traceback.extract_tb(getattr(reason, "__traceback__", None))]
+            self.last_error_metadata = {"type":type(exc).__name__, "http_status":code,
+                "reason_type":type(reason).__name__, "transport_frames":frames,
+                "request_not_sent": "do_handshake" in frames}
+            raise RuntimeError(f"workflow LLM request failed ({type(exc).__name__}, code={code})") from None
         try:
-            return body["choices"][0]["message"]
-        except (KeyError, IndexError, TypeError) as exc:
-            raise RuntimeError(f"workflow LLM response missing choices[0].message: {body}") from exc
+            self.last_usage = body.get("usage")
+            self.last_model = body.get("model")
+            self.last_request_id = body.get("id")
+            choice = body["choices"][0]
+            self.last_finish_reason = choice.get("finish_reason")
+            message = choice["message"]
+            if not isinstance(message, dict):
+                raise ValueError("invalid message")
+        except (KeyError, IndexError, TypeError, AttributeError, ValueError):
+            raise RuntimeError("workflow LLM response missing valid message") from None
+        if self.last_finish_reason not in {"stop", "tool_calls"}:
+            raise RuntimeError("workflow LLM response truncated or finish reason unsupported")
+        return message
 
 
 def run_workflow_task(
@@ -91,23 +109,37 @@ def run_workflow_task(
     event_index: int,
     output_dir: str,
     temperature: float = 0,
+    context: dict | None = None,
 ) -> str:
     """Run the filesystem workflow loop and publish a normal task log."""
 
     from workflow_runtime import WorkflowToolLoop
 
     trace_id = f"{member_id}-week-{week}-{date}-task-{event_index}"
+    run_id = os.environ.get("CHIMERA_RUN_ID") or "scope-" + hashlib.sha256(str(Path(output_dir).resolve()).encode()).hexdigest()[:24]
+    metadata = {"run_id": run_id, "task_id": "task-" + hashlib.sha256((run_id + trace_id).encode()).hexdigest()[:24]}
+    link_path = Path(config.init_schedule_dir) / "activity_links" / f"week_{week}" / f"{member_id}_week_{week}_{date}.json"
+    if link_path.exists():
+        candidates = [row for row in json.loads(link_path.read_text()) if row.get("description") == task and row.get("member_id") == member_id]
+        # Dynamic schedules and repeated descriptions cannot safely be matched by task index.
+        if len(candidates) == 1:
+            link = candidates[0]
+            metadata.update({key: link[key] for key in ("planned_activity_id", "phase_id", "workday")})
+            from datetime import datetime, timedelta, timezone
+            date_start = datetime.fromisoformat(os.environ.get("CHIMERA_SIMULATION_START", "2025-05-05T00:00:00+08:00"))
+            hour, minute, second = map(int, link["Time"].split(":"))
+            metadata["simulation_time"] = (date_start + timedelta(days=link["workday"]-1)).replace(hour=hour, minute=minute, second=second).isoformat()
+    metadata.update(context or {})
     workspace = Path(output_dir) / "workflow_workspaces" / trace_id
-    loop = WorkflowToolLoop(workspace, member_id=member_id, trace_id=trace_id)
-    result = loop.run(
-        task,
-        chat_fn=OpenAICompatibleChatClient(),
-        max_steps=getattr(config, "workflow_max_steps", 12),
-    )
+    loop = WorkflowToolLoop(workspace, member_id=member_id, trace_id=trace_id, context=metadata)
     member_log_dir = Path(log_dir)
     member_log_dir.mkdir(parents=True, exist_ok=True)
     detailed_log = member_log_dir / f"{member_id}_week_{week}_{date}_executio_task_{event_index}.log"
-    shutil.copyfile(workspace / "execution.log", detailed_log)
+    try:
+        result = loop.run(task, chat_fn=OpenAICompatibleChatClient(), max_steps=getattr(config, "workflow_max_steps", 12))
+    finally:
+        if (workspace / "execution.log").exists():
+            shutil.copyfile(workspace / "execution.log", detailed_log)
     return result.final_answer
 
 

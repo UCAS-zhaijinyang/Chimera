@@ -58,3 +58,33 @@ def test_bytes_artifact_round_trips(tmp_path: Path):
     bus = FilesystemArtifactBus(tmp_path)
     artifact = bus.put("file", "terminal", "member-1", b"abc", name="blob.bin")
     assert bus.get(artifact.artifact_id).payload == b"abc"
+
+
+def test_manifest_corruption_is_not_silently_ignored(tmp_path):
+    bus = FilesystemArtifactBus(tmp_path)
+    bus.put("file", "file_write", "m1", "payload")
+    with bus.manifest_path.open("a") as stream:
+        stream.write("{invalid\n")
+    with pytest.raises(ValueError, match="manifest"):
+        bus.list_visible("m1")
+
+
+def test_artifact_ids_cannot_overwrite_existing_payload_or_escape_workspace(tmp_path):
+    bus = FilesystemArtifactBus(tmp_path)
+    bus.put("file", "file_write", "m1", "original", artifact_id="fixed")
+    with pytest.raises(ValueError):
+        bus.put("file", "file_write", "m1", "replaced", artifact_id="fixed")
+    assert bus.get("fixed").payload == "original"
+    with pytest.raises(ValueError):
+        bus.put("file", "file_write", "m1", "outside", artifact_id="../outside")
+
+
+def test_persisted_hash_detects_tampering(tmp_path):
+    bus = FilesystemArtifactBus(tmp_path)
+    item = bus.put("file", "file_write", "m1", "original")
+    record = json.loads(bus.manifest_path.read_text())
+    assert record["version"] == 1
+    assert record["root_type"]
+    bus.path_for(item.artifact_id).write_text("tampered")
+    with pytest.raises(ValueError, match="hash"):
+        bus.get(item.artifact_id)

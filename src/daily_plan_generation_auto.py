@@ -7,7 +7,7 @@ from pathlib import Path
 
 from phase_planning import phase_ranges, require, validate_phase_daily
 from planning_io import dump, fingerprint, load_bundle, parse_json, prepare_output, read
-from planning_schedule import calendar, check_work_window, execution_activities
+from planning_schedule import activity_links, calendar, check_work_window, execution_activities
 
 DAILY_PROMPT = """Expand this employee's phase goals DIRECTLY into daily execution activities.
 Use only the inclusive workday_range in the input; it is a batch inside a business phase, not a week.
@@ -110,6 +110,8 @@ def generate_daily_plans(plans_path, output, *, generate=None, work_start="10:00
             dump(output / "workdays" / f"day_{row['workday']:03d}" / (member_id + ".json"), row)
             dump(output / f"week_{date['week']}" / f"{member_id}_week_{date['week']}_{date['day']}.json",
                  execution_activities(row, work_start, work_end))
+            dump(output / "activity_links" / f"week_{date['week']}" / f"{member_id}_week_{date['week']}_{date['day']}.json",
+                 activity_links(row, work_start, work_end))
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         list(pool.map(one, personal))

@@ -1,6 +1,6 @@
 # ChimeraLog+ 三阶段评测：数据可信、行为合理与检测效用
 
-研究日期：2026-10-12。分支：`research/dataset-evaluation-framework`。起点：`feat/workflow-tool-execution` 的 `f218ca5`。本目录是论文调研与可实施规格；尚未实现评测程序，未执行付费模型调用或完整仿真，所有实验目标均不是实测结果。
+研究日期：2026-10-12。分支：`research/dataset-evaluation-framework`。起点：`feat/workflow-tool-execution` 的 `f218ca5`。本目录包含论文调研、三阶段规格与第一阶段实测结果。L0应用仿真已实施并完成验收；第二/三阶段尚未执行。全部轮次、修复、真实DeepSeek用量与能力边界见[第一阶段报告](reports/stage1/README.md)。
 
 评测沿一条主线推进：**先确认生成数据可信，再检查行为与成果是否合理，最后验证它能否支持威胁检测。** 三个阶段分别建立记录与真值、业务与真实性、检测与迁移的证据。原图的L0–L5保留为指标编号，帮助定位具体检查。
 

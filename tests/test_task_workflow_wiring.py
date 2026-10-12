@@ -56,3 +56,39 @@ def test_run_task_keeps_legacy_path_when_workflow_disabled(monkeypatch, tmp_path
     )
     assert answer == "legacy answer"
     assert isinstance(seen["society"], FakeSociety)
+
+
+def test_workflow_failure_keeps_a_copied_closed_log(monkeypatch, tmp_path):
+    import task
+    import pytest
+    def unavailable(_request):
+        raise TimeoutError("network timeout")
+    monkeypatch.setattr(task, "OpenAICompatibleChatClient", lambda: unavailable)
+    logs = tmp_path / "logs"
+    with pytest.raises(TimeoutError):
+        task.run_workflow_task(week=1, date="Monday", task="Analyze data", member_id="m1",
+                               log_dir=str(logs), event_index=0, output_dir=str(tmp_path / "output"))
+    import json
+    rows = [json.loads(line.split(" ", 1)[1]) for line in
+            (logs / "m1_week_1_Monday_executio_task_0.log").read_text().splitlines()]
+    assert rows[-1]["event_type"] == "task_terminal"
+    assert rows[-1]["status"] == "timeout"
+
+
+def test_saved_plan_sidecar_is_joined_without_guessing_event_index(monkeypatch, tmp_path):
+    import config
+    import task
+    import json
+    schedules = tmp_path / "schedule"
+    sidecar = schedules / "activity_links/week_1/m1_week_1_Monday.json"
+    sidecar.parent.mkdir(parents=True)
+    sidecar.write_text(json.dumps([{"planned_activity_id": "p-stable", "member_id": "m1", "phase_id": "P1",
+                                  "workday": 1, "description": "Analyze data", "Time": "09:00:00"}]))
+    monkeypatch.setattr(config, "init_schedule_dir", str(schedules))
+    monkeypatch.setattr(task, "OpenAICompatibleChatClient", lambda: lambda r: {"content": "No actions"})
+    logs = tmp_path / "logs"
+    task.run_workflow_task(week=1, date="Monday", task="Analyze data", member_id="m1", log_dir=str(logs),
+                           event_index=42, output_dir=str(tmp_path / "output"))
+    row = json.loads((logs / "m1_week_1_Monday_executio_task_42.log").read_text().splitlines()[0].split(" ",1)[1])
+    assert row["planned_activity_id"] == "p-stable"
+    assert row["phase_id"] == "P1" and row["workday"] == 1

@@ -52,3 +52,26 @@ def test_write_dataset_exports_calls_and_transitions(tmp_path: Path):
             "to_step": "1",
         }
     ]
+
+
+def test_malformed_marked_rows_are_returned_as_rejections(tmp_path):
+    path = tmp_path / "broken.log"
+    path.write_text('TOOL_EVENT {broken\nTOOL_EVENT []\n')
+    rows = extract_events(path)
+    assert len(rows) == 2
+    assert all(e["event_type"] == "parse_rejection" for e in rows)
+    assert [e["source_line"] for e in rows] == [1, 2]
+
+
+def test_copy_deduplication_and_run_isolation_in_dataset_export(tmp_path):
+    first = {"run_id": "r1", "event_id": "e1", "trace_id": "same", "event_seq": 1,
+             "step": 0, "tool_name": "source_query", "status": "success"}
+    second = {**first, "run_id": "r2", "event_id": "e2", "tool_name": "data_transform"}
+    paths = [tmp_path / f"{n}.log" for n in range(3)]
+    for path, event in zip(paths, [first, first, second]):
+        path.write_text("TOOL_EVENT " + json.dumps(event) + "\n")
+    write_dataset(paths, tmp_path / "export")
+    rows = [json.loads(line) for line in (tmp_path / "export/agent_events.jsonl").read_text().splitlines()]
+    assert len(rows) == 2
+    with (tmp_path / "export/tool_transitions.csv").open() as handle:
+        assert list(csv.DictReader(handle)) == []

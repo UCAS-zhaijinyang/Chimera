@@ -6,7 +6,7 @@ from pathlib import Path
 
 from phase_planning import require, validate_phase_daily
 from planning_io import fingerprint, load_bundle, read
-from planning_schedule import calendar, execution_activities
+from planning_schedule import activity_links, calendar, execution_activities
 
 
 def audit(plans_path, schedules=None):
@@ -34,6 +34,9 @@ def audit(plans_path, schedules=None):
             path = schedules / f"week_{date['week']}" / f"{row['id']}_week_{date['week']}_{date['day']}.json"
             require(read(path) == execution_activities(day, manifest["work_start"], manifest["work_end"]),
                     "Execution schedule differs from daily plan")
+            link_path = schedules / "activity_links" / f"week_{date['week']}" / path.name
+            require(read(link_path) == activity_links(day, manifest["work_start"], manifest["work_end"]),
+                    "Activity identity sidecar differs from daily plan")
             count += 1
             hours += sum(a["hours"] for a in day["activities"])
     require(count == len(company["profiles"]) * company["total_workdays"], "Missing employee days")

@@ -40,6 +40,7 @@ def fixture(root: Path):
         if seq == 3:
             event["result"] = {"output_artifact_ids": ["a1"]}
         if seq == 5:
+            event["arguments"] = {"input_artifact_id": "a1"}
             event["result"] = {"output_artifact_ids": ["a2"]}
         events.append((marker, event))
     write_events(workspace / "execution.log", events)
@@ -50,7 +51,7 @@ def fixture(root: Path):
         write_json(workspace / relative, {"rows": [{"count": 1}]})
         records.append({"artifact_id": identifier, "artifact_type": "table", "owner_id": "m1",
                         "trace_id": "trace1", "producer_tool": producer, "path": relative,
-                        "inputs": inputs, "encoding": "json", "version": 1,
+                        "inputs": inputs, "input_versions": {i: 1 for i in inputs}, "encoding": "json", "version": 1,
                         "sha256": hashlib.sha256((workspace / relative).read_bytes()).hexdigest(),
                         "created_at": f"2026-10-12T00:00:0{produced_seq}+00:00",
                         "root_type": "simulation_source" if not inputs else None})
@@ -185,3 +186,20 @@ def test_reports_refuse_to_overwrite_previous_evaluation(tmp_path):
     with pytest.raises(FileExistsError):
         module.write_report(tmp_path / "study", output, report)
     assert (output / "report.json").read_bytes() == original
+
+
+def test_failed_tool_artifacts_are_still_valid_observations(tmp_path):
+    _, events, _, workspace = fixture(tmp_path)
+    events[4][1]["status"] = "failed"
+    events[5][1]["status"] = "failed"
+    write_events(workspace / "execution.log", events)
+    report = evaluator()(tmp_path)
+    assert report["status"] == "PASS", report["failures"]
+    assert report["inventory"]["artifacts"] == 2
+
+
+def test_count_metrics_report_actual_violations_not_a_success_ratio(tmp_path):
+    fixture(tmp_path)
+    report = evaluator()(tmp_path)
+    assert report["metrics"]["L0.5"]["value"] == 0
+    assert report["metrics"]["L0.8"]["value"] == 0

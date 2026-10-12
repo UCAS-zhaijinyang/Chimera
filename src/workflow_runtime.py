@@ -9,12 +9,14 @@ legacy path; the workflow path only needs an OpenAI-compatible chat callback.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import os
+import re
 from pathlib import Path
 import shlex
 import subprocess
+import uuid
 from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Sequence
 
 from tool_composition import FilesystemArtifactBus
@@ -35,9 +37,9 @@ def classify_workflow(task: str) -> str:
     """
 
     text = task.lower()
-    if any(keyword in text for keyword in WORKFLOW_KEYWORDS["bug_fix"]):
+    if any(re.search(r"\b" + re.escape(keyword) + r"\b", text) for keyword in WORKFLOW_KEYWORDS["bug_fix"]):
         return "bug_fix"
-    if any(keyword in text for keyword in WORKFLOW_KEYWORDS["software_feature"]):
+    if any(re.search(r"\b" + re.escape(keyword) + r"\b", text) for keyword in WORKFLOW_KEYWORDS["software_feature"]):
         return "software_feature"
     return "data_report"
 
@@ -127,6 +129,8 @@ def _safe_relative_path(root: Path, requested: str, default_name: str) -> Path:
     resolved = (root / candidate).resolve()
     if root.resolve() not in resolved.parents and resolved != root.resolve():
         raise ValueError(f"path must stay inside workspace: {requested!r}")
+    if resolved == root.resolve() or resolved.relative_to(root.resolve()).parts[0] in {"artifacts", "manifest.jsonl", "execution.log"}:
+        raise PermissionError("business writes cannot modify capture evidence")
     return resolved
 
 
@@ -139,6 +143,7 @@ class FilesystemToolRuntime:
         self.member_id = member_id
         self.trace_id = trace_id
         self.bus = FilesystemArtifactBus(self.workspace)
+        self._last_artifact_id = None
 
     def _input(self, arguments: Mapping[str, Any], key: str = "input_artifact_id"):
         artifact_id = arguments.get(key)
@@ -150,7 +155,9 @@ class FilesystemToolRuntime:
         return artifact
 
     def _put(self, artifact_type: str, tool_name: str, payload: Any, *, name: str, inputs=()):
-        return self.bus.put(
+        if tool_name in {"code_edit", "test_run", "build"} and not inputs and self._last_artifact_id:
+            inputs = (self._last_artifact_id,)
+        artifact = self.bus.put(
             artifact_type,
             tool_name,
             self.member_id,
@@ -159,7 +166,10 @@ class FilesystemToolRuntime:
             acl=(self.member_id,),
             trace_id=self.trace_id,
             inputs=tuple(inputs),
+            root_type="simulation_source" if tool_name in {"source_query", "issue_create"} else "standalone_generated_input",
         )
+        self._last_artifact_id = artifact.artifact_id
+        return artifact
 
     def execute(self, tool_name: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
         args = dict(arguments or {})
@@ -319,12 +329,18 @@ class FilesystemToolRuntime:
         }
 
     def _result(self, tool_name: str, artifact, message: str) -> dict[str, Any]:
-        return {
+        result = {
             "tool_name": tool_name,
             "message": message,
             "output_artifact_ids": [artifact.artifact_id],
             "output_paths": [artifact.path],
+            "evidence_level": "simulation_only",
+            "business_status": "not_measured",
         }
+        if tool_name in {"test_run", "build"}:
+            result["returncode"] = artifact.payload["returncode"]
+            result["business_status"] = "success" if artifact.payload["returncode"] == 0 else "failed"
+        return result
 
 
 TOOL_SCHEMAS: dict[str, dict[str, Any]] = {
@@ -378,15 +394,29 @@ class WorkflowRunResult:
 
 
 class WorkflowToolLoop:
-    def __init__(self, workspace: str | os.PathLike[str], *, member_id: str, trace_id: str):
+    def __init__(self, workspace: str | os.PathLike[str], *, member_id: str, trace_id: str, context: Optional[Mapping] = None):
         self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.member_id = member_id
         self.trace_id = trace_id
         self.runtime = FilesystemToolRuntime(self.workspace, member_id=member_id, trace_id=trace_id)
         self.log_path = self.workspace / "execution.log"
+        self.context = {"run_id": "r-" + uuid.uuid4().hex, "task_id": trace_id,
+                        "trace_id": trace_id, "member_id": member_id,
+                        "planned_activity_id": None, "phase_id": None, "workday": None,
+                        "simulation_time": datetime.now(timezone.utc).isoformat(), **dict(context or {})}
+        if self.context["member_id"] != member_id or self.context["trace_id"] != trace_id:
+            raise ValueError("context does not match runtime member/trace")
+        self._event_seq = 0
 
     def _log(self, marker: str, event: dict[str, Any]) -> None:
+        self._event_seq += 1
+        event = {**self.context, **event, "schema_version": "chimera-event/1",
+                 "event_seq": self._event_seq, "event_id": uuid.uuid4().hex,
+                 "wall_time_utc": datetime.now(timezone.utc).isoformat(),
+                 "simulation_time": (datetime.fromisoformat(self.context["simulation_time"].replace("Z", "+00:00")) +
+                                     timedelta(milliseconds=self._event_seq)).isoformat(),
+                 "simulation_clock_kind": "task_start_plus_logical_order"}
         with self.log_path.open("a", encoding="utf-8") as handle:
             handle.write(marker + " " + json.dumps(event, ensure_ascii=False) + "\n")
 
@@ -398,6 +428,8 @@ class WorkflowToolLoop:
         max_steps: int = 12,
     ) -> WorkflowRunResult:
         workflow_id = classify_workflow(task)
+        if self.log_path.exists():
+            raise FileExistsError("workflow log already exists; use a fresh task workspace")
         router = WorkflowRouter(workflow_id)
         state = router.initial_state
         tool_calls: list[str] = []
@@ -414,39 +446,87 @@ class WorkflowToolLoop:
             {"role": "user", "content": task},
         ]
         final_answer = ""
-        for step in range(max_steps):
-            allowed = router.tools_for_state(state)
-            request = {
-                "workflow_id": workflow_id,
-                "state": state,
-                "messages": messages,
-                "tools": schemas_for_tools(allowed),
-            }
-            response = chat_fn(request)
-            tool_calls_payload = response.get("tool_calls") or []
-            if not tool_calls_payload:
-                final_answer = str(response.get("content") or "")
-                self._log("FINAL_EVENT", {"trace_id": self.trace_id, "workflow_id": workflow_id, "state": state, "answer": final_answer})
-                return WorkflowRunResult(workflow_id, state, final_answer, tool_calls, str(self.workspace))
-            for call in tool_calls_payload:
-                function = call.get("function") or {}
-                requested_tool_name = str(function.get("name") or "")
-                tool_name = canonical_tool_name(requested_tool_name)
-                if tool_name not in allowed:
-                    self._log("TOOL_EVENT", {"trace_id": self.trace_id, "state": state, "tool_name": requested_tool_name, "status": "rejected"})
-                    raise ValueError(f"tool {requested_tool_name!r} is not allowed in state {state!r}")
-                raw_arguments = function.get("arguments") or {}
-                arguments = json.loads(raw_arguments) if isinstance(raw_arguments, str) else dict(raw_arguments)
-                old_state = state
+        self._log("TASK_EVENT", {"event_type": "task_started", "workflow_id": workflow_id, "status": "started"})
+        try:
+            for step in range(max_steps):
+                allowed = router.tools_for_state(state)
+                request = {"workflow_id": workflow_id, "state": state, "messages": messages,
+                           "tools": schemas_for_tools(allowed)}
+                model_call_id = "model-" + uuid.uuid4().hex
+                self._log("MODEL_EVENT", {"event_type": "model_started", "step": step,
+                          "workflow_id": workflow_id, "call_id": model_call_id, "status": "started"})
                 try:
-                    result = self.runtime.execute(tool_name, arguments)
-                    state = router.apply(state, tool_name)
-                    tool_calls.append(tool_name)
-                    event = {"trace_id": self.trace_id, "step": step, "workflow_id": workflow_id, "from_state": old_state, "to_state": state, "tool_name": tool_name, "requested_tool_name": requested_tool_name, "arguments": arguments, "result": result, "status": "success"}
-                    self._log("TOOL_EVENT", event)
-                    messages.append({"role": "assistant", "tool_calls": [call]})
-                    messages.append({"role": "tool", "tool_call_id": call.get("id", tool_name), "content": json.dumps(result, ensure_ascii=False)})
+                    response = chat_fn(request)
+                    if not isinstance(response, dict):
+                        raise ValueError("model message must be an object")
                 except Exception as exc:
-                    self._log("TOOL_EVENT", {"trace_id": self.trace_id, "step": step, "workflow_id": workflow_id, "from_state": old_state, "tool_name": tool_name, "arguments": arguments, "status": "failed", "error": str(exc)})
+                    self._log("MODEL_EVENT", {"event_type": "model_terminal", "step": step,
+                              "workflow_id": workflow_id, "call_id": model_call_id,
+                              "status": "timeout" if isinstance(exc, (TimeoutError, subprocess.TimeoutExpired)) else "failed",
+                              "error_type": type(exc).__name__, "usage": getattr(chat_fn, "last_usage", None),
+                              "usage_unknown": getattr(chat_fn, "last_usage", None) is None})
                     raise
-        raise RuntimeError(f"workflow exceeded max_steps={max_steps}")
+                self._log("MODEL_EVENT", {"event_type": "model_terminal", "step": step,
+                          "workflow_id": workflow_id, "call_id": model_call_id, "status": "success",
+                          "model": getattr(chat_fn, "last_model", None) or getattr(chat_fn, "model", None), "usage": getattr(chat_fn, "last_usage", None),
+                          "usage_unknown": getattr(chat_fn, "last_usage", None) is None})
+                tool_calls_payload = response.get("tool_calls") or []
+                if not tool_calls_payload:
+                    final_answer = str(response.get("content") or "")
+                    self._log("FINAL_EVENT", {"event_type": "final_answer", "workflow_id": workflow_id,
+                              "state": state, "answer": final_answer,
+                              "status": "completed" if router.is_terminal(state) else "early_terminated"})
+                    return WorkflowRunResult(workflow_id, state, final_answer, tool_calls, str(self.workspace))
+                for call in tool_calls_payload:
+                    function = call.get("function") or {}
+                    requested_tool_name = str(function.get("name") or "")
+                    tool_name = canonical_tool_name(requested_tool_name)
+                    call_id = "tool-" + uuid.uuid4().hex
+                    base = {"step": step, "workflow_id": workflow_id, "call_id": call_id,
+                            "provider_call_id": call.get("id"), "from_state": state,
+                            "tool_name": tool_name, "requested_tool_name": requested_tool_name}
+                    self._log("TOOL_START", {**base, "event_type": "tool_started", "status": "started"})
+                    tool_closed = False
+                    arguments = {}
+                    try:
+                        raw_arguments = function.get("arguments") or {}
+                        arguments = json.loads(raw_arguments) if isinstance(raw_arguments, str) else dict(raw_arguments)
+                        if not isinstance(arguments, dict):
+                            raise ValueError("tool arguments must be an object")
+                        if tool_name not in router.tools_for_state(state):
+                            self._log("TOOL_EVENT", {**base, "event_type": "tool_call", "arguments": arguments,
+                                      "status": "rejected", "to_state": state})
+                            tool_closed = True
+                            raise ValueError(f"tool {requested_tool_name!r} is not allowed in state {state!r}")
+                        schema = TOOL_SCHEMAS[tool_name]
+                        for name in schema.get("required", []):
+                            if name not in arguments or arguments[name] is None:
+                                raise ValueError(f"missing required tool argument: {name}")
+                        for name, value in arguments.items():
+                            kind = schema.get("properties", {}).get(name, {}).get("type")
+                            if kind == "string" and not isinstance(value, str) or kind == "array" and not isinstance(value, list):
+                                raise ValueError(f"invalid type for tool argument: {name}")
+                        result = self.runtime.execute(tool_name, arguments)
+                        failed = result.get("business_status") == "failed"
+                        if not failed:
+                            state = router.apply(state, tool_name)
+                            tool_calls.append(tool_name)
+                        self._log("TOOL_EVENT", {**base, "event_type": "tool_call", "to_state": state,
+                                  "arguments": arguments, "result": result, "status": "failed" if failed else "success"})
+                        tool_closed = True
+                        if failed:
+                            raise RuntimeError("workflow command returned a nonzero exit status")
+                        messages.append({"role": "assistant", "tool_calls": [call]})
+                        messages.append({"role": "tool", "tool_call_id": call.get("id", tool_name),
+                                         "content": json.dumps(result, ensure_ascii=False)})
+                    except Exception as exc:
+                        if not tool_closed:
+                            self._log("TOOL_EVENT", {**base, "event_type": "tool_call", "to_state": state,
+                                      "arguments": arguments, "status": "timeout" if isinstance(exc, (TimeoutError, subprocess.TimeoutExpired)) else "failed",
+                                      "error_type": type(exc).__name__})
+                        raise
+            raise RuntimeError(f"workflow exceeded max_steps={max_steps}")
+        except Exception as exc:
+            self._log("TASK_EVENT", {"event_type": "task_terminal", "workflow_id": workflow_id, "state": state,
+                      "status": "timeout" if isinstance(exc, (TimeoutError, subprocess.TimeoutExpired)) else "failed", "error_type": type(exc).__name__})
+            raise

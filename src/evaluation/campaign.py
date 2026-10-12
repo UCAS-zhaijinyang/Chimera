@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from concurrent.futures import ThreadPoolExecutor
 import inspect
 import json
 from pathlib import Path
@@ -9,6 +10,13 @@ import sys
 import uuid
 
 from workflow_runtime import WorkflowToolLoop
+from evaluation.trust import read_marked
+
+# Explicit feature contract; truth and case/variant metadata never enter the release.
+OBSERVABLE_FIELDS = {"schema_version", "run_id", "task_id", "trace_id", "member_id",
+    "event_id", "event_seq", "wall_time_utc", "simulation_time", "event_type", "status",
+    "planned_activity_id", "phase_id", "workday", "workflow_id", "call_id", "tool_name",
+    "from_state", "to_state", "arguments", "result", "error_type", "state"}
 
 SEQUENCES = {
     "data_report": ["source_query", "data_transform", "file_write", "shared_storage", "message_send"],
@@ -92,7 +100,7 @@ class ScriptedEmployee:
                 "function": {"name": tool, "arguments": json.dumps(args)}}]}
 
 
-def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None, pilot=False):
+def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None, pilot=False, workers=1, task_prefix=""):
     root = Path(study_dir)
     root.mkdir(parents=True, exist_ok=False)
     cases = cases or golden_cases()
@@ -117,8 +125,9 @@ def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None,
     else:
         jobs = [(case, repeat, 1, f"m{n % 12:02d}", n % 2)
                 for repeat in range(repetitions) for n, case in enumerate(cases)]
-    for number, (case, repeat, day, member_id, slot) in enumerate(jobs, 1):
-        task_id, trace_id, plan_id = f"t{number:04d}", f"trace{number:04d}", f"p{number:04d}"
+    def run_one(job):
+        number, (case, repeat, day, member_id, slot) = job
+        task_id, trace_id, plan_id = f"{task_prefix}t{number:04d}", f"{task_prefix}trace{number:04d}", f"{task_prefix}p{number:04d}"
         sim = datetime(2025, 5, 5, 9 + slot * 4, tzinfo=timezone(timedelta(hours=8))) + timedelta(days=day - 1)
         context = {"run_id": f"{run_id}-{repeat}", "task_id": task_id, "trace_id": trace_id,
                    "member_id": member_id, "planned_activity_id": plan_id, "phase_id": "phase1" if day < 3 else "phase2",
@@ -167,5 +176,19 @@ def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None,
                 "execution_status": rule["label_type"] if matching else "unknown",
                 "evidence_call_ids": [event.get("call_id") for event in matching],
                 "independent_spec": "fixture business policy: chief recipient / src/main.py only"})
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        list(pool.map(run_one, enumerate(jobs, 1)))
+    study["members"] = sorted(set(study["members"]))
+    for key in ("tasks", "planned_activities", "execution_results", "attack_truth"):
+        study[key].sort(key=lambda row: row["task_id"])
+    release = root / "release" / "events.jsonl"
+    release.parent.mkdir()
+    with release.open("w") as handle:
+        for task in study["tasks"]:
+            rows, _, _ = read_marked(root / task["log_files"][0])
+            for row in rows:
+                handle.write(json.dumps({k: v for k, v in row["payload"].items() if k in OBSERVABLE_FIELDS}) + "\n")
+    study["release_files"] = ["release/events.jsonl"]
+    study["release_policy"] = "Observable event features only; private study inventory/truth/logs are not detector input."
     (root / "study_manifest.json").write_text(json.dumps(study, ensure_ascii=False, indent=2) + "\n")
     return study

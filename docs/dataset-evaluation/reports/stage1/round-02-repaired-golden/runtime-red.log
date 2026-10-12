@@ -1,0 +1,290 @@
+........FFFFFFFF....FFF..FF                                              [100%]
+=================================== FAILURES ===================================
+____________ test_lifecycle_remains_complete_on_every_exit[normal] _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_lifecycle_remains_complet0')
+mode = 'normal'
+
+    @pytest.mark.parametrize("mode", ["normal", "illegal", "bad_json", "http", "timeout", "max_steps"])
+    def test_lifecycle_remains_complete_on_every_exit(tmp_path, mode):
+        def reply(request):
+            if mode == "http":
+                raise ConnectionError("endpoint unavailable")
+            if mode == "timeout":
+                raise TimeoutError("request timeout")
+            if mode == "normal":
+                return {"content": "No action performed."}
+            if mode == "max_steps":
+                return {"tool_calls": [{"id": "x", "function": {"name": "source_query", "arguments": '{"query":"x"}'}}]}
+            name = "message_send" if mode == "illegal" else "source_query"
+            args = '{invalid' if mode == "bad_json" else '{"to":["outside@example.invalid"]}'
+            return {"tool_calls": [{"id": "x", "function": {"name": name, "arguments": args}}]}
+    
+        context = {"run_id": "r1", "task_id": "t1", "planned_activity_id": "p1", "phase_id": "phase1",
+                   "workday": 1, "simulation_time": "2025-05-05T09:00:00+08:00"}
+        try:
+>           WorkflowToolLoop(tmp_path, member_id="m1", trace_id="trace1", context=context).run(
+                "Analyze data", chat_fn=reply, max_steps=1)
+E               TypeError: WorkflowToolLoop.__init__() got an unexpected keyword argument 'context'
+
+tests/test_workflow_runtime.py:163: TypeError
+____________ test_lifecycle_remains_complete_on_every_exit[illegal] ____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_lifecycle_remains_complet1')
+mode = 'illegal'
+
+    @pytest.mark.parametrize("mode", ["normal", "illegal", "bad_json", "http", "timeout", "max_steps"])
+    def test_lifecycle_remains_complete_on_every_exit(tmp_path, mode):
+        def reply(request):
+            if mode == "http":
+                raise ConnectionError("endpoint unavailable")
+            if mode == "timeout":
+                raise TimeoutError("request timeout")
+            if mode == "normal":
+                return {"content": "No action performed."}
+            if mode == "max_steps":
+                return {"tool_calls": [{"id": "x", "function": {"name": "source_query", "arguments": '{"query":"x"}'}}]}
+            name = "message_send" if mode == "illegal" else "source_query"
+            args = '{invalid' if mode == "bad_json" else '{"to":["outside@example.invalid"]}'
+            return {"tool_calls": [{"id": "x", "function": {"name": name, "arguments": args}}]}
+    
+        context = {"run_id": "r1", "task_id": "t1", "planned_activity_id": "p1", "phase_id": "phase1",
+                   "workday": 1, "simulation_time": "2025-05-05T09:00:00+08:00"}
+        try:
+>           WorkflowToolLoop(tmp_path, member_id="m1", trace_id="trace1", context=context).run(
+                "Analyze data", chat_fn=reply, max_steps=1)
+E               TypeError: WorkflowToolLoop.__init__() got an unexpected keyword argument 'context'
+
+tests/test_workflow_runtime.py:163: TypeError
+___________ test_lifecycle_remains_complete_on_every_exit[bad_json] ____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_lifecycle_remains_complet2')
+mode = 'bad_json'
+
+    @pytest.mark.parametrize("mode", ["normal", "illegal", "bad_json", "http", "timeout", "max_steps"])
+    def test_lifecycle_remains_complete_on_every_exit(tmp_path, mode):
+        def reply(request):
+            if mode == "http":
+                raise ConnectionError("endpoint unavailable")
+            if mode == "timeout":
+                raise TimeoutError("request timeout")
+            if mode == "normal":
+                return {"content": "No action performed."}
+            if mode == "max_steps":
+                return {"tool_calls": [{"id": "x", "function": {"name": "source_query", "arguments": '{"query":"x"}'}}]}
+            name = "message_send" if mode == "illegal" else "source_query"
+            args = '{invalid' if mode == "bad_json" else '{"to":["outside@example.invalid"]}'
+            return {"tool_calls": [{"id": "x", "function": {"name": name, "arguments": args}}]}
+    
+        context = {"run_id": "r1", "task_id": "t1", "planned_activity_id": "p1", "phase_id": "phase1",
+                   "workday": 1, "simulation_time": "2025-05-05T09:00:00+08:00"}
+        try:
+>           WorkflowToolLoop(tmp_path, member_id="m1", trace_id="trace1", context=context).run(
+                "Analyze data", chat_fn=reply, max_steps=1)
+E               TypeError: WorkflowToolLoop.__init__() got an unexpected keyword argument 'context'
+
+tests/test_workflow_runtime.py:163: TypeError
+_____________ test_lifecycle_remains_complete_on_every_exit[http] ______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_lifecycle_remains_complet3')
+mode = 'http'
+
+    @pytest.mark.parametrize("mode", ["normal", "illegal", "bad_json", "http", "timeout", "max_steps"])
+    def test_lifecycle_remains_complete_on_every_exit(tmp_path, mode):
+        def reply(request):
+            if mode == "http":
+                raise ConnectionError("endpoint unavailable")
+            if mode == "timeout":
+                raise TimeoutError("request timeout")
+            if mode == "normal":
+                return {"content": "No action performed."}
+            if mode == "max_steps":
+                return {"tool_calls": [{"id": "x", "function": {"name": "source_query", "arguments": '{"query":"x"}'}}]}
+            name = "message_send" if mode == "illegal" else "source_query"
+            args = '{invalid' if mode == "bad_json" else '{"to":["outside@example.invalid"]}'
+            return {"tool_calls": [{"id": "x", "function": {"name": name, "arguments": args}}]}
+    
+        context = {"run_id": "r1", "task_id": "t1", "planned_activity_id": "p1", "phase_id": "phase1",
+                   "workday": 1, "simulation_time": "2025-05-05T09:00:00+08:00"}
+        try:
+>           WorkflowToolLoop(tmp_path, member_id="m1", trace_id="trace1", context=context).run(
+                "Analyze data", chat_fn=reply, max_steps=1)
+E               TypeError: WorkflowToolLoop.__init__() got an unexpected keyword argument 'context'
+
+tests/test_workflow_runtime.py:163: TypeError
+____________ test_lifecycle_remains_complete_on_every_exit[timeout] ____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_lifecycle_remains_complet4')
+mode = 'timeout'
+
+    @pytest.mark.parametrize("mode", ["normal", "illegal", "bad_json", "http", "timeout", "max_steps"])
+    def test_lifecycle_remains_complete_on_every_exit(tmp_path, mode):
+        def reply(request):
+            if mode == "http":
+                raise ConnectionError("endpoint unavailable")
+            if mode == "timeout":
+                raise TimeoutError("request timeout")
+            if mode == "normal":
+                return {"content": "No action performed."}
+            if mode == "max_steps":
+                return {"tool_calls": [{"id": "x", "function": {"name": "source_query", "arguments": '{"query":"x"}'}}]}
+            name = "message_send" if mode == "illegal" else "source_query"
+            args = '{invalid' if mode == "bad_json" else '{"to":["outside@example.invalid"]}'
+            return {"tool_calls": [{"id": "x", "function": {"name": name, "arguments": args}}]}
+    
+        context = {"run_id": "r1", "task_id": "t1", "planned_activity_id": "p1", "phase_id": "phase1",
+                   "workday": 1, "simulation_time": "2025-05-05T09:00:00+08:00"}
+        try:
+>           WorkflowToolLoop(tmp_path, member_id="m1", trace_id="trace1", context=context).run(
+                "Analyze data", chat_fn=reply, max_steps=1)
+E               TypeError: WorkflowToolLoop.__init__() got an unexpected keyword argument 'context'
+
+tests/test_workflow_runtime.py:163: TypeError
+___________ test_lifecycle_remains_complete_on_every_exit[max_steps] ___________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_lifecycle_remains_complet5')
+mode = 'max_steps'
+
+    @pytest.mark.parametrize("mode", ["normal", "illegal", "bad_json", "http", "timeout", "max_steps"])
+    def test_lifecycle_remains_complete_on_every_exit(tmp_path, mode):
+        def reply(request):
+            if mode == "http":
+                raise ConnectionError("endpoint unavailable")
+            if mode == "timeout":
+                raise TimeoutError("request timeout")
+            if mode == "normal":
+                return {"content": "No action performed."}
+            if mode == "max_steps":
+                return {"tool_calls": [{"id": "x", "function": {"name": "source_query", "arguments": '{"query":"x"}'}}]}
+            name = "message_send" if mode == "illegal" else "source_query"
+            args = '{invalid' if mode == "bad_json" else '{"to":["outside@example.invalid"]}'
+            return {"tool_calls": [{"id": "x", "function": {"name": name, "arguments": args}}]}
+    
+        context = {"run_id": "r1", "task_id": "t1", "planned_activity_id": "p1", "phase_id": "phase1",
+                   "workday": 1, "simulation_time": "2025-05-05T09:00:00+08:00"}
+        try:
+>           WorkflowToolLoop(tmp_path, member_id="m1", trace_id="trace1", context=context).run(
+                "Analyze data", chat_fn=reply, max_steps=1)
+E               TypeError: WorkflowToolLoop.__init__() got an unexpected keyword argument 'context'
+
+tests/test_workflow_runtime.py:163: TypeError
+______ test_code_test_build_keep_input_lineage_and_failed_command_status _______
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_code_test_build_keep_inpu0')
+
+    def test_code_test_build_keep_input_lineage_and_failed_command_status(tmp_path):
+        runtime = FilesystemToolRuntime(tmp_path, member_id="m1", trace_id="tr1")
+        issue = runtime.execute("issue_create", {"title": "Feature"})
+        design = runtime.execute("design_document", {"input_artifact_id": issue["output_artifact_ids"][0]})
+        code = runtime.execute("code_edit", {"path": "src/main.py", "content": "print('ok')\n"})
+        import sys
+        test = runtime.execute("test_run", {"command": f'{sys.executable} -c "import sys;sys.exit(7)"'})
+        records = [json.loads(line) for line in (tmp_path / "manifest.jsonl").read_text().splitlines()]
+>       assert records[2]["inputs"] == design["output_artifact_ids"]
+E       AssertionError: assert [] == ['383bd5aa3399']
+E         
+E         Right contains one more item: '383bd5aa3399'
+E         Use -v to get more diff
+
+tests/test_workflow_runtime.py:190: AssertionError
+_______________ test_loop_preserves_two_calls_in_same_model_step _______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_loop_preserves_two_calls_0')
+
+    def test_loop_preserves_two_calls_in_same_model_step(tmp_path):
+        replies = [{"tool_calls": [
+            {"id": "a", "function": {"name": "source_query", "arguments": '{"query":"x"}'}},
+            {"id": "b", "function": {"name": "source_query", "arguments": '{"query":"x"}'}}]}]
+        with pytest.raises(ValueError):
+            WorkflowToolLoop(tmp_path, member_id="m1", trace_id="tr1").run("Analyze data", chat_fn=lambda r: replies.pop())
+        rows = parsed_log(tmp_path)
+        tools = [e for e in rows if e.get("event_type") == "tool_call"]
+>       assert [e["status"] for e in tools] == ["success", "rejected"]
+E       AssertionError: assert [] == ['success', 'rejected']
+E         
+E         Right contains 2 more items, first extra item: 'success'
+E         Use -v to get more diff
+
+tests/test_workflow_runtime.py:204: AssertionError
+_______________ test_manifest_corruption_is_not_silently_ignored _______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_manifest_corruption_is_no0')
+
+    def test_manifest_corruption_is_not_silently_ignored(tmp_path):
+        bus = FilesystemArtifactBus(tmp_path)
+        bus.put("file", "file_write", "m1", "payload")
+        with bus.manifest_path.open("a") as stream:
+            stream.write("{invalid\n")
+>       with pytest.raises(ValueError, match="manifest"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_filesystem_artifacts.py:68: Failed
+___ test_artifact_ids_cannot_overwrite_existing_payload_or_escape_workspace ____
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_artifact_ids_cannot_overw0')
+
+    def test_artifact_ids_cannot_overwrite_existing_payload_or_escape_workspace(tmp_path):
+        bus = FilesystemArtifactBus(tmp_path)
+        bus.put("file", "file_write", "m1", "original", artifact_id="fixed")
+>       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_filesystem_artifacts.py:75: Failed
+____________________ test_persisted_hash_detects_tampering _____________________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_persisted_hash_detects_ta0')
+
+    def test_persisted_hash_detects_tampering(tmp_path):
+        bus = FilesystemArtifactBus(tmp_path)
+        item = bus.put("file", "file_write", "m1", "original")
+        record = json.loads(bus.manifest_path.read_text())
+>       assert record["version"] == 1
+E       KeyError: 'version'
+
+tests/test_filesystem_artifacts.py:86: KeyError
+____________ test_malformed_marked_rows_are_returned_as_rejections _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_malformed_marked_rows_are0')
+
+    def test_malformed_marked_rows_are_returned_as_rejections(tmp_path):
+        path = tmp_path / "broken.log"
+        path.write_text('TOOL_EVENT {broken\nTOOL_EVENT []\n')
+        rows = extract_events(path)
+>       assert len(rows) == 2
+E       assert 0 == 2
+E        +  where 0 = len([])
+
+tests/test_tool_log_extractor.py:61: AssertionError
+_________ test_copy_deduplication_and_run_isolation_in_dataset_export __________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-7/test_copy_deduplication_and_ru0')
+
+    def test_copy_deduplication_and_run_isolation_in_dataset_export(tmp_path):
+        first = {"run_id": "r1", "event_id": "e1", "trace_id": "same", "event_seq": 1,
+                 "step": 0, "tool_name": "source_query", "status": "success"}
+        second = {**first, "run_id": "r2", "event_id": "e2", "tool_name": "data_transform"}
+        paths = [tmp_path / f"{n}.log" for n in range(3)]
+        for path, event in zip(paths, [first, first, second]):
+            path.write_text("TOOL_EVENT " + json.dumps(event) + "\n")
+        write_dataset(paths, tmp_path / "export")
+        rows = [json.loads(line) for line in (tmp_path / "export/agent_events.jsonl").read_text().splitlines()]
+>       assert len(rows) == 2
+E       AssertionError: assert 3 == 2
+E        +  where 3 = len([{'run_id': 'r1', 'event_id': 'e1', 'trace_id': 'same', 'event_seq': 1, ...}, {'run_id': 'r1', 'event_id': 'e1', 'trace_id': 'same', 'event_seq': 1, ...}, {'run_id': 'r2', 'event_id': 'e2', 'trace_id': 'same', 'event_seq': 1, ...}])
+
+tests/test_tool_log_extractor.py:75: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_workflow_runtime.py::test_lifecycle_remains_complete_on_every_exit[normal]
+FAILED tests/test_workflow_runtime.py::test_lifecycle_remains_complete_on_every_exit[illegal]
+FAILED tests/test_workflow_runtime.py::test_lifecycle_remains_complete_on_every_exit[bad_json]
+FAILED tests/test_workflow_runtime.py::test_lifecycle_remains_complete_on_every_exit[http]
+FAILED tests/test_workflow_runtime.py::test_lifecycle_remains_complete_on_every_exit[timeout]
+FAILED tests/test_workflow_runtime.py::test_lifecycle_remains_complete_on_every_exit[max_steps]
+FAILED tests/test_workflow_runtime.py::test_code_test_build_keep_input_lineage_and_failed_command_status
+FAILED tests/test_workflow_runtime.py::test_loop_preserves_two_calls_in_same_model_step
+FAILED tests/test_filesystem_artifacts.py::test_manifest_corruption_is_not_silently_ignored
+FAILED tests/test_filesystem_artifacts.py::test_artifact_ids_cannot_overwrite_existing_payload_or_escape_workspace
+FAILED tests/test_filesystem_artifacts.py::test_persisted_hash_detects_tampering
+FAILED tests/test_tool_log_extractor.py::test_malformed_marked_rows_are_returned_as_rejections
+FAILED tests/test_tool_log_extractor.py::test_copy_deduplication_and_run_isolation_in_dataset_export
+13 failed, 14 passed in 0.09s

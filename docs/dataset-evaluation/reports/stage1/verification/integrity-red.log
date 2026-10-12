@@ -1,0 +1,160 @@
+...FFF.F                                                                 [100%]
+=================================== FAILURES ===================================
+__________ test_additional_integrity_challenges[concealed_input-L0.4] __________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-13/test_additional_integrity_chal0')
+mutation = 'concealed_input', metric = 'L0.4'
+
+    @pytest.mark.parametrize('mutation,metric', [('concealed_input','L0.4'), ('wrong_version','L0.4'), ('marker','L0.1'), ('reverse_call','L0.5'), ('pii','L0.8')])
+    def test_additional_integrity_challenges(tmp_path, mutation, metric):
+        generate_study(tmp_path / 'study', cases=golden_cases()[:1], repetitions=1)
+        root = tmp_path / 'study'
+        manifest = root / 'workspaces/t0001/manifest.jsonl'
+        records = [json.loads(line) for line in manifest.read_text().splitlines()]
+        log = root / 'workspaces/t0001/execution.log'
+        rows = [(line.split(' ', 1)[0], json.loads(line.split(' ', 1)[1])) for line in log.read_text().splitlines()]
+        if mutation == 'concealed_input':
+            records[1]['inputs'] = []
+            records[1]['root_type'] = 'standalone_generated_input'
+        elif mutation == 'wrong_version':
+            records[1]['input_versions'] = {records[0]['artifact_id']: 99}
+        elif mutation == 'marker':
+            rows[0] = ('TOOL_EVENT', rows[0][1])
+        elif mutation == 'reverse_call':
+            start = next(e for _,e in rows if e['event_type']=='tool_started')
+            end = next(e for _,e in rows if e['event_type']=='tool_call')
+            start['event_seq'],end['event_seq'] = end['event_seq'],start['event_seq']
+            start['wall_time_utc'],end['wall_time_utc'] = end['wall_time_utc'],start['wall_time_utc']
+        elif mutation == 'pii':
+            artifact = root / 'workspaces/t0001' / records[0]['path']
+            artifact.write_text(json.dumps({'contact': 'person@real-company.test-unreserved'}))
+            records[0]['sha256'] = hashlib.sha256(artifact.read_bytes()).hexdigest()
+        manifest.write_text(''.join(json.dumps(row)+'\n' for row in records))
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       assert evaluate_study(root)['metrics'][metric]['status']=='FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_stage1_boundaries.py:92: AssertionError
+___________ test_additional_integrity_challenges[wrong_version-L0.4] ___________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-13/test_additional_integrity_chal1')
+mutation = 'wrong_version', metric = 'L0.4'
+
+    @pytest.mark.parametrize('mutation,metric', [('concealed_input','L0.4'), ('wrong_version','L0.4'), ('marker','L0.1'), ('reverse_call','L0.5'), ('pii','L0.8')])
+    def test_additional_integrity_challenges(tmp_path, mutation, metric):
+        generate_study(tmp_path / 'study', cases=golden_cases()[:1], repetitions=1)
+        root = tmp_path / 'study'
+        manifest = root / 'workspaces/t0001/manifest.jsonl'
+        records = [json.loads(line) for line in manifest.read_text().splitlines()]
+        log = root / 'workspaces/t0001/execution.log'
+        rows = [(line.split(' ', 1)[0], json.loads(line.split(' ', 1)[1])) for line in log.read_text().splitlines()]
+        if mutation == 'concealed_input':
+            records[1]['inputs'] = []
+            records[1]['root_type'] = 'standalone_generated_input'
+        elif mutation == 'wrong_version':
+            records[1]['input_versions'] = {records[0]['artifact_id']: 99}
+        elif mutation == 'marker':
+            rows[0] = ('TOOL_EVENT', rows[0][1])
+        elif mutation == 'reverse_call':
+            start = next(e for _,e in rows if e['event_type']=='tool_started')
+            end = next(e for _,e in rows if e['event_type']=='tool_call')
+            start['event_seq'],end['event_seq'] = end['event_seq'],start['event_seq']
+            start['wall_time_utc'],end['wall_time_utc'] = end['wall_time_utc'],start['wall_time_utc']
+        elif mutation == 'pii':
+            artifact = root / 'workspaces/t0001' / records[0]['path']
+            artifact.write_text(json.dumps({'contact': 'person@real-company.test-unreserved'}))
+            records[0]['sha256'] = hashlib.sha256(artifact.read_bytes()).hexdigest()
+        manifest.write_text(''.join(json.dumps(row)+'\n' for row in records))
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       assert evaluate_study(root)['metrics'][metric]['status']=='FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_stage1_boundaries.py:92: AssertionError
+______________ test_additional_integrity_challenges[marker-L0.1] _______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-13/test_additional_integrity_chal2')
+mutation = 'marker', metric = 'L0.1'
+
+    @pytest.mark.parametrize('mutation,metric', [('concealed_input','L0.4'), ('wrong_version','L0.4'), ('marker','L0.1'), ('reverse_call','L0.5'), ('pii','L0.8')])
+    def test_additional_integrity_challenges(tmp_path, mutation, metric):
+        generate_study(tmp_path / 'study', cases=golden_cases()[:1], repetitions=1)
+        root = tmp_path / 'study'
+        manifest = root / 'workspaces/t0001/manifest.jsonl'
+        records = [json.loads(line) for line in manifest.read_text().splitlines()]
+        log = root / 'workspaces/t0001/execution.log'
+        rows = [(line.split(' ', 1)[0], json.loads(line.split(' ', 1)[1])) for line in log.read_text().splitlines()]
+        if mutation == 'concealed_input':
+            records[1]['inputs'] = []
+            records[1]['root_type'] = 'standalone_generated_input'
+        elif mutation == 'wrong_version':
+            records[1]['input_versions'] = {records[0]['artifact_id']: 99}
+        elif mutation == 'marker':
+            rows[0] = ('TOOL_EVENT', rows[0][1])
+        elif mutation == 'reverse_call':
+            start = next(e for _,e in rows if e['event_type']=='tool_started')
+            end = next(e for _,e in rows if e['event_type']=='tool_call')
+            start['event_seq'],end['event_seq'] = end['event_seq'],start['event_seq']
+            start['wall_time_utc'],end['wall_time_utc'] = end['wall_time_utc'],start['wall_time_utc']
+        elif mutation == 'pii':
+            artifact = root / 'workspaces/t0001' / records[0]['path']
+            artifact.write_text(json.dumps({'contact': 'person@real-company.test-unreserved'}))
+            records[0]['sha256'] = hashlib.sha256(artifact.read_bytes()).hexdigest()
+        manifest.write_text(''.join(json.dumps(row)+'\n' for row in records))
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       assert evaluate_study(root)['metrics'][metric]['status']=='FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_stage1_boundaries.py:92: AssertionError
+________________ test_additional_integrity_challenges[pii-L0.8] ________________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-13/test_additional_integrity_chal4')
+mutation = 'pii', metric = 'L0.8'
+
+    @pytest.mark.parametrize('mutation,metric', [('concealed_input','L0.4'), ('wrong_version','L0.4'), ('marker','L0.1'), ('reverse_call','L0.5'), ('pii','L0.8')])
+    def test_additional_integrity_challenges(tmp_path, mutation, metric):
+        generate_study(tmp_path / 'study', cases=golden_cases()[:1], repetitions=1)
+        root = tmp_path / 'study'
+        manifest = root / 'workspaces/t0001/manifest.jsonl'
+        records = [json.loads(line) for line in manifest.read_text().splitlines()]
+        log = root / 'workspaces/t0001/execution.log'
+        rows = [(line.split(' ', 1)[0], json.loads(line.split(' ', 1)[1])) for line in log.read_text().splitlines()]
+        if mutation == 'concealed_input':
+            records[1]['inputs'] = []
+            records[1]['root_type'] = 'standalone_generated_input'
+        elif mutation == 'wrong_version':
+            records[1]['input_versions'] = {records[0]['artifact_id']: 99}
+        elif mutation == 'marker':
+            rows[0] = ('TOOL_EVENT', rows[0][1])
+        elif mutation == 'reverse_call':
+            start = next(e for _,e in rows if e['event_type']=='tool_started')
+            end = next(e for _,e in rows if e['event_type']=='tool_call')
+            start['event_seq'],end['event_seq'] = end['event_seq'],start['event_seq']
+            start['wall_time_utc'],end['wall_time_utc'] = end['wall_time_utc'],start['wall_time_utc']
+        elif mutation == 'pii':
+            artifact = root / 'workspaces/t0001' / records[0]['path']
+            artifact.write_text(json.dumps({'contact': 'person@real-company.test-unreserved'}))
+            records[0]['sha256'] = hashlib.sha256(artifact.read_bytes()).hexdigest()
+        manifest.write_text(''.join(json.dumps(row)+'\n' for row in records))
+        log.write_text(''.join(m+' '+json.dumps(e)+'\n' for m,e in rows))
+>       assert evaluate_study(root)['metrics'][metric]['status']=='FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_stage1_boundaries.py:92: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_stage1_boundaries.py::test_additional_integrity_challenges[concealed_input-L0.4]
+FAILED tests/test_stage1_boundaries.py::test_additional_integrity_challenges[wrong_version-L0.4]
+FAILED tests/test_stage1_boundaries.py::test_additional_integrity_challenges[marker-L0.1]
+FAILED tests/test_stage1_boundaries.py::test_additional_integrity_challenges[pii-L0.8]
+4 failed, 4 passed in 0.70s

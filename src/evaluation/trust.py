@@ -26,11 +26,26 @@ LABEL_FIELDS = {"attack_label", "true_label", "is_attack", "is_malicious", "atta
 SECRET = re.compile(r"(?:\bsk-[A-Za-z0-9]{20,}\b|(?:API_KEY|api_key|Authorization)\s*[:=]\s*['\"]?(?:Bearer\s+)?[A-Za-z0-9_-]{12,})")
 
 
+EXPECTED_MARKER = {"task_started": "TASK_EVENT", "task_terminal": "TASK_EVENT",
+                   "tool_started": "TOOL_START", "tool_call": "TOOL_EVENT",
+                   "model_started": "MODEL_EVENT", "model_terminal": "MODEL_EVENT", "final_answer": "FINAL_EVENT"}
+EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z][A-Za-z0-9-]*)")
+
+def pii_candidates(text):
+    # Contact candidates are not asserted to be real PII. Reserved simulation
+    # domains are explicitly synthetic; other contacts require review.
+    return [digest(match.group(0).encode()) for match in EMAIL.finditer(text)
+            if not (match.group(1).endswith((".invalid", ".example", ".test")) or
+                    match.group(1) in {"example.com", "example.org", "example.net"})]
+
+
 def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
 def within(root: Path, relative: str) -> Path:
+    if not isinstance(relative, str):
+        raise ValueError("path must be a string")
     path = (root / relative).resolve()
     if path == root.resolve() or root.resolve() not in path.parents:
         raise ValueError("path must be a file/directory strictly inside study workspace")
@@ -101,6 +116,18 @@ def evaluate_study(study_dir: str | Path) -> dict:
         study = json.loads((root / "study_manifest.json").read_text(encoding="utf-8"))
         if study.get("schema_version") != 1 or not isinstance(study.get("tasks"), list):
             raise ValueError("unsupported or incomplete study manifest")
+        if not all(isinstance(t, dict) and all(isinstance(t.get(k), str) and t[k] for k in
+                   ("task_id", "run_id", "trace_id", "member_id", "workspace")) and
+                   isinstance(t.get("log_files"), list) and all(isinstance(p, str) for p in t["log_files"])
+                   for t in study["tasks"]):
+            raise ValueError("invalid task inventory shape")
+        for key in ("planned_activities", "attack_truth"):
+            if not isinstance(study.get(key, []), list) or not all(isinstance(p, dict) for p in study.get(key, [])):
+                raise ValueError("invalid study sidecar shape")
+        if not isinstance(study.get("members", []), list) or not all(isinstance(v, str) for v in study.get("members", [])):
+            raise ValueError("invalid member inventory")
+        if not all(isinstance(p.get("id"), str) for p in study.get("planned_activities", [])):
+            raise ValueError("invalid plan identity")
     except (OSError, ValueError, AttributeError) as exc:
         fail("L0.1", "study manifest unavailable or invalid", exception=type(exc).__name__)
         metrics["L0.1"]["status"] = "FAIL"
@@ -133,6 +160,16 @@ def evaluate_study(study_dir: str | Path) -> dict:
                 continue
             for row in rows:
                 event, source = row["payload"], row["source"]
+                if any(k in event and not isinstance(event[k], str) for k in
+                       ("run_id", "task_id", "trace_id", "member_id", "event_id", "call_id", "event_type")) or \
+                       ("event_seq" in event and type(event["event_seq"]) is not int):
+                    normalized.append(row)
+                    fail("L0.1", "invalid event field types retained", task_id=task_id, **source)
+                    continue
+                if "arguments" in event and not isinstance(event["arguments"], dict):
+                    normalized.append(row)
+                    fail("L0.1", "invalid tool argument record", task_id=task_id, **source)
+                    continue
                 identity = (event.get("run_id"), event.get("event_id"))
                 if event.get("event_id") and identity in seen:
                     previous = seen[identity]
@@ -146,6 +183,7 @@ def evaluate_study(study_dir: str | Path) -> dict:
                 normalized.append(row)
                 selected.append(event)
                 valid = all(key in event and event[key] is not None for key in CORE_FIELDS)
+                valid &= event.get("schema_version") == "chimera-event/1" and EXPECTED_MARKER.get(event.get("event_type")) == row["marker"]
                 valid &= type(event.get("event_seq")) is int and event.get("event_seq", 0) > 0
                 if not valid:
                     fail("L0.1", "required event fields missing or invalid", task_id=task_id, **source)
@@ -159,6 +197,7 @@ def evaluate_study(study_dir: str | Path) -> dict:
                     plan = plans.get(planned, {})
                     link &= planned == task["planned_activity_id"] and all(
                         plan.get(p) == task.get(p) for p in ("task_id", "member_id", "phase_id", "workday"))
+                    link &= all(event.get(p) == task.get(p) for p in ("phase_id", "workday"))
                 if not link:
                     fail("L0.2", "event cannot join unique task/member/planned activity", task_id=task_id, **source)
                 else:
@@ -173,6 +212,11 @@ def evaluate_study(study_dir: str | Path) -> dict:
                  started=len(starts), terminal=len(endings))
         else:
             closed += 1
+            if any(e.get("event_seq", 0) <= starts[0].get("event_seq", 0) or e.get("event_seq", 0) >= endings[0].get("event_seq", 0)
+                   for e in selected if e.get("event_type") not in {"task_started", "task_terminal", "final_answer"}):
+                fail("L0.5", "call/event outside task lifecycle", task_id=task_id)
+            if starts[0].get("event_seq", 0) >= endings[0].get("event_seq", 0):
+                fail("L0.5", "task terminal precedes start", task_id=task_id)
         calls = {}
         for event in selected:
             if event.get("event_type") in ("tool_started", "tool_call", "model_started", "model_terminal"):
@@ -184,6 +228,8 @@ def evaluate_study(study_dir: str | Path) -> dict:
             ended = [e for e in events if e.get("event_type") in ("tool_call", "model_terminal")]
             if len(begun) != 1 or len(ended) != 1:
                 fail("L0.3", "call lifecycle not closed exactly once", task_id=task_id, call_id=call_id)
+            elif type(begun[0].get("event_seq")) is int and type(ended[0].get("event_seq")) is int and begun[0]["event_seq"] >= ended[0]["event_seq"]:
+                fail("L0.5", "call terminal precedes start", task_id=task_id, call_id=call_id)
             elif begun[0].get("tool_name") != ended[0].get("tool_name"):
                 fail("L0.2", "tool identity changed during call", task_id=task_id, call_id=call_id)
         sequence = [e.get("event_seq") for e in selected]
@@ -199,7 +245,7 @@ def evaluate_study(study_dir: str | Path) -> dict:
                 fail("L0.5", str(exc), task_id=task_id, field=field)
         try:
             workspace = within(root, task["workspace"])
-            manifest_path = workspace / "manifest.jsonl"
+            manifest_path = within(workspace, "manifest.jsonl")
             records = []
             if manifest_path.exists():
                 for number, line in enumerate(manifest_path.read_bytes().splitlines(), 1):
@@ -207,6 +253,11 @@ def evaluate_study(study_dir: str | Path) -> dict:
                         record = json.loads(line.decode("utf-8"))
                         if not isinstance(record, dict):
                             raise ValueError("manifest row is not an object")
+                        if not isinstance(record.get("artifact_id"), str) or not record["artifact_id"]:
+                            raise ValueError("invalid artifact identity")
+                        if not isinstance(record.get("inputs"), list) or not all(isinstance(i, str) for i in record.get("inputs", [])):
+                            fail("L0.4", "invalid artifact inputs retained", task_id=task_id, line=number)
+                            record["inputs"] = []
                         records.append(record)
                     except ValueError:
                         fail("L0.4", "invalid manifest row", task_id=task_id, line=number)
@@ -218,7 +269,7 @@ def evaluate_study(study_dir: str | Path) -> dict:
             fail("L0.4", "duplicate artifact IDs", task_id=task_id)
         produced = {}
         for event in selected:
-            if event.get("event_type") == "tool_call" and event.get("status") == "success":
+            if event.get("event_type") == "tool_call" and isinstance(event.get("result"), dict):
                 for identifier in (event.get("result") or {}).get("output_artifact_ids", []):
                     outputs_total += 1
                     if identifier in index:
@@ -235,7 +286,14 @@ def evaluate_study(study_dir: str | Path) -> dict:
             artifacts.append(artifact)
             try:
                 raw = within(workspace, artifact["path"]).read_bytes()
-                if artifact.get("sha256") != digest(raw) or type(artifact.get("version")) is not int:
+                candidates = pii_candidates(raw.decode("utf-8", errors="replace"))
+                if candidates:
+                    fail("L0.8", "unreviewed contact/PII candidates in artifact", task_id=task_id,
+                         artifact_id=identifier, candidate_sha256=candidates)
+                if SECRET.search(raw.decode("utf-8", errors="replace")):
+                    fail("L0.8", "credential candidate in artifact (value redacted)", task_id=task_id,
+                         artifact_id=identifier)
+                if artifact.get("sha256") != digest(raw) or type(artifact.get("version")) is not int or artifact.get("version", 0) < 1:
                     raise ValueError("artifact content hash/version mismatch")
             except (KeyError, OSError, ValueError):
                 fail("L0.4", "artifact unavailable, out of scope or hash/version invalid", task_id=task_id,
@@ -249,12 +307,32 @@ def evaluate_study(study_dir: str | Path) -> dict:
                 inputs = []
             if not inputs and not artifact.get("root_type"):
                 fail("L0.4", "unexplained root artifact", task_id=task_id, artifact_id=identifier)
+            if producer:
+                arguments = producer.get("arguments") or {}
+                required = arguments.get("input_artifact_id")
+                if producer.get("tool_name") in {"data_transform", "file_write", "shared_storage", "message_send",
+                       "design_document", "reproduce_bug", "pull_request", "approve"} and not required:
+                    fail("L0.4", "tool contract requires recorded input dependency", task_id=task_id, artifact_id=identifier)
+                if not inputs and producer.get("tool_name") not in {"source_query", "issue_create", "code_edit", "test_run", "build"}:
+                    fail("L0.4", "tool contract forbids unexplained root", task_id=task_id, artifact_id=identifier)
+                if required and required not in inputs:
+                    fail("L0.4", "declared lineage omits executed input", task_id=task_id, artifact_id=identifier)
+                if producer.get("tool_name") in {"code_edit", "test_run", "build"}:
+                    prior = [(e.get("event_seq", -1), i) for i, e in produced.items()
+                             if e.get("event_seq", -1) < producer.get("event_seq", -1)]
+                    if prior and max(prior)[1] not in inputs:
+                        fail("L0.4", "command/code lineage omits preceding version", task_id=task_id, artifact_id=identifier)
             for input_id in inputs:
                 edges_total += 1
                 if input_id not in index or input_id == identifier:
                     fail("L0.4", "dangling or self input edge", task_id=task_id, artifact_id=identifier, input_id=input_id)
                 else:
-                    edges_good += 1
+                    versions = artifact.get("input_versions")
+                    if not isinstance(versions, dict) or versions.get(input_id) != index[input_id].get("version"):
+                        fail("L0.4", "input version missing or mismatched", task_id=task_id,
+                             artifact_id=identifier, input_id=input_id)
+                    else:
+                        edges_good += 1
                     parent = produced.get(input_id)
                     if producer and parent and parent.get("event_seq", -1) >= producer.get("event_seq", -1):
                         fail("L0.5", "artifact consumed before production", task_id=task_id,
@@ -289,17 +367,25 @@ def evaluate_study(study_dir: str | Path) -> dict:
         else:
             fail("L0.6", "positive attack label not supported by matching executed/blocked evidence",
                  episode_id=truth.get("episode_id"), task_id=truth.get("task_id"))
+    release_rows = []
     for relative in study.get("release_files", []):
         try:
             path = within(root, relative)
             text = path.read_text(encoding="utf-8")
+            candidates = pii_candidates(text)
+            if candidates:
+                fail("L0.8", "unreviewed contact/PII candidates in release", path=relative, candidate_sha256=candidates)
             if SECRET.search(text):
                 fail("L0.8", "credential candidate in release (value redacted)", path=relative)
             if "attack_truth" in relative or re.search(r"(?:^|[/_-])attack(?:[/_.-]|$)", relative):
                 fail("L0.8", "release feature filename reveals label", path=relative)
             for line_number, line in enumerate(text.splitlines(), 1):
                 try:
-                    leaked = _leaked_keys(json.loads(line))
+                    released = json.loads(line)
+                    if not isinstance(released, dict):
+                        raise ValueError("release row must be an object")
+                    release_rows.append(released)
+                    leaked = _leaked_keys(released)
                     if leaked:
                         fail("L0.8", "label/oracle fields in observable release", path=relative,
                              line=line_number, fields=sorted(leaked))
@@ -307,6 +393,16 @@ def evaluate_study(study_dir: str | Path) -> dict:
                     fail("L0.8", "release is not valid JSONL", path=relative, line=line_number)
         except (OSError, ValueError):
             fail("L0.8", "declared release file unavailable", path=relative)
+    if study.get("release_files"):
+        fields = {"schema_version", "run_id", "task_id", "trace_id", "member_id", "event_id", "event_seq",
+                  "wall_time_utc", "simulation_time", "event_type", "status", "planned_activity_id", "phase_id",
+                  "workday", "workflow_id", "call_id", "tool_name", "from_state", "to_state", "arguments", "result",
+                  "error_type", "state"}
+        expected = Counter(json.dumps({k:v for k,v in row["payload"].items() if k in fields}, sort_keys=True) for row in normalized)
+        actual = Counter(json.dumps(row, sort_keys=True) for row in release_rows)
+        if expected != actual:
+            fail("L0.8", "observable release differs from captured feature projection", missing=sum((expected-actual).values()),
+                 extra_or_conflicting=sum((actual-expected).values()))
     # Scan raw evidence for actual key-shaped strings without copying their values to reports.
     for relative in {p for task in tasks for p in task.get("log_files", [])}:
         try:
@@ -318,11 +414,16 @@ def evaluate_study(study_dir: str | Path) -> dict:
     measure("L0.2", links_good, len(normalized))
     measure("L0.3", closed, len(tasks))
     metrics["L0.3"]["conservation_balanced"] = inventory["raw_marked_rows"] == inventory["parsed_rows"] + inventory["rejected_rows"]
+    metrics["L0.4"].update(verified_artifacts=artifacts_good, total_artifacts=len(artifacts))
     measure("L0.4", edges_good if edges_total else artifacts_good, edges_total or len(artifacts), na=bool(tasks))
     measure("L0.5", len(tasks), len(tasks))
+    metrics["L0.5"]["value"] = sum(f["metric_id"] == "L0.5" for f in failures)
+    metrics["L0.5"]["unit"] = "conflict_count"
     measure("L0.6", positive_good, len(positive), na=bool(tasks))
     measure("L0.7", outputs_good, outputs_total, na=bool(tasks))
     measure("L0.8", len(tasks), len(tasks))
+    metrics["L0.8"]["value"] = sum(f["metric_id"] == "L0.8" for f in failures)
+    metrics["L0.8"]["unit"] = "confirmed_or_unresolved_issue_count"
     for kind, available in study.get("capabilities", {}).items():
         if available:
             coverage[kind] = "MEASURED" if kind == "application" and outputs_total else "NOT_MEASURED"
@@ -360,6 +461,8 @@ def write_report(study_dir: str | Path, report_dir: str | Path, report: dict) ->
     except (OSError, subprocess.CalledProcessError):
         commit, dirty, diff = "unavailable", "unavailable", ""
     (output / "execution.json").write_text(json.dumps({"evaluated_at": datetime.now(timezone.utc).isoformat(),
-        "commit": commit, "working_tree_status": dirty, "diff_sha256": digest(diff.encode())}, indent=2) + "\n")
+        "commit": commit, "working_tree_status": dirty, "diff_sha256": digest(diff.encode()),
+        "source_sha256": {str(p): digest(p.read_bytes()) for base in (Path("src"), Path("scripts"), Path("tests"))
+                          for p in sorted(base.rglob("*.py"))}}, indent=2) + "\n")
     with tarfile.open(output / "evidence.tar.gz", "w:gz") as archive:
         archive.add(root, arcname="study")
