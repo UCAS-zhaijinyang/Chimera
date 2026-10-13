@@ -1,0 +1,154 @@
+{
+  "status": "DESIGN_ONLY_NOT_EXECUTED",
+  "price_evidence": "evidence/stage2-pricing-2026-10-13.json",
+  "currency": "USD",
+  "all_costs_estimates_not_invoice_or_maximum": true,
+  "observed_task_cost_proxy": {
+    "low_source": "round23 specified normal 54 tasks only",
+    "low_known_peak_usd": 0.313505112,
+    "low_tasks": 54,
+    "low_usd_per_task": 0.005805650222222222,
+    "high_source": "round24 original-description 54 normal tasks",
+    "high_known_peak_usd": 0.484303644,
+    "high_tasks": 54,
+    "high_usd_per_task": 0.008968586,
+    "caveat": "Two different task sets, not confidence limits or bounds on longer multi-day tasks; observed cache hit rates may not recur."
+  },
+  "workflow_pilot": {
+    "tasks": 720,
+    "low_base_usd": 4.18006816,
+    "high_base_usd": 6.45738192,
+    "low_with_20_percent_usd": 5.016081792,
+    "high_with_20_percent_usd": 7.748858304
+  },
+  "workflow_confirmation": {
+    "tasks": 8640,
+    "low_base_usd": 50.16081792,
+    "high_base_usd": 77.48858304,
+    "low_with_20_percent_usd": 60.192981504,
+    "high_with_20_percent_usd": 92.986299648
+  },
+  "workflow_pilot_and_confirmation": {
+    "tasks": 9360,
+    "low_base_usd": 54.34088608,
+    "high_base_usd": 83.94596496,
+    "low_with_20_percent_usd": 65.209063296,
+    "high_with_20_percent_usd": 100.735157952
+  },
+  "legacy_golden_placeholder_only": {
+    "tasks": 90,
+    "low_base_usd": 0.52250852,
+    "high_base_usd": 0.80717274,
+    "low_with_20_percent_usd": 0.627010224,
+    "high_with_20_percent_usd": 0.968607288
+  },
+  "legacy_pilot_and_confirmation": {
+    "status": "UNMEASURED",
+    "tasks": 9360,
+    "required_formula": "measured legacy USD per task * 9360 * 1.2 + measured legacy planning/meetings/summaries",
+    "conditional_same_proxy_only": {
+      "tasks": 9360,
+      "low_base_usd": 54.34088608,
+      "high_base_usd": 83.94596496,
+      "low_with_20_percent_usd": 65.209063296,
+      "high_with_20_percent_usd": 100.735157952
+    }
+  },
+  "independent_single_shot_baseline": {
+    "input_tokens_per_request": 4000,
+    "output_tokens_per_request": 1000,
+    "pilot_requests": 360,
+    "confirmation_train_validation_requests": 2880,
+    "unit_peak_no_cache_usd": 0.0024,
+    "pilot_with_20_percent_usd": 1.0368,
+    "confirmation_with_20_percent_usd": 8.2944,
+    "total_with_20_percent_usd": 9.3312
+  },
+  "judge": {
+    "input_tokens_per_request": 3000,
+    "output_tokens_per_request": 600,
+    "parts": [
+      {
+        "part": "calibration",
+        "requests": 60,
+        "unit_usd": 0.00162,
+        "with_20_percent_usd": 0.11664,
+        "expert_rating_person_hours_at_3_min": 9
+      },
+      {
+        "part": "main_confirmation",
+        "requests": 180,
+        "unit_usd": 0.00162,
+        "with_20_percent_usd": 0.34992,
+        "expert_rating_person_hours_at_3_min": 27
+      },
+      {
+        "part": "semantic_challenges",
+        "requests": 60,
+        "unit_usd": 0.00162,
+        "with_20_percent_usd": 0.11664,
+        "expert_rating_person_hours_at_3_min": 0
+      },
+      {
+        "part": "repeat_review",
+        "requests": 60,
+        "unit_usd": 0.00162,
+        "with_20_percent_usd": 0.11664,
+        "expert_rating_person_hours_at_3_min": 0
+      },
+      {
+        "part": "pro_escalation",
+        "requests": 60,
+        "unit_usd": 0.006336,
+        "with_20_percent_usd": 0.456192,
+        "expert_rating_person_hours_at_3_min": 0
+      },
+      {
+        "part": "independent_baseline_confirmation",
+        "requests": 120,
+        "unit_usd": 0.00162,
+        "with_20_percent_usd": 0.23328,
+        "expert_rating_person_hours_at_3_min": 18
+      }
+    ],
+    "total_requests": 540,
+    "total_with_20_percent_usd": 1.389312
+  },
+  "expert_rating": {
+    "calibration_packages": 60,
+    "main_confirmation_packages": 180,
+    "baseline_confirmation_packages": 120,
+    "experts_per_package": 3,
+    "person_hours_at_3_min": 54,
+    "person_hours_at_6_min": 108,
+    "cash_formula": "54*r to 108*r, in the currency of hourly rate r; excludes recruitment/training/packet preparation/challenge truth review/adjudication"
+  },
+  "subtotals": {
+    "workflow_plus_single_shot_plus_judge_excluding_legacy_and_other_calls": {
+      "low_usd": 75.929575296,
+      "high_usd": 111.455669952
+    },
+    "both_paths_conditional_same_cost_proxy_plus_legacy_golden_single_shot_judge": {
+      "low_usd": 141.765648816,
+      "high_usd": 213.159435192,
+      "status": "CONDITIONAL_ILLUSTRATION_NOT_FULL_BUDGET"
+    }
+  },
+  "excluded_unmeasured_costs": [
+    "planning/meetings/email/summaries beyond counted workflow requests",
+    "development/adaptation",
+    "fixture and attack truth authoring/review",
+    "reference acquisition/licensing/adaptation",
+    "local compute/storage or cloud rentals",
+    "expert recruitment/training/adjudication",
+    "additional runs/model escalations or longer context after pilot",
+    "optional 2x2 planning ablation and statistical generators"
+  ],
+  "quality_rules": [
+    "pilot before freezing confirmatory budget and sample size",
+    "preserve all failures and uncertain/unmeasured outcomes",
+    "reference/test holdouts not exposed to generator or judge tuning",
+    "budget cap reached means incomplete, never relaxed acceptance",
+    "no automatic paid execution authorized by this analysis"
+  ]
+}
