@@ -23,10 +23,11 @@ import json
 import inspect
 import hashlib
 import traceback
+from http.client import HTTPConnection, HTTPSConnection
 from pathlib import Path
 import shutil
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import Request, build_opener, HTTPHandler, HTTPSHandler
 
 import config
 
@@ -35,12 +36,50 @@ import config
 run_chimera_society = None
 
 
+def _bounded_connection(connection_type, connect_timeout):
+    """Bound each DNS-address TCP dial, then restore the response timeout.
+
+    Address fallback happens before HTTP transmission; never retry a submitted
+    generation request here. TLS verification remains urllib's default.
+    """
+    def create(host, **kwargs):
+        connection = connection_type(host, **kwargs)
+        original = connection._create_connection
+        def _workflow_dial(address, timeout, source_address=None, **options):
+            sock = original(address, min(timeout, connect_timeout), source_address, **options)
+            sock.settimeout(timeout)
+            return sock
+        connection._create_connection = _workflow_dial
+        return connection
+    return create
+
+
+class _WorkflowHTTPHandler(HTTPHandler):
+    def __init__(self, connect_timeout):
+        super().__init__()
+        self.connection = _bounded_connection(HTTPConnection, connect_timeout)
+
+    def http_open(self, request):
+        return self.do_open(self.connection, request)
+
+
+class _WorkflowHTTPSHandler(HTTPSHandler):
+    def __init__(self, connect_timeout):
+        super().__init__()
+        self.connection = _bounded_connection(HTTPSConnection, connect_timeout)
+
+    def https_open(self, request):
+        return self.do_open(self.connection, request, context=self._context,
+                            check_hostname=self._check_hostname)
+
+
 class OpenAICompatibleChatClient:
     """Minimal OpenAI-compatible client for the filesystem workflow runner."""
 
     def __init__(self, *, api_key: str | None = None, base_url: str | None = None,
                  model: str | None = None, max_tokens: int = 4096,
-                 thinking: bool | None = None, timeout: float | None = None):
+                 thinking: bool | None = None, timeout: float | None = None,
+                 connect_timeout: float = 5):
         self.api_key = api_key or getattr(config, "api_key", "")
         configured = base_url or getattr(config, "llm_base_url", "")
         self.base_url = (configured or ("https://api.deepseek.com" if
@@ -48,8 +87,13 @@ class OpenAICompatibleChatClient:
                          "https://api.openai.com/v1")).rstrip("/")
         self.model = model or getattr(config, "foundation_model", "deepseek-chat")
         self.max_tokens = max_tokens
-        self.thinking = thinking
+        # DeepSeek's named/required tool choices are unavailable in thinking
+        # mode. The workflow uses those choices and defaults to non-thinking.
+        self.thinking = False if thinking is None and self.model.startswith('deepseek') else thinking
         self.timeout = timeout or getattr(config, "workflow_api_timeout", 90)
+        if connect_timeout <= 0:
+            raise ValueError('connect_timeout must be positive')
+        self.opener = build_opener(_WorkflowHTTPHandler(connect_timeout), _WorkflowHTTPSHandler(connect_timeout))
         self.last_usage = self.last_model = self.last_finish_reason = self.last_request_id = None
         self.last_error_metadata = None
 
@@ -59,7 +103,8 @@ class OpenAICompatibleChatClient:
         payload = {"model": self.model, "messages": request_payload["messages"],
                    "temperature": request_payload.get("temperature", 0), "max_tokens": self.max_tokens}
         if request_payload.get("tools"):
-            payload.update(tools=request_payload["tools"], tool_choice="auto")
+            payload.update(tools=request_payload["tools"], tool_choice=request_payload.get("tool_choice", "auto"),
+                           parallel_tool_calls=False)
         if self.thinking is not None:
             payload["thinking"] = {"type": "enabled" if self.thinking else "disabled"}
         endpoint = self.base_url
@@ -69,7 +114,7 @@ class OpenAICompatibleChatClient:
                           headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
                           method="POST")
         try:
-            with urlopen(request, timeout=self.timeout) as response:
+            with self.opener.open(request, timeout=self.timeout) as response:
                 body = json.loads(response.read().decode("utf-8"))
         except TimeoutError:
             self.last_error_metadata = {"type":"TimeoutError"}
@@ -81,7 +126,7 @@ class OpenAICompatibleChatClient:
             frames = [frame.name for frame in traceback.extract_tb(getattr(reason, "__traceback__", None))]
             self.last_error_metadata = {"type":type(exc).__name__, "http_status":code,
                 "reason_type":type(reason).__name__, "transport_frames":frames,
-                "request_not_sent": "do_handshake" in frames}
+                "request_not_sent": "do_handshake" in frames or "_workflow_dial" in frames}
             raise RuntimeError(f"workflow LLM request failed ({type(exc).__name__}, code={code})") from None
         try:
             self.last_usage = body.get("usage")
@@ -136,7 +181,7 @@ def run_workflow_task(
     member_log_dir.mkdir(parents=True, exist_ok=True)
     detailed_log = member_log_dir / f"{member_id}_week_{week}_{date}_executio_task_{event_index}.log"
     try:
-        result = loop.run(task, chat_fn=OpenAICompatibleChatClient(), max_steps=getattr(config, "workflow_max_steps", 12))
+        result = loop.run(task, chat_fn=OpenAICompatibleChatClient(), max_steps=getattr(config, "workflow_max_steps", 24))
     finally:
         if (workspace / "execution.log").exists():
             shutil.copyfile(workspace / "execution.log", detailed_log)

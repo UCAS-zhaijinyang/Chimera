@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "study_id": "missing_log-1",
+  "status": "FAIL",
+  "scope": "workflow application simulation; no real system/network/email claim",
+  "metrics": {
+    "L0.1": {
+      "name": "核心字段可用率",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "status": "NOT_MEASURED",
+      "evidence_refs": []
+    },
+    "L0.2": {
+      "name": "主键关联完整性",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "status": "NOT_MEASURED",
+      "evidence_refs": []
+    },
+    "L0.3": {
+      "name": "文件与事件守恒",
+      "value": 0.0,
+      "numerator": 0,
+      "denominator": 1,
+      "status": "FAIL",
+      "evidence_refs": [
+        {
+          "task_id": "t0001",
+          "path": "workspaces/t0001/execution.log",
+          "exception": "FileNotFoundError"
+        },
+        {
+          "task_id": "t0001",
+          "started": 0,
+          "terminal": 0
+        }
+      ],
+      "conservation_balanced": true
+    },
+    "L0.4": {
+      "name": "产物血缘完整性",
+      "value": 1.0,
+      "numerator": 4,
+      "denominator": 4,
+      "status": "FAIL",
+      "evidence_refs": [
+        {
+          "task_id": "t0001",
+          "artifact_id": "582e85836586"
+        },
+        {
+          "task_id": "t0001",
+          "artifact_id": "bb2b85993581"
+        },
+        {
+          "task_id": "t0001",
+          "artifact_id": "70c568ff4dab"
+        },
+        {
+          "task_id": "t0001",
+          "artifact_id": "352732c13be3"
+        },
+        {
+          "task_id": "t0001",
+          "artifact_id": "4b06668c3e95"
+        }
+      ],
+      "verified_artifacts": 0,
+      "total_artifacts": 5
+    },
+    "L0.5": {
+      "name": "因果与时间约束",
+      "value": 0,
+      "numerator": 1,
+      "denominator": 1,
+      "status": "PASS",
+      "evidence_refs": [],
+      "unit": "conflict_count"
+    },
+    "L0.6": {
+      "name": "标签可追溯性",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "status": "NOT_APPLICABLE",
+      "evidence_refs": []
+    },
+    "L0.7": {
+      "name": "跨采集源对齐",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "status": "NOT_APPLICABLE",
+      "evidence_refs": []
+    },
+    "L0.8": {
+      "name": "发布完整性/泄漏扫描",
+      "value": 1,
+      "numerator": 1,
+      "denominator": 1,
+      "status": "FAIL",
+      "evidence_refs": [
+        {
+          "missing": 0,
+          "extra_or_conflicting": 24
+        }
+      ],
+      "unit": "confirmed_or_unresolved_issue_count"
+    }
+  },
+  "failures": [
+    {
+      "metric_id": "L0.3",
+      "reason": "expected log missing or outside workspace",
+      "evidence": {
+        "task_id": "t0001",
+        "path": "workspaces/t0001/execution.log",
+        "exception": "FileNotFoundError"
+      }
+    },
+    {
+      "metric_id": "L0.3",
+      "reason": "task lifecycle not closed exactly once",
+      "evidence": {
+        "task_id": "t0001",
+        "started": 0,
+        "terminal": 0
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "582e85836586"
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "bb2b85993581"
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "70c568ff4dab"
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "352732c13be3"
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "4b06668c3e95"
+      }
+    },
+    {
+      "metric_id": "L0.8",
+      "reason": "observable release differs from captured feature projection",
+      "evidence": {
+        "missing": 0,
+        "extra_or_conflicting": 24
+      }
+    }
+  ],
+  "inventory": {
+    "raw_marked_rows": 0,
+    "parsed_rows": 0,
+    "rejected_rows": 0,
+    "unique_events": 0,
+    "copied_rows": 0,
+    "tasks": 1,
+    "artifacts": 5
+  },
+  "coverage": {
+    "application": "NOT_MEASURED",
+    "system": "NOT_MEASURED",
+    "network": "NOT_MEASURED",
+    "real_email": "NOT_MEASURED"
+  },
+  "parse_rejections": [],
+  "events": [],
+  "artifacts": [
+    {
+      "artifact_id": "582e85836586",
+      "artifact_type": "file",
+      "producer_tool": "source_query",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "source.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/582e85836586.json",
+      "encoding": "json",
+      "inputs": [],
+      "version": 1,
+      "sha256": "e30359ddbf1eeda211a45b377f1ac7ac8da2aef047269b450714e68a516ac63c",
+      "created_at": "2026-10-13T03:52:16.861114+00:00",
+      "root_type": "simulation_source",
+      "input_versions": {},
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "bb2b85993581",
+      "artifact_type": "table",
+      "producer_tool": "data_transform",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "table.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/bb2b85993581.json",
+      "encoding": "json",
+      "inputs": [
+        "582e85836586"
+      ],
+      "version": 1,
+      "sha256": "e1a5de2b68691b9eaa4220d9f1ea557c9b2dca15a969aa71c4310169a81fad16",
+      "created_at": "2026-10-13T03:52:16.862080+00:00",
+      "root_type": null,
+      "input_versions": {
+        "582e85836586": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "70c568ff4dab",
+      "artifact_type": "file",
+      "producer_tool": "file_write",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "reports/out.md",
+      "trace_id": "trace0001",
+      "path": "artifacts/70c568ff4dab.md",
+      "encoding": "text",
+      "inputs": [
+        "bb2b85993581"
+      ],
+      "version": 1,
+      "sha256": "e1a5de2b68691b9eaa4220d9f1ea557c9b2dca15a969aa71c4310169a81fad16",
+      "created_at": "2026-10-13T03:52:16.863120+00:00",
+      "root_type": null,
+      "input_versions": {
+        "bb2b85993581": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "352732c13be3",
+      "artifact_type": "drive_object",
+      "producer_tool": "shared_storage",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "shared/out.md",
+      "trace_id": "trace0001",
+      "path": "artifacts/352732c13be3.md",
+      "encoding": "json",
+      "inputs": [
+        "70c568ff4dab"
+      ],
+      "version": 1,
+      "sha256": "130cbdd36b2ecedb9caa6cfd0112cfc0e9aabfa39acd1cf470506de10d52c2fb",
+      "created_at": "2026-10-13T03:52:16.864152+00:00",
+      "root_type": null,
+      "input_versions": {
+        "70c568ff4dab": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "4b06668c3e95",
+      "artifact_type": "email",
+      "producer_tool": "message_send",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "message.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/4b06668c3e95.json",
+      "encoding": "json",
+      "inputs": [
+        "352732c13be3"
+      ],
+      "version": 1,
+      "sha256": "73a5037ade4c559d19d3ec63810be23ead74ca05aa20e80548b7e2f4eb0803d2",
+      "created_at": "2026-10-13T03:52:16.865008+00:00",
+      "root_type": null,
+      "input_versions": {
+        "352732c13be3": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    }
+  ]
+}

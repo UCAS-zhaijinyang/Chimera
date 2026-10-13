@@ -94,7 +94,7 @@ max_tool_iterations = 20
 # default so existing Phase 2 experiments are reproducible.
 workflow_execution_enabled = os.environ.get("CHIMERA_WORKFLOW_EXECUTION", "0").lower() in {"1", "true", "yes"}
 workflow_api_timeout = int(os.environ.get("CHIMERA_WORKFLOW_API_TIMEOUT", "90"))
-workflow_max_steps = int(os.environ.get("CHIMERA_WORKFLOW_MAX_STEPS", "12"))
+workflow_max_steps = int(os.environ.get("CHIMERA_WORKFLOW_MAX_STEPS", "24"))
 # Wall-clock timeout for a single Phase-2 OWL task subprocess (seconds).
 # Timed-out / unfinished workers are killed by the process registry.
 task_process_timeout = 600

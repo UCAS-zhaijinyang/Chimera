@@ -1,0 +1,20 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____ test_hidden_code_check_verifies_multiple_source_files_in_fresh_process ____
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-46/test_hidden_code_check_verifie0')
+
+    def test_hidden_code_check_verifies_multiple_source_files_in_fresh_process(tmp_path):
+        from evaluation.business import check_code
+        (tmp_path/'helper.py').write_text('def add(a,b):\n    return a+b\n')
+        (tmp_path/'main.py').write_text('from helper import add\ndef compute(a,b):\n    return add(a,b)\n')
+>       assert check_code(tmp_path/'main.py',0)['status']=='PASS'
+E       AssertionError: assert 'FAIL' == 'PASS'
+E         
+E         - PASS
+E         + FAIL
+
+tests/test_business_acceptance.py:55: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_business_acceptance.py::test_hidden_code_check_verifies_multiple_source_files_in_fresh_process
+1 failed in 0.16s

@@ -34,7 +34,29 @@ EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z][A-Za-z0-9-]*)")
 def pii_candidates(text):
     # Contact candidates are not asserted to be real PII. Reserved simulation
     # domains are explicitly synthetic; other contacts require review.
-    return [digest(match.group(0).encode()) for match in EMAIL.finditer(text)
+    # JSON serialization escapes newlines as `\\n`. Scanning those bytes
+    # mistakes `\\n@pytest.mark.parametrize` for an email `n@pytest...`.
+    # Decode structured text and scan individual string values instead.
+    def strings(value):
+        if isinstance(value, str):
+            yield value
+        elif isinstance(value, dict):
+            for key, child in value.items():
+                yield str(key)
+                yield from strings(child)
+        elif isinstance(value, list):
+            for child in value:
+                yield from strings(child)
+    try:
+        values = list(strings(json.loads(text)))
+    except (ValueError, TypeError):
+        values = []
+        for line in text.splitlines():
+            try:
+                values.extend(strings(json.loads(line)))
+            except (ValueError, TypeError):
+                values.append(line)
+    return [digest(match.group(0).encode()) for value in values for match in EMAIL.finditer(value)
             if not (match.group(1).endswith((".invalid", ".example", ".test")) or
                     match.group(1) in {"example.com", "example.org", "example.net"})]
 

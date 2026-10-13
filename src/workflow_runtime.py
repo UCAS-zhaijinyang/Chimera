@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 import json
+import importlib.util
 import os
 import re
 from pathlib import Path
@@ -71,7 +72,7 @@ WORKFLOWS: dict[str, WorkflowSpec] = {
             "requested": {"issue_create": "issue_created"},
             "issue_created": {"design_document": "designed"},
             "designed": {"code_edit": "implemented"},
-            "implemented": {"test_run": "tested"},
+            "implemented": {"test_run": "tested", "code_edit": "implemented"},
             "tested": {"build": "built"},
             "built": {"pull_request": "in_review"},
             "in_review": {"approve": "completed"},
@@ -83,7 +84,7 @@ WORKFLOWS: dict[str, WorkflowSpec] = {
             "requested": {"issue_create": "issue_created"},
             "issue_created": {"reproduce_bug": "reproduced"},
             "reproduced": {"code_edit": "fixed"},
-            "fixed": {"test_run": "tested"},
+            "fixed": {"test_run": "tested", "code_edit": "fixed"},
             "tested": {"pull_request": "in_review"},
             "in_review": {"approve": "completed"},
         },
@@ -137,13 +138,24 @@ def _safe_relative_path(root: Path, requested: str, default_name: str) -> Path:
 class FilesystemToolRuntime:
     """Execute semantic local tools and persist every output as an artifact."""
 
-    def __init__(self, workspace: str | os.PathLike[str], *, member_id: str, trace_id: str):
+    def __init__(self, workspace: str | os.PathLike[str], *, member_id: str, trace_id: str,
+                 source_rows: Optional[Sequence[Mapping[str, Any]]] = None,
+                 reproduction_command: Optional[str] = None):
         self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.member_id = member_id
         self.trace_id = trace_id
         self.bus = FilesystemArtifactBus(self.workspace)
         self._last_artifact_id = None
+        self.source_rows = list(source_rows) if source_rows is not None else [{"week": "W1", "count": 3}, {"week": "W2", "count": 5}]
+        self.reproduction_command = reproduction_command
+        self.execution_environment = {
+            'cwd':str(self.workspace), 'python_executable':os.sys.executable,
+            'default_build_command':f'{shlex.quote(os.sys.executable)} -m compileall -q src',
+            'build_kind':'python_bytecode_compilation',
+            'optional_modules':{name:importlib.util.find_spec(name) is not None
+                                for name in ('pytest','build','pip','setuptools')},
+        }
 
     def _input(self, arguments: Mapping[str, Any], key: str = "input_artifact_id"):
         artifact_id = arguments.get(key)
@@ -178,7 +190,7 @@ class FilesystemToolRuntime:
             artifact = self._put(
                 "file",
                 tool_name,
-                {"query": query, "rows": [{"week": "W1", "count": 3}, {"week": "W2", "count": 5}]},
+                {"query": query, "rows": self.source_rows},
                 name="source.json",
             )
             return self._result(tool_name, artifact, f"source data acquired for {query}")
@@ -272,21 +284,30 @@ class FilesystemToolRuntime:
 
         if tool_name == "reproduce_bug":
             source = self._input(args)
+            payload = {"reproduced": None, "issue_artifact_id": source.artifact_id,
+                       "reproduction_kind": "simulation_placeholder"}
+            if self.reproduction_command:
+                payload = self._run_command(self.reproduction_command)
+                payload.update(reproduced=payload["returncode"] == 1 and "AssertionError" in payload["stderr"],
+                               issue_artifact_id=source.artifact_id, reproduction_kind="executed_check")
             artifact = self._put(
                 "file", tool_name,
-                {"reproduced": True, "issue_artifact_id": source.artifact_id},
+                payload,
                 name="reproduction.json", inputs=(source.artifact_id,),
             )
-            return self._result(tool_name, artifact, "bug reproduced")
+            result = self._result(tool_name, artifact, "reproduction recorded")
+            if self.reproduction_command:
+                result["business_status"] = "success" if payload["reproduced"] else "failed"
+            return result
 
         if tool_name == "test_run":
-            command = args.get("command") or "python -m compileall -q ."
+            command = args.get("command") or f"{shlex.quote(os.sys.executable)} -m compileall -q ."
             result = self._run_command(str(command))
             artifact = self._put("file", tool_name, result, name="test_report.json")
             return self._result(tool_name, artifact, "tests completed")
 
         if tool_name == "build":
-            command = args.get("command") or "python -m compileall -q ."
+            command = args.get("command") or f"{shlex.quote(os.sys.executable)} -m compileall -q ."
             result = self._run_command(str(command))
             artifact = self._put("file", tool_name, result, name="build_report.json")
             return self._result(tool_name, artifact, "build completed")
@@ -336,6 +357,12 @@ class FilesystemToolRuntime:
             "output_paths": [artifact.path],
             "evidence_level": "simulation_only",
             "business_status": "not_measured",
+            # The model needs actual values, not only opaque IDs and evidence paths.
+            "payload": artifact.payload,
+            "output_paths_kind": "read_only_capture_evidence",
+            "business_path": artifact.name if tool_name in {"file_write", "shared_storage", "code_edit"} else None,
+            "workspace": str(self.workspace),
+            "execution_environment": self.execution_environment,
         }
         if tool_name in {"test_run", "build"}:
             result["returncode"] = artifact.payload["returncode"]
@@ -394,12 +421,14 @@ class WorkflowRunResult:
 
 
 class WorkflowToolLoop:
-    def __init__(self, workspace: str | os.PathLike[str], *, member_id: str, trace_id: str, context: Optional[Mapping] = None):
+    def __init__(self, workspace: str | os.PathLike[str], *, member_id: str, trace_id: str, context: Optional[Mapping] = None,
+                 source_rows: Optional[Sequence[Mapping[str, Any]]] = None, reproduction_command: Optional[str] = None):
         self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.member_id = member_id
         self.trace_id = trace_id
-        self.runtime = FilesystemToolRuntime(self.workspace, member_id=member_id, trace_id=trace_id)
+        self.runtime = FilesystemToolRuntime(self.workspace, member_id=member_id, trace_id=trace_id,
+                                            source_rows=source_rows, reproduction_command=reproduction_command)
         self.log_path = self.workspace / "execution.log"
         self.context = {"run_id": "r-" + uuid.uuid4().hex, "task_id": trace_id,
                         "trace_id": trace_id, "member_id": member_id,
@@ -425,7 +454,8 @@ class WorkflowToolLoop:
         task: str,
         *,
         chat_fn: Callable[[dict[str, Any]], dict[str, Any]],
-        max_steps: int = 12,
+        max_steps: int = 24,
+        max_tool_errors: int = 2,
     ) -> WorkflowRunResult:
         workflow_id = classify_workflow(task)
         if self.log_path.exists():
@@ -446,12 +476,45 @@ class WorkflowToolLoop:
             {"role": "user", "content": task},
         ]
         final_answer = ""
+        tool_errors = 0
         self._log("TASK_EVENT", {"event_type": "task_started", "workflow_id": workflow_id, "status": "started"})
         try:
             for step in range(max_steps):
                 allowed = router.tools_for_state(state)
-                request = {"workflow_id": workflow_id, "state": state, "messages": messages,
+                sequence = " -> ".join(name for transitions in router.spec.transitions.values() for name in transitions)
+                # State must be in messages: OpenAI-compatible APIs do not transmit
+                # the Python-only `state`/`workflow_id` request fields.
+                progress = (
+                    "You are completing an isolated simulated structured work task. "
+                    f"Workflow: {workflow_id}; full sequence: {sequence}. Current state: {state}. "
+                    f"Current allowed tools: {', '.join(allowed) or '<none: terminal>'}. "
+                    "Tools for later phases become available after the current phase succeeds. "
+                    "Use the latest output_artifact_ids as input_artifact_id. Ticket artifacts are valid inputs "
+                    "for design_document and reproduce_bug. Tool payload contains the actual input/output values. "
+                    "output_paths are read-only capture evidence; never write to artifacts/, manifest.jsonl, "
+                    "manifest.lock or execution.log. Write business files to reports/, shared/ or src/. "
+                    "Follow the specified business requirements and do not invent missing requirements. "
+                    "Use only the current offered tools. Only after the workflow reaches its terminal state "
+                    "give a brief final answer. Make ONE tool call per response. In implemented/fixed states "
+                    "code_edit remains available to write additional source/test files and repair failed checks; "
+                    "test_run advances only on success. Finish every required file before testing. "
+                    f"Available Python interpreter: {shlex.quote(os.sys.executable)}. "
+                    f"Command working directory and business file root: {self.workspace}. "
+                    "The interpreter installation directory is NOT the task workspace. "
+                    "Run commands relative to the task workspace; do not cd to the framework repository. "
+                    f"Execution environment: {json.dumps(self.runtime.execution_environment)}. "
+                    "For this local simulation, unless packaging is explicitly required, build with the "
+                    "advertised default_build_command (Python bytecode compilation). Do not assume optional "
+                    "packaging modules or install dependencies. Compilation alone is not a functional test. "
+                    "Message/review/approval tools are local simulation records."
+                )
+                request = {"workflow_id": workflow_id, "state": state,
+                           "messages": [{"role": "system", "content": progress}, *messages[1:]],
                            "tools": schemas_for_tools(allowed)}
+                if len(allowed) == 1:
+                    request["tool_choice"] = {"type": "function", "function": {"name": allowed[0]}}
+                elif allowed:
+                    request['tool_choice'] = 'required'
                 model_call_id = "model-" + uuid.uuid4().hex
                 self._log("MODEL_EVENT", {"event_type": "model_started", "step": step,
                           "workflow_id": workflow_id, "call_id": model_call_id, "status": "started"})
@@ -477,7 +540,7 @@ class WorkflowToolLoop:
                               "state": state, "answer": final_answer,
                               "status": "completed" if router.is_terminal(state) else "early_terminated"})
                     return WorkflowRunResult(workflow_id, state, final_answer, tool_calls, str(self.workspace))
-                for call in tool_calls_payload:
+                for call_index, call in enumerate(tool_calls_payload):
                     function = call.get("function") or {}
                     requested_tool_name = str(function.get("name") or "")
                     tool_name = canonical_tool_name(requested_tool_name)
@@ -488,11 +551,25 @@ class WorkflowToolLoop:
                     self._log("TOOL_START", {**base, "event_type": "tool_started", "status": "started"})
                     tool_closed = False
                     arguments = {}
+                    result = None
                     try:
                         raw_arguments = function.get("arguments") or {}
                         arguments = json.loads(raw_arguments) if isinstance(raw_arguments, str) else dict(raw_arguments)
                         if not isinstance(arguments, dict):
                             raise ValueError("tool arguments must be an object")
+                        if call_index > 0:
+                            # The first call may already have committed a write.
+                            # Never replay it or execute speculative future calls.
+                            # Retain a rejection for every extra call and give the
+                            # model feedback at the next bounded loop iteration.
+                            self._log("TOOL_EVENT", {**base, "event_type": "tool_call", "arguments": arguments,
+                                      "status": "rejected", "to_state": state,
+                                      "rejection_reason": "one_tool_call_per_workflow_turn"})
+                            tool_closed = True
+                            messages.append({"role": "assistant", "tool_calls": [call]})
+                            messages.append({"role": "tool", "tool_call_id": call.get("id", tool_name),
+                                "content": json.dumps({"status":"rejected", "reason":"Only one tool call per turn is executed; the first call already committed. Continue from the current state with the latest successful artifact ID."})})
+                            continue
                         if tool_name not in router.tools_for_state(state):
                             self._log("TOOL_EVENT", {**base, "event_type": "tool_call", "arguments": arguments,
                                       "status": "rejected", "to_state": state})
@@ -511,6 +588,8 @@ class WorkflowToolLoop:
                         if not failed:
                             state = router.apply(state, tool_name)
                             tool_calls.append(tool_name)
+                            if state != base['from_state']:
+                                tool_errors = 0
                         self._log("TOOL_EVENT", {**base, "event_type": "tool_call", "to_state": state,
                                   "arguments": arguments, "result": result, "status": "failed" if failed else "success"})
                         tool_closed = True
@@ -524,6 +603,15 @@ class WorkflowToolLoop:
                             self._log("TOOL_EVENT", {**base, "event_type": "tool_call", "to_state": state,
                                       "arguments": arguments, "status": "timeout" if isinstance(exc, (TimeoutError, subprocess.TimeoutExpired)) else "failed",
                                       "error_type": type(exc).__name__})
+                        if isinstance(exc, (ValueError, KeyError, PermissionError, RuntimeError)) and tool_errors < max_tool_errors:
+                            tool_errors += 1
+                            messages.append({"role":"assistant", "tool_calls":[call]})
+                            messages.append({"role":"tool", "tool_call_id":call.get("id", tool_name),
+                                "content":json.dumps({"status":"error", "error_type":type(exc).__name__,
+                                    "current_state":state, "allowed_tools":list(router.tools_for_state(state)),
+                                    "result":result,
+                                    "guidance":"The rejected/failed action did not advance state. Use ONLY the current allowed tool, use the latest successful artifact ID, and keep writes outside capture evidence. A failed command is not a successful test."})})
+                            continue
                         raise
             raise RuntimeError(f"workflow exceeded max_steps={max_steps}")
         except Exception as exc:

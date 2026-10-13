@@ -1,0 +1,17 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_model_receives_the_actual_command_directory_and_available_build_command _
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-56/test_model_receives_the_actual0')
+
+    def test_model_receives_the_actual_command_directory_and_available_build_command(tmp_path):
+        import sys, shlex
+        runtime=FilesystemToolRuntime(tmp_path,member_id='m',trace_id='t')
+        result=runtime.execute('test_run',{'command':f'{shlex.quote(sys.executable)} -c "import os;print(os.getcwd())"'})
+>       environment=result['execution_environment']
+E       KeyError: 'execution_environment'
+
+tests/test_workflow_execution_repairs.py:166: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_workflow_execution_repairs.py::test_model_receives_the_actual_command_directory_and_available_build_command
+1 failed in 0.05s

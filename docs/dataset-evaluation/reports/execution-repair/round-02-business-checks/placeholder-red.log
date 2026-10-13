@@ -1,0 +1,17 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_unconfigured_reproduction_never_claims_observed_bug ___________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-37/test_unconfigured_reproduction0')
+
+    def test_unconfigured_reproduction_never_claims_observed_bug(tmp_path):
+        runtime = FilesystemToolRuntime(tmp_path, member_id='m', trace_id='t')
+        issue = runtime.execute('issue_create', {'title':'Bug'})
+        result = runtime.execute('reproduce_bug', {'input_artifact_id':issue['output_artifact_ids'][0]})
+>       assert result['payload']['reproduced'] is None
+E       assert True is None
+
+tests/test_business_acceptance.py:36: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_business_acceptance.py::test_unconfigured_reproduction_never_claims_observed_bug
+1 failed in 0.02s

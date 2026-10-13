@@ -1,0 +1,56 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+________________ test_source_query_uses_supplied_business_rows _________________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-32/test_source_query_uses_supplie0')
+
+    def test_source_query_uses_supplied_business_rows(tmp_path):
+>       runtime = FilesystemToolRuntime(tmp_path, member_id='m', trace_id='t', source_rows=[{'week':'W1','count':9}])
+E       TypeError: FilesystemToolRuntime.__init__() got an unexpected keyword argument 'source_rows'
+
+tests/test_business_acceptance.py:9: TypeError
+______ test_reproduce_bug_requires_an_actual_failed_check_when_configured ______
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-32/test_reproduce_bug_requires_an0')
+
+    def test_reproduce_bug_requires_an_actual_failed_check_when_configured(tmp_path):
+        import sys
+>       runtime = FilesystemToolRuntime(tmp_path, member_id='m', trace_id='t', reproduction_command=f'{sys.executable} -c "assert 1 == 2"')
+E       TypeError: FilesystemToolRuntime.__init__() got an unexpected keyword argument 'reproduction_command'
+
+tests/test_business_acceptance.py:15: TypeError
+_______ test_reproduce_bug_does_not_claim_reproduction_when_check_passes _______
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-32/test_reproduce_bug_does_not_cl0')
+
+    def test_reproduce_bug_does_not_claim_reproduction_when_check_passes(tmp_path):
+        import sys
+>       runtime = FilesystemToolRuntime(tmp_path, member_id='m', trace_id='t', reproduction_command=f'{sys.executable} -c "assert 1 == 1"')
+E       TypeError: FilesystemToolRuntime.__init__() got an unexpected keyword argument 'reproduction_command'
+
+tests/test_business_acceptance.py:25: TypeError
+______ test_hidden_code_check_rejects_syntactically_valid_wrong_function _______
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-32/test_hidden_code_check_rejects0')
+
+    def test_hidden_code_check_rejects_syntactically_valid_wrong_function(tmp_path):
+>       from evaluation.business import check_code
+E       ModuleNotFoundError: No module named 'evaluation.business'
+
+tests/test_business_acceptance.py:33: ModuleNotFoundError
+_________ test_independent_report_check_detects_wrong_values_and_copy __________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-32/test_independent_report_check_0')
+
+    def test_independent_report_check_detects_wrong_values_and_copy(tmp_path):
+>       from evaluation.business import check_report_files
+E       ModuleNotFoundError: No module named 'evaluation.business'
+
+tests/test_business_acceptance.py:44: ModuleNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_business_acceptance.py::test_source_query_uses_supplied_business_rows
+FAILED tests/test_business_acceptance.py::test_reproduce_bug_requires_an_actual_failed_check_when_configured
+FAILED tests/test_business_acceptance.py::test_reproduce_bug_does_not_claim_reproduction_when_check_passes
+FAILED tests/test_business_acceptance.py::test_hidden_code_check_rejects_syntactically_valid_wrong_function
+FAILED tests/test_business_acceptance.py::test_independent_report_check_detects_wrong_values_and_copy
+5 failed in 0.14s

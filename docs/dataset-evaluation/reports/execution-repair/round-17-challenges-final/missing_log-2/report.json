@@ -1,0 +1,396 @@
+{
+  "schema_version": 1,
+  "study_id": "missing_log-2",
+  "status": "FAIL",
+  "scope": "workflow application simulation; no real system/network/email claim",
+  "metrics": {
+    "L0.1": {
+      "name": "核心字段可用率",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "status": "NOT_MEASURED",
+      "evidence_refs": []
+    },
+    "L0.2": {
+      "name": "主键关联完整性",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "status": "NOT_MEASURED",
+      "evidence_refs": []
+    },
+    "L0.3": {
+      "name": "文件与事件守恒",
+      "value": 0.0,
+      "numerator": 0,
+      "denominator": 1,
+      "status": "FAIL",
+      "evidence_refs": [
+        {
+          "task_id": "t0001",
+          "path": "workspaces/t0001/execution.log",
+          "exception": "FileNotFoundError"
+        },
+        {
+          "task_id": "t0001",
+          "started": 0,
+          "terminal": 0
+        }
+      ],
+      "conservation_balanced": true
+    },
+    "L0.4": {
+      "name": "产物血缘完整性",
+      "value": 1.0,
+      "numerator": 6,
+      "denominator": 6,
+      "status": "FAIL",
+      "evidence_refs": [
+        {
+          "task_id": "t0001",
+          "artifact_id": "8ff05b544c29"
+        },
+        {
+          "task_id": "t0001",
+          "artifact_id": "504481d1adee"
+        },
+        {
+          "task_id": "t0001",
+          "artifact_id": "36b4a61a0a4a"
+        },
+        {
+          "task_id": "t0001",
+          "artifact_id": "14d9f81340fd"
+        },
+        {
+          "task_id": "t0001",
+          "artifact_id": "28c175d102b9"
+        },
+        {
+          "task_id": "t0001",
+          "artifact_id": "1c16c5a19608"
+        },
+        {
+          "task_id": "t0001",
+          "artifact_id": "f762dd27b526"
+        }
+      ],
+      "verified_artifacts": 0,
+      "total_artifacts": 7
+    },
+    "L0.5": {
+      "name": "因果与时间约束",
+      "value": 0,
+      "numerator": 1,
+      "denominator": 1,
+      "status": "PASS",
+      "evidence_refs": [],
+      "unit": "conflict_count"
+    },
+    "L0.6": {
+      "name": "标签可追溯性",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "status": "NOT_APPLICABLE",
+      "evidence_refs": []
+    },
+    "L0.7": {
+      "name": "跨采集源对齐",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "status": "NOT_APPLICABLE",
+      "evidence_refs": []
+    },
+    "L0.8": {
+      "name": "发布完整性/泄漏扫描",
+      "value": 1,
+      "numerator": 1,
+      "denominator": 1,
+      "status": "FAIL",
+      "evidence_refs": [
+        {
+          "missing": 0,
+          "extra_or_conflicting": 32
+        }
+      ],
+      "unit": "confirmed_or_unresolved_issue_count"
+    }
+  },
+  "failures": [
+    {
+      "metric_id": "L0.3",
+      "reason": "expected log missing or outside workspace",
+      "evidence": {
+        "task_id": "t0001",
+        "path": "workspaces/t0001/execution.log",
+        "exception": "FileNotFoundError"
+      }
+    },
+    {
+      "metric_id": "L0.3",
+      "reason": "task lifecycle not closed exactly once",
+      "evidence": {
+        "task_id": "t0001",
+        "started": 0,
+        "terminal": 0
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "8ff05b544c29"
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "504481d1adee"
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "36b4a61a0a4a"
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "14d9f81340fd"
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "28c175d102b9"
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "1c16c5a19608"
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "artifact has no matching captured producer",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "f762dd27b526"
+      }
+    },
+    {
+      "metric_id": "L0.8",
+      "reason": "observable release differs from captured feature projection",
+      "evidence": {
+        "missing": 0,
+        "extra_or_conflicting": 32
+      }
+    }
+  ],
+  "inventory": {
+    "raw_marked_rows": 0,
+    "parsed_rows": 0,
+    "rejected_rows": 0,
+    "unique_events": 0,
+    "copied_rows": 0,
+    "tasks": 1,
+    "artifacts": 7
+  },
+  "coverage": {
+    "application": "NOT_MEASURED",
+    "system": "NOT_MEASURED",
+    "network": "NOT_MEASURED",
+    "real_email": "NOT_MEASURED"
+  },
+  "parse_rejections": [],
+  "events": [],
+  "artifacts": [
+    {
+      "artifact_id": "8ff05b544c29",
+      "artifact_type": "ticket",
+      "producer_tool": "issue_create",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "issue.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/8ff05b544c29.json",
+      "encoding": "json",
+      "inputs": [],
+      "version": 1,
+      "sha256": "cefd9d3084da31e09530f65f82b11c5dce26ecf2cb44c6a2e76ceec9a4baa9b5",
+      "created_at": "2026-10-13T03:36:17.357875+00:00",
+      "root_type": "simulation_source",
+      "input_versions": {},
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "504481d1adee",
+      "artifact_type": "file",
+      "producer_tool": "design_document",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "design.md",
+      "trace_id": "trace0001",
+      "path": "artifacts/504481d1adee.md",
+      "encoding": "text",
+      "inputs": [
+        "8ff05b544c29"
+      ],
+      "version": 1,
+      "sha256": "87498d7bc288a67bdff4ffc7a59fd739057eb02e902cae1ac94395563dbf8246",
+      "created_at": "2026-10-13T03:36:17.358681+00:00",
+      "root_type": null,
+      "input_versions": {
+        "8ff05b544c29": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "36b4a61a0a4a",
+      "artifact_type": "file",
+      "producer_tool": "code_edit",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "src/main.py",
+      "trace_id": "trace0001",
+      "path": "artifacts/36b4a61a0a4a.py",
+      "encoding": "text",
+      "inputs": [
+        "504481d1adee"
+      ],
+      "version": 1,
+      "sha256": "1043ef52e8b2145382368acfe3244720f319f539a54f1542a9c3c857ed3d2111",
+      "created_at": "2026-10-13T03:36:17.359502+00:00",
+      "root_type": null,
+      "input_versions": {
+        "504481d1adee": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "14d9f81340fd",
+      "artifact_type": "file",
+      "producer_tool": "test_run",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "test_report.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/14d9f81340fd.json",
+      "encoding": "json",
+      "inputs": [
+        "36b4a61a0a4a"
+      ],
+      "version": 1,
+      "sha256": "f7fcadc0039c85922de37a6b08f2a8953f5e4b28bfd708d2792daf1eb75da08c",
+      "created_at": "2026-10-13T03:36:17.374675+00:00",
+      "root_type": null,
+      "input_versions": {
+        "36b4a61a0a4a": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "28c175d102b9",
+      "artifact_type": "file",
+      "producer_tool": "build",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "build_report.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/28c175d102b9.json",
+      "encoding": "json",
+      "inputs": [
+        "14d9f81340fd"
+      ],
+      "version": 1,
+      "sha256": "8986beceb5fad935f6840d6e9fb857c448e1ef1657557c3580ebf2fe980f25b2",
+      "created_at": "2026-10-13T03:36:17.397258+00:00",
+      "root_type": null,
+      "input_versions": {
+        "14d9f81340fd": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "1c16c5a19608",
+      "artifact_type": "ticket",
+      "producer_tool": "pull_request",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "pull_request.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/1c16c5a19608.json",
+      "encoding": "json",
+      "inputs": [
+        "28c175d102b9"
+      ],
+      "version": 1,
+      "sha256": "8c1a5059c8ba0189a6219ee1335a9fcecaa7a00dbe96129d41535dc6af648e32",
+      "created_at": "2026-10-13T03:36:17.398212+00:00",
+      "root_type": null,
+      "input_versions": {
+        "28c175d102b9": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "f762dd27b526",
+      "artifact_type": "event",
+      "producer_tool": "approve",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "approval.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/f762dd27b526.json",
+      "encoding": "json",
+      "inputs": [
+        "1c16c5a19608"
+      ],
+      "version": 1,
+      "sha256": "b9ea65d7aae95688b2752b7f14869f4a6edb9ead31280a49e1557ed7aebdedba",
+      "created_at": "2026-10-13T03:36:17.399011+00:00",
+      "root_type": null,
+      "input_versions": {
+        "1c16c5a19608": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    }
+  ]
+}

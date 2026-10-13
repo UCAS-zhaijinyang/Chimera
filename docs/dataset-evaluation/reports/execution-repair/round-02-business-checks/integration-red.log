@@ -1,0 +1,18 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___ test_business_campaign_has_real_reproduction_and_independent_acceptance ____
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-34/test_business_campaign_has_rea0')
+
+    def test_business_campaign_has_real_reproduction_and_independent_acceptance(tmp_path):
+        from evaluation.campaign import generate_study, golden_cases
+        from evaluation.business import evaluate_business
+        from evaluation.trust import evaluate_study
+        cases = [c for c in golden_cases() if c['variant']==0]
+>       generate_study(tmp_path/'study', cases=cases, repetitions=1, business_checks=True)
+E       TypeError: generate_study() got an unexpected keyword argument 'business_checks'
+
+tests/test_business_acceptance.py:61: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_business_acceptance.py::test_business_campaign_has_real_reproduction_and_independent_acceptance
+1 failed in 0.11s

@@ -46,6 +46,9 @@ def golden_cases():
 
 
 def task_description(case):
+    if case.get('business_fixture'):
+        from evaluation.fixtures import business_task_description
+        return business_task_description(case)
     titles = {"data_report": "Analyze simulation data, write a report, save it and send it to chief@example.invalid.",
               "software_feature": "Implement a small Python feature, test, build and prepare a simulated review.",
               "bug_fix": "Fix a small Python bug, test and prepare a simulated review."}
@@ -61,15 +64,21 @@ class ScriptedEmployee:
     def __init__(self, case):
         self.case = case
         self.step = 0
+        self.extra_files = []
 
     def __call__(self, request):
         sequence = SEQUENCES[self.case["workflow"]]
+        if self.extra_files:
+            args = self.extra_files.pop(0)
+            return {'tool_calls':[{'id':'fixture-extra-'+str(len(self.extra_files)), 'type':'function',
+                'function':{'name':'code_edit','arguments':json.dumps(args)}}]}
         index = self.step
         self.step += 1
         if index >= len(sequence):
             return {"content": "Fixture execution ended."}
         tool = sequence[index]
-        previous = [m for m in request["messages"] if m["role"] == "tool"]
+        previous = [m for m in request["messages"] if m["role"] == "tool"
+                    and json.loads(m['content']).get('output_artifact_ids')]
         latest = json.loads(previous[-1]["content"])["output_artifact_ids"][0] if previous else None
         args = {"source_query": {"query": "synthetic fixture rows"},
                 "issue_create": {"title": "Fixture work item"},
@@ -84,6 +93,25 @@ class ScriptedEmployee:
                 "build": {"command": f"{sys.executable} -m compileall -q src"},
                 "pull_request": {"input_artifact_id": latest, "title": "Fixture change"},
                 "approve": {"input_artifact_id": latest}}[tool]
+        if self.case.get('business_fixture'):
+            from evaluation.fixtures import fixture_rows, OPERATIONS
+            if tool == 'file_write':
+                totals = {}
+                for row in fixture_rows(self.case['variant']):
+                    totals[row['week']] = totals.get(row['week'], 0) + row['count']
+                args.update(path='reports/out.json', content=json.dumps(totals))
+            elif tool == 'shared_storage':
+                args['path'] = 'shared/out.json'
+            elif tool == 'message_send':
+                args['subject'] = 'Weekly counts'
+            elif tool == 'code_edit':
+                args['content'] = f"def compute(a, b):\n    return {OPERATIONS[self.case['variant'] % 6][1]}\n"
+                if self.case['variant']==5 and self.case['workflow']=='software_feature':
+                    args['content']='from helper import mean_values\ndef compute(a,b):\n    return mean_values(a,b)\n'
+                    self.extra_files=[{'path':'src/helper.py','content':'def mean_values(a,b):\n    return (a+b)/2\n'},
+                        {'path':'tests/test_compute.py','content':'import unittest\nclass TestCompute(unittest.TestCase):\n    def test_mean(self):\n        import sys\n        sys.path.insert(0,"src")\n        from main import compute\n        self.assertEqual(compute(2,3),2.5)\n'}]
+            elif tool == 'test_run':
+                args['command'] = f'{sys.executable} checks/public_check.py'
         if self.case["variant"] == 6 and index == 1:
             args["input_artifact_id"] = "missing-fixture-input"
         if self.case["variant"] == 7 and tool == "test_run":
@@ -100,7 +128,7 @@ class ScriptedEmployee:
                 "function": {"name": tool, "arguments": json.dumps(args)}}]}
 
 
-def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None, pilot=False, workers=1, task_prefix=""):
+def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None, pilot=False, workers=1, task_prefix="", business_checks=False):
     root = Path(study_dir)
     root.mkdir(parents=True, exist_ok=False)
     cases = cases or golden_cases()
@@ -127,6 +155,7 @@ def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None,
                 for repeat in range(repetitions) for n, case in enumerate(cases)]
     def run_one(job):
         number, (case, repeat, day, member_id, slot) = job
+        case = {**case, 'business_fixture':business_checks}
         task_id, trace_id, plan_id = f"{task_prefix}t{number:04d}", f"{task_prefix}trace{number:04d}", f"{task_prefix}p{number:04d}"
         sim = datetime(2025, 5, 5, 9 + slot * 4, tzinfo=timezone(timedelta(hours=8))) + timedelta(days=day - 1)
         context = {"run_id": f"{run_id}-{repeat}", "task_id": task_id, "trace_id": trace_id,
@@ -137,6 +166,10 @@ def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None,
         # Allows a genuine before/after run on the uninstrumented baseline.
         if "context" in inspect.signature(WorkflowToolLoop).parameters:
             kwargs["context"] = context
+        if business_checks:
+            from evaluation.fixtures import prepare_fixture
+            kwargs.update(prepare_fixture(workspace, case))
+            (workspace/'fixture-input.json').write_text(json.dumps(kwargs['source_rows']))
         loop = WorkflowToolLoop(workspace, **kwargs)
         client = client_factory(case, context) if client_factory else ScriptedEmployee(case)
         exception, state = None, None
@@ -152,7 +185,8 @@ def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None,
                                             "phase_id": context["phase_id"], "workday": day})
         study["execution_results"].append({"task_id": task_id, "case_id": case["case_id"],
             "workflow": case["workflow"], "kind": case["kind"], "repetition": repeat,
-            "exception": exception, "last_state": state})
+            "exception": exception, "last_state": state, "variant":case['variant'],
+            "business_fixture":business_checks})
         if member_id not in study["members"]:
             study["members"].append(member_id)
         if case["label_rule"]:

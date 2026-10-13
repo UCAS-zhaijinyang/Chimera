@@ -97,7 +97,7 @@ def test_tool_loop_rejects_illegal_transition(tmp_path: Path):
 
     loop = WorkflowToolLoop(tmp_path, member_id="m-1", trace_id="trace-1")
     with pytest.raises(ValueError, match="not allowed"):
-        loop.run("analyze the data and write a report", chat_fn=fake_chat)
+        loop.run("analyze the data and write a report", chat_fn=fake_chat, max_tool_errors=0)
 
 
 def test_tool_loop_advances_state_and_returns_answer(tmp_path: Path):
@@ -196,9 +196,9 @@ def test_code_test_build_keep_input_lineage_and_failed_command_status(tmp_path):
 def test_loop_preserves_two_calls_in_same_model_step(tmp_path):
     replies = [{"tool_calls": [
         {"id": "a", "function": {"name": "source_query", "arguments": '{"query":"x"}'}},
-        {"id": "b", "function": {"name": "source_query", "arguments": '{"query":"x"}'}}]}]
-    with pytest.raises(ValueError):
-        WorkflowToolLoop(tmp_path, member_id="m1", trace_id="tr1").run("Analyze data", chat_fn=lambda r: replies.pop())
+        {"id": "b", "function": {"name": "source_query", "arguments": '{"query":"x"}'}}]},
+        {"content":"No further actions"}]
+    WorkflowToolLoop(tmp_path, member_id="m1", trace_id="tr1").run("Analyze data", chat_fn=lambda r: replies.pop(0))
     rows = parsed_log(tmp_path)
     tools = [e for e in rows if e.get("event_type") == "tool_call"]
     assert [e["status"] for e in tools] == ["success", "rejected"]

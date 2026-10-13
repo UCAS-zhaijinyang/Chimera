@@ -1,0 +1,56 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+______ test_source_result_exposes_values_needed_to_write_a_correct_report ______
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-30/test_source_result_exposes_val0')
+
+    def test_source_result_exposes_values_needed_to_write_a_correct_report(tmp_path):
+        runtime = FilesystemToolRuntime(tmp_path, member_id='m', trace_id='t')
+        result = runtime.execute('source_query', {'query': 'weekly counts'})
+>       assert result['payload']['rows'] == [{'week': 'W1', 'count': 3}, {'week': 'W2', 'count': 5}]
+E       KeyError: 'payload'
+
+tests/test_workflow_execution_repairs.py:13: KeyError
+________ test_next_step_can_observe_whole_workflow_and_writeable_paths _________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-30/test_next_step_can_observe_who0')
+
+    def test_next_step_can_observe_whole_workflow_and_writeable_paths(tmp_path):
+        captured = []
+        def reply(request):
+            captured.append(request)
+            if len(captured) == 1:
+                return {'tool_calls': [{'id': 'a', 'function': {'name': 'issue_create', 'arguments': '{"title":"Feature"}'}}]}
+            return {'content': 'Stopped'}
+        WorkflowToolLoop(tmp_path, member_id='m', trace_id='t').run('Implement a feature', chat_fn=reply)
+        system = captured[1]['messages'][0]['content']
+>       assert 'issue_created' in system and 'design_document' in system and 'code_edit' in system
+E       AssertionError: assert ('issue_created' in 'You are an employee completing a structured work task. Use only the tools offered for the current workflow state. Whe...ifact IDs, pass those IDs to the next tool. If the task is complete or no useful next call is offered, answer briefly.')
+
+tests/test_workflow_execution_repairs.py:27: AssertionError
+____________ test_http_client_honors_workflow_required_tool_choice _____________
+
+    def test_http_client_honors_workflow_required_tool_choice():
+        seen = []
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args): pass
+            def do_POST(self):
+                seen.append(json.loads(self.rfile.read(int(self.headers['Content-Length']))))
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(json.dumps({'model':'test','usage':{},'choices':[{'finish_reason':'stop','message':{'content':'x'}}]}).encode())
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            client = OpenAICompatibleChatClient(api_key='local-test', base_url=f'http://127.0.0.1:{server.server_port}')
+            choice = {'type': 'function', 'function': {'name': 'source_query'}}
+            client({'messages': [], 'tools':[{'type':'function','function':{'name':'source_query'}}], 'tool_choice':choice})
+>           assert seen[0]['tool_choice'] == choice
+E           AssertionError: assert 'auto' == {'type': 'function', 'function': {'name': 'source_query'}}
+
+tests/test_workflow_execution_repairs.py:47: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_workflow_execution_repairs.py::test_source_result_exposes_values_needed_to_write_a_correct_report
+FAILED tests/test_workflow_execution_repairs.py::test_next_step_can_observe_whole_workflow_and_writeable_paths
+FAILED tests/test_workflow_execution_repairs.py::test_http_client_honors_workflow_required_tool_choice
+3 failed in 0.59s

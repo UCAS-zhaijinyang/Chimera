@@ -1,0 +1,86 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_acceptance_rejects_missing_duplicate_or_unknown_execution_rows[missing] _
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-60/test_acceptance_rejects_missin0')
+mutation = 'missing'
+
+    @pytest.mark.parametrize('mutation',['missing','duplicate','unknown'])
+    def test_acceptance_rejects_missing_duplicate_or_unknown_execution_rows(tmp_path,mutation):
+        from evaluation.campaign import generate_study,golden_cases
+        from evaluation.business import evaluate_business,evaluate_execution
+        root=tmp_path/'study'
+        generate_study(root,cases=[c for c in golden_cases() if c['variant']==0],repetitions=1,business_checks=True)
+        manifest=root/'study_manifest.json'; study=json.loads(manifest.read_text())
+        if mutation=='missing':study['execution_results'].pop()
+        elif mutation=='duplicate':study['execution_results'].append(study['execution_results'][0])
+        else:study['execution_results'][0]['task_id']='unlisted-task'
+        manifest.write_text(json.dumps(study))
+>       assert evaluate_execution(root)['status']=='FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_business_acceptance.py:133: AssertionError
+_ test_acceptance_rejects_missing_duplicate_or_unknown_execution_rows[duplicate] _
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-60/test_acceptance_rejects_missin1')
+mutation = 'duplicate'
+
+    @pytest.mark.parametrize('mutation',['missing','duplicate','unknown'])
+    def test_acceptance_rejects_missing_duplicate_or_unknown_execution_rows(tmp_path,mutation):
+        from evaluation.campaign import generate_study,golden_cases
+        from evaluation.business import evaluate_business,evaluate_execution
+        root=tmp_path/'study'
+        generate_study(root,cases=[c for c in golden_cases() if c['variant']==0],repetitions=1,business_checks=True)
+        manifest=root/'study_manifest.json'; study=json.loads(manifest.read_text())
+        if mutation=='missing':study['execution_results'].pop()
+        elif mutation=='duplicate':study['execution_results'].append(study['execution_results'][0])
+        else:study['execution_results'][0]['task_id']='unlisted-task'
+        manifest.write_text(json.dumps(study))
+>       assert evaluate_execution(root)['status']=='FAIL'
+E       AssertionError: assert 'PASS' == 'FAIL'
+E         
+E         - FAIL
+E         + PASS
+
+tests/test_business_acceptance.py:133: AssertionError
+_ test_acceptance_rejects_missing_duplicate_or_unknown_execution_rows[unknown] _
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-60/test_acceptance_rejects_missin2')
+mutation = 'unknown'
+
+    @pytest.mark.parametrize('mutation',['missing','duplicate','unknown'])
+    def test_acceptance_rejects_missing_duplicate_or_unknown_execution_rows(tmp_path,mutation):
+        from evaluation.campaign import generate_study,golden_cases
+        from evaluation.business import evaluate_business,evaluate_execution
+        root=tmp_path/'study'
+        generate_study(root,cases=[c for c in golden_cases() if c['variant']==0],repetitions=1,business_checks=True)
+        manifest=root/'study_manifest.json'; study=json.loads(manifest.read_text())
+        if mutation=='missing':study['execution_results'].pop()
+        elif mutation=='duplicate':study['execution_results'].append(study['execution_results'][0])
+        else:study['execution_results'][0]['task_id']='unlisted-task'
+        manifest.write_text(json.dumps(study))
+>       assert evaluate_execution(root)['status']=='FAIL'
+
+tests/test_business_acceptance.py:133: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+study_dir = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-60/test_acceptance_rejects_missin2/study')
+
+    def evaluate_execution(study_dir):
+        """Completion gate, kept separate from recording and business correctness."""
+        root=Path(study_dir)
+        study=json.loads((root/'study_manifest.json').read_text())
+        results=[]
+        for execution in study['execution_results']:
+>           task=next(t for t in study['tasks'] if t['task_id']==execution['task_id'])
+E           StopIteration
+
+src/evaluation/business.py:182: StopIteration
+=========================== short test summary info ============================
+FAILED tests/test_business_acceptance.py::test_acceptance_rejects_missing_duplicate_or_unknown_execution_rows[missing]
+FAILED tests/test_business_acceptance.py::test_acceptance_rejects_missing_duplicate_or_unknown_execution_rows[duplicate]
+FAILED tests/test_business_acceptance.py::test_acceptance_rejects_missing_duplicate_or_unknown_execution_rows[unknown]
+3 failed in 0.33s

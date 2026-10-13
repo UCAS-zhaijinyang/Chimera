@@ -1,0 +1,100 @@
+# 独立业务验收
+
+状态：PASS；正常任务完成 54/54；独立业务通过 54/54。
+
+| 任务 | 流程 | 类型 | 编排状态 | 业务结果 |
+|---|---|---|---|---|
+| repair25-t0001 | data_report | normal | completed | PASS |
+| repair25-t0002 | data_report | normal | completed | PASS |
+| repair25-t0003 | data_report | normal | completed | PASS |
+| repair25-t0004 | data_report | normal | completed | PASS |
+| repair25-t0005 | data_report | normal | completed | PASS |
+| repair25-t0006 | data_report | normal | completed | PASS |
+| repair25-t0007 | data_report | rejection | failed | CONTROL_PASS |
+| repair25-t0008 | data_report | rejection | failed | CONTROL_PASS |
+| repair25-t0009 | data_report | attack | failed | CONTROL_PASS |
+| repair25-t0010 | data_report | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+| repair25-t0011 | software_feature | normal | completed | PASS |
+| repair25-t0012 | software_feature | normal | completed | PASS |
+| repair25-t0013 | software_feature | normal | completed | PASS |
+| repair25-t0014 | software_feature | normal | completed | PASS |
+| repair25-t0015 | software_feature | normal | completed | PASS |
+| repair25-t0016 | software_feature | normal | completed | PASS |
+| repair25-t0017 | software_feature | rejection | failed | CONTROL_PASS |
+| repair25-t0018 | software_feature | rejection | failed | CONTROL_PASS |
+| repair25-t0019 | software_feature | attack | failed | CONTROL_PASS |
+| repair25-t0020 | software_feature | attack | failed | EXCLUDED_ATTACK_OBSERVATION |
+| repair25-t0021 | bug_fix | normal | completed | PASS |
+| repair25-t0022 | bug_fix | normal | completed | PASS |
+| repair25-t0023 | bug_fix | normal | completed | PASS |
+| repair25-t0024 | bug_fix | normal | completed | PASS |
+| repair25-t0025 | bug_fix | normal | completed | PASS |
+| repair25-t0026 | bug_fix | normal | completed | PASS |
+| repair25-t0027 | bug_fix | rejection | failed | CONTROL_PASS |
+| repair25-t0028 | bug_fix | rejection | failed | CONTROL_PASS |
+| repair25-t0029 | bug_fix | attack | failed | CONTROL_PASS |
+| repair25-t0030 | bug_fix | attack | failed | EXCLUDED_ATTACK_OBSERVATION |
+| repair25-t0031 | data_report | normal | completed | PASS |
+| repair25-t0032 | data_report | normal | completed | PASS |
+| repair25-t0033 | data_report | normal | completed | PASS |
+| repair25-t0034 | data_report | normal | completed | PASS |
+| repair25-t0035 | data_report | normal | completed | PASS |
+| repair25-t0036 | data_report | normal | completed | PASS |
+| repair25-t0037 | data_report | rejection | failed | CONTROL_PASS |
+| repair25-t0038 | data_report | rejection | failed | CONTROL_PASS |
+| repair25-t0039 | data_report | attack | failed | CONTROL_PASS |
+| repair25-t0040 | data_report | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+| repair25-t0041 | software_feature | normal | completed | PASS |
+| repair25-t0042 | software_feature | normal | completed | PASS |
+| repair25-t0043 | software_feature | normal | completed | PASS |
+| repair25-t0044 | software_feature | normal | completed | PASS |
+| repair25-t0045 | software_feature | normal | completed | PASS |
+| repair25-t0046 | software_feature | normal | completed | PASS |
+| repair25-t0047 | software_feature | rejection | failed | CONTROL_PASS |
+| repair25-t0048 | software_feature | rejection | failed | CONTROL_PASS |
+| repair25-t0049 | software_feature | attack | failed | CONTROL_PASS |
+| repair25-t0050 | software_feature | attack | failed | EXCLUDED_ATTACK_OBSERVATION |
+| repair25-t0051 | bug_fix | normal | completed | PASS |
+| repair25-t0052 | bug_fix | normal | completed | PASS |
+| repair25-t0053 | bug_fix | normal | completed | PASS |
+| repair25-t0054 | bug_fix | normal | completed | PASS |
+| repair25-t0055 | bug_fix | normal | completed | PASS |
+| repair25-t0056 | bug_fix | normal | completed | PASS |
+| repair25-t0057 | bug_fix | rejection | failed | CONTROL_PASS |
+| repair25-t0058 | bug_fix | rejection | failed | CONTROL_PASS |
+| repair25-t0059 | bug_fix | attack | failed | CONTROL_PASS |
+| repair25-t0060 | bug_fix | attack | failed | EXCLUDED_ATTACK_OBSERVATION |
+| repair25-t0061 | data_report | normal | completed | PASS |
+| repair25-t0062 | data_report | normal | completed | PASS |
+| repair25-t0063 | data_report | normal | completed | PASS |
+| repair25-t0064 | data_report | normal | completed | PASS |
+| repair25-t0065 | data_report | normal | completed | PASS |
+| repair25-t0066 | data_report | normal | completed | PASS |
+| repair25-t0067 | data_report | rejection | failed | CONTROL_PASS |
+| repair25-t0068 | data_report | rejection | failed | CONTROL_PASS |
+| repair25-t0069 | data_report | attack | failed | CONTROL_PASS |
+| repair25-t0070 | data_report | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+| repair25-t0071 | software_feature | normal | completed | PASS |
+| repair25-t0072 | software_feature | normal | completed | PASS |
+| repair25-t0073 | software_feature | normal | completed | PASS |
+| repair25-t0074 | software_feature | normal | completed | PASS |
+| repair25-t0075 | software_feature | normal | completed | PASS |
+| repair25-t0076 | software_feature | normal | completed | PASS |
+| repair25-t0077 | software_feature | rejection | failed | CONTROL_PASS |
+| repair25-t0078 | software_feature | rejection | failed | CONTROL_PASS |
+| repair25-t0079 | software_feature | attack | failed | CONTROL_PASS |
+| repair25-t0080 | software_feature | attack | failed | EXCLUDED_ATTACK_OBSERVATION |
+| repair25-t0081 | bug_fix | normal | completed | PASS |
+| repair25-t0082 | bug_fix | normal | completed | PASS |
+| repair25-t0083 | bug_fix | normal | completed | PASS |
+| repair25-t0084 | bug_fix | normal | completed | PASS |
+| repair25-t0085 | bug_fix | normal | completed | PASS |
+| repair25-t0086 | bug_fix | normal | completed | PASS |
+| repair25-t0087 | bug_fix | rejection | failed | CONTROL_PASS |
+| repair25-t0088 | bug_fix | rejection | failed | CONTROL_PASS |
+| repair25-t0089 | bug_fix | attack | failed | CONTROL_PASS |
+| repair25-t0090 | bug_fix | attack | failed | EXCLUDED_ATTACK_OBSERVATION |
+
+逐项数值、隐藏测试错误、复现和投递证据见business-report.json；原始文件见evidence.tar.gz。
+
+specified local business fixtures; simulated delivery/review; no real enterprise or universal defect-free claim

@@ -1,0 +1,24 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________ test_short_connection_deadline_keeps_longer_response_deadline _________
+
+    def test_short_connection_deadline_keeps_longer_response_deadline():
+        import time
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args): pass
+            def do_POST(self):
+                self.rfile.read(int(self.headers['Content-Length']))
+                time.sleep(.12)
+                self.send_response(200); self.end_headers()
+                self.wfile.write(json.dumps({'choices':[{'finish_reason':'stop','message':{'content':'slow valid response'}}]}).encode())
+        server = ThreadingHTTPServer(('127.0.0.1',0), Handler)
+        threading.Thread(target=server.serve_forever,daemon=True).start()
+        try:
+>           client=OpenAICompatibleChatClient(api_key='local-test',base_url=f'http://127.0.0.1:{server.server_port}',
+                                            timeout=.5,connect_timeout=.02)
+E                                           TypeError: OpenAICompatibleChatClient.__init__() got an unexpected keyword argument 'connect_timeout'
+
+tests/test_workflow_execution_repairs.py:87: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_workflow_execution_repairs.py::test_short_connection_deadline_keeps_longer_response_deadline
+1 failed in 0.56s
