@@ -1,0 +1,67 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________ test_unsent_transport_failure_is_retried_with_closed_attempts _________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-75/test_unsent_transport_failure_0')
+
+    def test_unsent_transport_failure_is_retried_with_closed_attempts(tmp_path):
+        from workflow_runtime import WorkflowToolLoop
+        class Employee:
+            last_error_metadata = None
+            def __init__(self): self.replies = iter([None, call('shell_exec',id='s',command='printf recovered > result.txt'),
+                                                    call('finish_task',summary='verified'),{'content':'done'}])
+            def __call__(self, request):
+                result = next(self.replies)
+                self.last_error_metadata = {'request_not_sent':True} if result is None else None
+                if result is None: raise RuntimeError('TLS connection closed before request')
+                return result
+        loop = WorkflowToolLoop(tmp_path/'capture',member_id='m',trace_id='t',base_tools=True)
+>       result=loop.run('Operate resources',workflow_id='general',chat_fn=Employee())
+
+tests/test_base_tool_workflows.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/workflow_runtime.py:589: in run
+    response = chat_fn(request)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_base_tool_workflows.test_unsent_transport_failure_is_retried_with_closed_attempts.<locals>.Employee object at 0x10a861690>
+request = {'workflow_id': 'general', 'state': 'requested', 'messages': [{'role': 'system', 'content': 'Complete the employee tas...{...}, 'seconds': {...}}, 'required': ['id', 'seconds'], 'type': 'object', 'additionalProperties': False}}}, ...], ...}
+
+    def __call__(self, request):
+        result = next(self.replies)
+        self.last_error_metadata = {'request_not_sent':True} if result is None else None
+>       if result is None: raise RuntimeError('TLS connection closed before request')
+E       RuntimeError: TLS connection closed before request
+
+tests/test_base_tool_workflows.py:102: RuntimeError
+=============================== warnings summary ===============================
+tests/test_base_tool_workflows.py::test_unsent_transport_failure_is_retried_with_closed_attempts
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/cohere_config.py:77: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    COHERE_API_PARAMS = {param for param in CohereConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_unsent_transport_failure_is_retried_with_closed_attempts
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/mistral_config.py:79: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    MISTRAL_API_PARAMS = {param for param in MistralConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_unsent_transport_failure_is_retried_with_closed_attempts
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/reka_config.py:69: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    REKA_API_PARAMS = {param for param in RekaConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_unsent_transport_failure_is_retried_with_closed_attempts
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:68: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaVerseAPIConfig().model_fields.keys()
+
+tests/test_base_tool_workflows.py::test_unsent_transport_failure_is_retried_with_closed_attempts
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:163: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaCloudAPIConfig().model_fields.keys()
+
+tests/test_base_tool_workflows.py::test_unsent_transport_failure_is_retried_with_closed_attempts
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/toolkits/function_tool.py:461: UserWarning: Parameter description is missing for 
+                              {'enum': ['searchResults', 'sourcedAnswer', 'structured'], 'type': 'string'}. This may affect the quality of tool 
+                              calling.
+    warnings.warn(f"""Parameter description is missing for
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_base_tool_workflows.py::test_unsent_transport_failure_is_retried_with_closed_attempts
+1 failed, 6 warnings in 0.70s
