@@ -1,0 +1,175 @@
+..................................F..................................... [ 35%]
+........................................................................ [ 70%]
+Exception occurred during processing of request from ('127.0.0.1', 56076)
+Traceback (most recent call last):
+  File "/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/server.py", line 437, in handle
+    self.handle_one_request()
+  File "/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/server.py", line 425, in handle_one_request
+    method()
+  File "/Users/ayang/Desktop/project_work/Chimera/tests/test_stage1_boundaries.py", line 178, in do_POST
+    self.send_response(200);self.send_header('Content-Length','2');self.end_headers();self.wfile.write(b'ok')
+  File "/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/server.py", line 539, in end_headers
+    self.flush_headers()
+  File "/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/server.py", line 543, in flush_headers
+    self.wfile.write(b"".join(self._headers_buffer))
+  File "/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/socketserver.py", line 826, in write
+    self._sock.sendall(b)
+  File "/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/ssl.py", line 1282, in sendall
+    v = self.send(byte_view[count:])
+  File "/Users/ayang/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/ssl.py", line 1251, in send
+    return self._sslobj.write(data)
+BrokenPipeError: [Errno 32] Broken pipe
+F----------------------------------------
+...........................................................             [100%]
+=================================== FAILURES ===================================
+____________ test_cleanup_terminates_child_after_shell_leader_exits ____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-99/test_cleanup_terminates_child_0')
+
+    def test_cleanup_terminates_child_after_shell_leader_exits(tmp_path):
+        import time
+        from base_tools import BaseToolRegistry
+        registry=BaseToolRegistry(tmp_path,offline=True)
+        result=registry.execute('shell_exec',{'id':'s','command':'(sleep 2; printf late > late.txt) &'})
+        assert result['running']
+>       registry.close()
+
+tests/test_base_tool_workflows.py:156: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/base_tools.py:193: in close
+    self._shell('shell_kill_process', {'id': key})
+src/base_tools.py:135: in _shell
+    if self._group_running(session):
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+session = {'process': <Popen: returncode: 0 args: '(sleep 2; printf late > late.txt) &'>, 'stdout': <tempfile._TemporaryFileWrapper object at 0x10e3c2b90>, 'stderr': <tempfile._TemporaryFileWrapper object at 0x10e3c2f20>, 'observed_terminal': False}
+
+    @staticmethod
+    def _group_running(session):
+        # Leaders may exit while descendants still own the session's pgid.
+        try:
+>           os.killpg(session['process'].pid, 0)
+E           PermissionError: [Errno 1] Operation not permitted
+
+src/base_tools.py:72: PermissionError
+______ test_tls_failover_tries_other_resolved_address_before_sending_http ______
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-99/test_tls_failover_tries_other_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e14d7b0>
+
+    def test_tls_failover_tries_other_resolved_address_before_sending_http(tmp_path,monkeypatch):
+        import socket,ssl,subprocess
+        from http.client import HTTPSConnection
+        from task import _bounded_connection
+        cert,key=tmp_path/'cert.pem',tmp_path/'key.pem'
+        subprocess.run(['openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',str(key),'-out',str(cert),'-days','1','-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost'],capture_output=True,check=True)
+        seen=[]
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self,*args):pass
+            def do_POST(self):
+                seen.append(self.rfile.read(int(self.headers['Content-Length'])))
+                self.send_response(200);self.send_header('Content-Length','2');self.end_headers();self.wfile.write(b'ok')
+        server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+        context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER);context.load_cert_chain(str(cert),str(key))
+        server.socket=context.wrap_socket(server.socket,server_side=True)
+        threading.Thread(target=server.serve_forever,daemon=True).start()
+        bad=socket.socket();bad.bind(('127.0.0.1',0));bad.listen(1)
+        bad_port=bad.getsockname()[1];handshakes=[]
+        def reject_tls():
+            conn,_=bad.accept();handshakes.append(conn.recv(2048));conn.close();bad.close()
+        threading.Thread(target=reject_tls,daemon=True).start()
+        original=socket.getaddrinfo
+        def resolved(host,port,*args,**kwargs):
+            if host=='localhost':return [(socket.AF_INET,socket.SOCK_STREAM,6,'',('127.0.0.1',bad_port)),(socket.AF_INET,socket.SOCK_STREAM,6,'',('127.0.0.1',server.server_port))]
+            return original(host,port,*args,**kwargs)
+        monkeypatch.setattr(socket,'getaddrinfo',resolved)
+        client=_bounded_connection(HTTPSConnection,1)('localhost',timeout=3,context=ssl.create_default_context(cafile=str(cert)))
+        try:
+            client.request('POST','/chat/completions',body=b'{}')
+>           assert client.getresponse().read()==b'ok'
+
+tests/test_stage1_boundaries.py:196: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <http.client.HTTPSConnection object at 0x10e14c220>
+
+    def getresponse(self):
+        """Get the response from the server.
+    
+        If the HTTPConnection is in the correct state, returns an
+        instance of HTTPResponse or of whatever object is returned by
+        the response_class variable.
+    
+        If a request has not been sent or if a previous response has
+        not be handled, ResponseNotReady is raised.  If the HTTP
+        response indicates that the connection should be closed, then
+        it will be closed before the response is returned.  When the
+        connection is closed, the underlying socket is closed.
+        """
+    
+        # if a prior response has been completed, then forget about it.
+        if self.__response and self.__response.isclosed():
+            self.__response = None
+    
+        # if a prior response exists, then it must be completed (otherwise, we
+        # cannot read this response's header to determine the connection-close
+        # behavior)
+        #
+        # note: if a prior response existed, but was connection-close, then the
+        # socket and response were made independent of this HTTPConnection
+        # object since a new request requires that we open a whole new
+        # connection
+        #
+        # this means the prior response had one of two states:
+        #   1) will_close: this connection was reset and the prior socket and
+        #                  response operate independently
+        #   2) persistent: the response was retained and we await its
+        #                  isclosed() status to become true.
+        #
+        if self.__state != _CS_REQ_SENT or self.__response:
+>           raise ResponseNotReady(self.__state)
+E           http.client.ResponseNotReady: Idle
+
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/client.py:1385: ResponseNotReady
+----------------------------- Captured stderr call -----------------------------
+----------------------------------------
+=============================== warnings summary ===============================
+tests/test_attack_lab_coverage.py::test_all_original_steps_have_real_lab_side_effects[gen_attack_1]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/cohere_config.py:77: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    COHERE_API_PARAMS = {param for param in CohereConfig().model_fields.keys()}
+
+tests/test_attack_lab_coverage.py::test_all_original_steps_have_real_lab_side_effects[gen_attack_1]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/mistral_config.py:79: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    MISTRAL_API_PARAMS = {param for param in MistralConfig().model_fields.keys()}
+
+tests/test_attack_lab_coverage.py::test_all_original_steps_have_real_lab_side_effects[gen_attack_1]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/reka_config.py:69: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    REKA_API_PARAMS = {param for param in RekaConfig().model_fields.keys()}
+
+tests/test_attack_lab_coverage.py::test_all_original_steps_have_real_lab_side_effects[gen_attack_1]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:68: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaVerseAPIConfig().model_fields.keys()
+
+tests/test_attack_lab_coverage.py::test_all_original_steps_have_real_lab_side_effects[gen_attack_1]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:163: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaCloudAPIConfig().model_fields.keys()
+
+tests/test_attack_lab_coverage.py: 16 warnings
+tests/test_base_tool_workflows.py: 6 warnings
+tests/test_browser_workflow.py: 4 warnings
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/toolkits/function_tool.py:461: UserWarning: Parameter description is missing for 
+                              {'enum': ['searchResults', 'sourcedAnswer', 'structured'], 'type': 'string'}. This may affect the quality of tool 
+                              calling.
+    warnings.warn(f"""Parameter description is missing for
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_base_tool_workflows.py::test_cleanup_terminates_child_after_shell_leader_exits
+FAILED tests/test_stage1_boundaries.py::test_tls_failover_tries_other_resolved_address_before_sending_http
+2 failed, 202 passed, 31 warnings in 37.29s
