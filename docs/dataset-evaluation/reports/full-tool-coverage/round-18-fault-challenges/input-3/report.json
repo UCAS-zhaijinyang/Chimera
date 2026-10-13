@@ -1,0 +1,1337 @@
+{
+  "schema_version": 1,
+  "study_id": "input-3",
+  "status": "FAIL",
+  "scope": "workflow application simulation; no real system/network/email claim",
+  "metrics": {
+    "L0.1": {
+      "name": "核心字段可用率",
+      "value": 1.0,
+      "numerator": 28,
+      "denominator": 28,
+      "status": "PASS",
+      "evidence_refs": []
+    },
+    "L0.2": {
+      "name": "主键关联完整性",
+      "value": 1.0,
+      "numerator": 28,
+      "denominator": 28,
+      "status": "PASS",
+      "evidence_refs": []
+    },
+    "L0.3": {
+      "name": "文件与事件守恒",
+      "value": 1.0,
+      "numerator": 1,
+      "denominator": 1,
+      "status": "PASS",
+      "evidence_refs": [],
+      "conservation_balanced": true
+    },
+    "L0.4": {
+      "name": "产物血缘完整性",
+      "value": 0.8,
+      "numerator": 4,
+      "denominator": 5,
+      "status": "FAIL",
+      "evidence_refs": [
+        {
+          "task_id": "t0001",
+          "artifact_id": "0da859b491f0"
+        },
+        {
+          "task_id": "t0001",
+          "artifact_id": "0da859b491f0",
+          "input_id": "missing-input"
+        }
+      ],
+      "verified_artifacts": 5,
+      "total_artifacts": 6
+    },
+    "L0.5": {
+      "name": "因果与时间约束",
+      "value": 0,
+      "numerator": 1,
+      "denominator": 1,
+      "status": "PASS",
+      "evidence_refs": [],
+      "unit": "conflict_count"
+    },
+    "L0.6": {
+      "name": "标签可追溯性",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "status": "NOT_APPLICABLE",
+      "evidence_refs": []
+    },
+    "L0.7": {
+      "name": "跨采集源对齐",
+      "value": 1.0,
+      "numerator": 6,
+      "denominator": 6,
+      "status": "PASS",
+      "evidence_refs": []
+    },
+    "L0.8": {
+      "name": "发布完整性/泄漏扫描",
+      "value": 0,
+      "numerator": 1,
+      "denominator": 1,
+      "status": "PASS",
+      "evidence_refs": [],
+      "unit": "confirmed_or_unresolved_issue_count"
+    }
+  },
+  "failures": [
+    {
+      "metric_id": "L0.4",
+      "reason": "declared lineage omits executed input",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "0da859b491f0"
+      }
+    },
+    {
+      "metric_id": "L0.4",
+      "reason": "dangling or self input edge",
+      "evidence": {
+        "task_id": "t0001",
+        "artifact_id": "0da859b491f0",
+        "input_id": "missing-input"
+      }
+    }
+  ],
+  "inventory": {
+    "raw_marked_rows": 28,
+    "parsed_rows": 28,
+    "rejected_rows": 0,
+    "unique_events": 28,
+    "copied_rows": 0,
+    "tasks": 1,
+    "artifacts": 6
+  },
+  "coverage": {
+    "application": "MEASURED",
+    "system": "NOT_MEASURED",
+    "network": "NOT_MEASURED",
+    "real_email": "NOT_MEASURED"
+  },
+  "parse_rejections": [],
+  "events": [
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.001000+08:00",
+        "event_type": "task_started",
+        "workflow_id": "bug_fix",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 1,
+        "event_id": "ee0deee84d9944228415e66b60d70c64",
+        "wall_time_utc": "2026-10-13T11:28:19.740498+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TASK_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 1,
+        "sha256": "6d763652b78b2eef984f1f9f48a52d3e8d13667e014332795fb421f904233094"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.002000+08:00",
+        "event_type": "model_started",
+        "step": 0,
+        "workflow_id": "bug_fix",
+        "call_id": "model-bd3272efce864398894ab64cdf9a667d",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 2,
+        "event_id": "47ca28681a5d4348bbad051facb549ea",
+        "wall_time_utc": "2026-10-13T11:28:19.740748+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 2,
+        "sha256": "ceb9c1ea01c9ee293e5ea6b3fc86edbb082e763f738a5d51bd8280b1a479209b"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.003000+08:00",
+        "event_type": "model_terminal",
+        "step": 0,
+        "workflow_id": "bug_fix",
+        "call_id": "model-bd3272efce864398894ab64cdf9a667d",
+        "status": "success",
+        "model": null,
+        "usage": null,
+        "usage_unknown": true,
+        "schema_version": "chimera-event/1",
+        "event_seq": 3,
+        "event_id": "6e95b2b562264d7fa7fa9faa7393a85d",
+        "wall_time_utc": "2026-10-13T11:28:19.740801+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 3,
+        "sha256": "c3d8dbc844c11bdcac41d21721919e3e396a20af72f4cd4e2bcbd6240dd9698e"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.004000+08:00",
+        "step": 0,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-dd61c4ac7a434bc991bfda36780b10ad",
+        "provider_call_id": "fixture-call-0",
+        "from_state": "requested",
+        "tool_name": "issue_create",
+        "requested_tool_name": "issue_create",
+        "event_type": "tool_started",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 4,
+        "event_id": "851e5e9f516f4be2943a9054df856041",
+        "wall_time_utc": "2026-10-13T11:28:19.740838+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_START",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 4,
+        "sha256": "9f7f6b7539b9376b250e82c92e5ee5526b00ce13f80b3df1ae813f0a5544f192"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.005000+08:00",
+        "step": 0,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-dd61c4ac7a434bc991bfda36780b10ad",
+        "provider_call_id": "fixture-call-0",
+        "from_state": "requested",
+        "tool_name": "issue_create",
+        "requested_tool_name": "issue_create",
+        "event_type": "tool_call",
+        "to_state": "issue_created",
+        "arguments": {
+          "title": "Fixture work item"
+        },
+        "result": {
+          "tool_name": "issue_create",
+          "message": "issue created",
+          "output_artifact_ids": [
+            "225267400134"
+          ],
+          "output_paths": [
+            "artifacts/225267400134.json"
+          ],
+          "evidence_level": "simulation_only",
+          "business_status": "not_measured",
+          "payload": {
+            "title": "Fixture work item",
+            "description": ""
+          },
+          "output_paths_kind": "read_only_capture_evidence",
+          "business_path": null,
+          "workspace": "study/workspaces/t0001",
+          "execution_environment": {
+            "cwd": "study/workspaces/t0001",
+            "python_executable": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python",
+            "default_build_command": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python -m compileall -q src",
+            "build_kind": "python_bytecode_compilation",
+            "optional_modules": {
+              "pytest": true,
+              "build": false,
+              "pip": false,
+              "setuptools": false
+            }
+          }
+        },
+        "status": "success",
+        "schema_version": "chimera-event/1",
+        "event_seq": 5,
+        "event_id": "c93c6add1836447081ed996d1fa16913",
+        "wall_time_utc": "2026-10-13T11:28:19.741391+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 5,
+        "sha256": "4227b322fd9cc8c5fa865883b83aa9c6658392b153c7d42dd825346a968376bb"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.006000+08:00",
+        "event_type": "model_started",
+        "step": 1,
+        "workflow_id": "bug_fix",
+        "call_id": "model-154627cbe3fc4ca4aedddcc4e1a5b7be",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 6,
+        "event_id": "573e01d8c13347859eaa28a23ce1e85a",
+        "wall_time_utc": "2026-10-13T11:28:19.741462+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 6,
+        "sha256": "52df83976191b4c8ba438cf46971c116493bec0c3196db9b846fed94dd08e6ea"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.007000+08:00",
+        "event_type": "model_terminal",
+        "step": 1,
+        "workflow_id": "bug_fix",
+        "call_id": "model-154627cbe3fc4ca4aedddcc4e1a5b7be",
+        "status": "success",
+        "model": null,
+        "usage": null,
+        "usage_unknown": true,
+        "schema_version": "chimera-event/1",
+        "event_seq": 7,
+        "event_id": "8feb76e237e3463595fe6bff8a8ec613",
+        "wall_time_utc": "2026-10-13T11:28:19.741510+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 7,
+        "sha256": "60739bea3e383e09f38a5c240f3bd8684705e160a97e4a8682bf15dec1f795ee"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.008000+08:00",
+        "step": 1,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-327695f1a61e4e89862a2070553d9eab",
+        "provider_call_id": "fixture-call-1",
+        "from_state": "issue_created",
+        "tool_name": "reproduce_bug",
+        "requested_tool_name": "reproduce_bug",
+        "event_type": "tool_started",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 8,
+        "event_id": "38be9f4fe72c4c81937d2fe656a11a4b",
+        "wall_time_utc": "2026-10-13T11:28:19.741545+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_START",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 8,
+        "sha256": "e3d4890ba9dedc90ac8b99fabcb0245fe381b4d9fafc216d01b0c3986fa73e66"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.009000+08:00",
+        "step": 1,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-327695f1a61e4e89862a2070553d9eab",
+        "provider_call_id": "fixture-call-1",
+        "from_state": "issue_created",
+        "tool_name": "reproduce_bug",
+        "requested_tool_name": "reproduce_bug",
+        "event_type": "tool_call",
+        "to_state": "reproduced",
+        "arguments": {
+          "input_artifact_id": "225267400134"
+        },
+        "result": {
+          "tool_name": "reproduce_bug",
+          "message": "reproduction recorded",
+          "output_artifact_ids": [
+            "0da859b491f0"
+          ],
+          "output_paths": [
+            "artifacts/0da859b491f0.json"
+          ],
+          "evidence_level": "simulation_only",
+          "business_status": "not_measured",
+          "payload": {
+            "reproduced": null,
+            "issue_artifact_id": "225267400134",
+            "reproduction_kind": "simulation_placeholder"
+          },
+          "output_paths_kind": "read_only_capture_evidence",
+          "business_path": null,
+          "workspace": "study/workspaces/t0001",
+          "execution_environment": {
+            "cwd": "study/workspaces/t0001",
+            "python_executable": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python",
+            "default_build_command": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python -m compileall -q src",
+            "build_kind": "python_bytecode_compilation",
+            "optional_modules": {
+              "pytest": true,
+              "build": false,
+              "pip": false,
+              "setuptools": false
+            }
+          }
+        },
+        "status": "success",
+        "schema_version": "chimera-event/1",
+        "event_seq": 9,
+        "event_id": "fa944ff12e1d433c825615e0b23b5b44",
+        "wall_time_utc": "2026-10-13T11:28:19.742321+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 9,
+        "sha256": "c4bd89232b7d2411ed0d1e7ff433d5b991fda0116b3c584d641249d251a6f608"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.010000+08:00",
+        "event_type": "model_started",
+        "step": 2,
+        "workflow_id": "bug_fix",
+        "call_id": "model-326dc19190f54661a67193d8cdbdcdfa",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 10,
+        "event_id": "15842ec38d30491aba43f8234f78bb0a",
+        "wall_time_utc": "2026-10-13T11:28:19.742377+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 10,
+        "sha256": "34abf7ffc77c1e637f680c6c497b022405105125d10fee8e2e84370de20d1163"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.011000+08:00",
+        "event_type": "model_terminal",
+        "step": 2,
+        "workflow_id": "bug_fix",
+        "call_id": "model-326dc19190f54661a67193d8cdbdcdfa",
+        "status": "success",
+        "model": null,
+        "usage": null,
+        "usage_unknown": true,
+        "schema_version": "chimera-event/1",
+        "event_seq": 11,
+        "event_id": "cfe21f9875b04a07a4d79b520abfba89",
+        "wall_time_utc": "2026-10-13T11:28:19.742551+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 11,
+        "sha256": "922a56ae17631a458c81573f0b4b56096115f67435ddd4df399a3716daa5344f"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.012000+08:00",
+        "step": 2,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-892671f7f1944c328481074f13a997a0",
+        "provider_call_id": "fixture-call-2",
+        "from_state": "reproduced",
+        "tool_name": "code_edit",
+        "requested_tool_name": "code_edit",
+        "event_type": "tool_started",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 12,
+        "event_id": "02afb931691d4f79a9cd10cfe9406c89",
+        "wall_time_utc": "2026-10-13T11:28:19.742592+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_START",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 12,
+        "sha256": "5fd101bcd329fd66f8366730ed7aeac677ae31e5ae62ae78b282919a5562fbc0"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.013000+08:00",
+        "step": 2,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-892671f7f1944c328481074f13a997a0",
+        "provider_call_id": "fixture-call-2",
+        "from_state": "reproduced",
+        "tool_name": "code_edit",
+        "requested_tool_name": "code_edit",
+        "event_type": "tool_call",
+        "to_state": "fixed",
+        "arguments": {
+          "path": "src/main.py",
+          "content": "def main():\n    return 0\n"
+        },
+        "result": {
+          "tool_name": "code_edit",
+          "message": "edited src/main.py",
+          "output_artifact_ids": [
+            "7e7af75a6fc1"
+          ],
+          "output_paths": [
+            "artifacts/7e7af75a6fc1.py"
+          ],
+          "evidence_level": "simulation_only",
+          "business_status": "not_measured",
+          "payload": "def main():\n    return 0\n",
+          "output_paths_kind": "read_only_capture_evidence",
+          "business_path": "src/main.py",
+          "workspace": "study/workspaces/t0001",
+          "execution_environment": {
+            "cwd": "study/workspaces/t0001",
+            "python_executable": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python",
+            "default_build_command": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python -m compileall -q src",
+            "build_kind": "python_bytecode_compilation",
+            "optional_modules": {
+              "pytest": true,
+              "build": false,
+              "pip": false,
+              "setuptools": false
+            }
+          }
+        },
+        "status": "success",
+        "schema_version": "chimera-event/1",
+        "event_seq": 13,
+        "event_id": "11021ca48e6242cbb5ebcce9de4cb67a",
+        "wall_time_utc": "2026-10-13T11:28:19.743402+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 13,
+        "sha256": "5667ae03bc744c30bec52cc1460bb52e0a8971b5d9c7c62ab91d3f77e0a88b53"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.014000+08:00",
+        "event_type": "model_started",
+        "step": 3,
+        "workflow_id": "bug_fix",
+        "call_id": "model-ed01bcf75065462bb7c7a49441817489",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 14,
+        "event_id": "6f337ac70ab84b1784b68ba44b9d81b7",
+        "wall_time_utc": "2026-10-13T11:28:19.743466+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 14,
+        "sha256": "74b020d44898fb94a3d990933bb1dd73f22c5daabdd14f8e3aa033c35bd54f99"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.015000+08:00",
+        "event_type": "model_terminal",
+        "step": 3,
+        "workflow_id": "bug_fix",
+        "call_id": "model-ed01bcf75065462bb7c7a49441817489",
+        "status": "success",
+        "model": null,
+        "usage": null,
+        "usage_unknown": true,
+        "schema_version": "chimera-event/1",
+        "event_seq": 15,
+        "event_id": "df22a47a9b834bae8e4e3f7e6f6b9fc6",
+        "wall_time_utc": "2026-10-13T11:28:19.743519+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 15,
+        "sha256": "8f76751ce3b3d8600e8c7f984655a775655f4536255a3e60513c88ffd2003bbb"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.016000+08:00",
+        "step": 3,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-695c9193d23d419fa627800c08ba6686",
+        "provider_call_id": "fixture-call-3",
+        "from_state": "fixed",
+        "tool_name": "test_run",
+        "requested_tool_name": "test_run",
+        "event_type": "tool_started",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 16,
+        "event_id": "fbc93c91523a4a129b0ce44bb081615b",
+        "wall_time_utc": "2026-10-13T11:28:19.743647+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_START",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 16,
+        "sha256": "19fbf71c20fb178836149c64dfdbd9fb375bb7581accf01995d46d7c72caec4d"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.017000+08:00",
+        "step": 3,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-695c9193d23d419fa627800c08ba6686",
+        "provider_call_id": "fixture-call-3",
+        "from_state": "fixed",
+        "tool_name": "test_run",
+        "requested_tool_name": "test_run",
+        "event_type": "tool_call",
+        "to_state": "tested",
+        "arguments": {
+          "command": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python -c \"assert 1 + 1 == 2\""
+        },
+        "result": {
+          "tool_name": "test_run",
+          "message": "tests completed",
+          "output_artifact_ids": [
+            "23f0899166d8"
+          ],
+          "output_paths": [
+            "artifacts/23f0899166d8.json"
+          ],
+          "evidence_level": "simulation_only",
+          "business_status": "success",
+          "payload": {
+            "command": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python -c \"assert 1 + 1 == 2\"",
+            "returncode": 0,
+            "stdout": "",
+            "stderr": "",
+            "success": true
+          },
+          "output_paths_kind": "read_only_capture_evidence",
+          "business_path": null,
+          "workspace": "study/workspaces/t0001",
+          "execution_environment": {
+            "cwd": "study/workspaces/t0001",
+            "python_executable": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python",
+            "default_build_command": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python -m compileall -q src",
+            "build_kind": "python_bytecode_compilation",
+            "optional_modules": {
+              "pytest": true,
+              "build": false,
+              "pip": false,
+              "setuptools": false
+            }
+          },
+          "returncode": 0
+        },
+        "status": "success",
+        "schema_version": "chimera-event/1",
+        "event_seq": 17,
+        "event_id": "646e6d6074394fd8ae53e8baafc2d4c1",
+        "wall_time_utc": "2026-10-13T11:28:19.759424+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 17,
+        "sha256": "fec54cbc2ebf2ced31e596eb0a032fbb7b9de1cf600411d9f959eca928db9173"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.018000+08:00",
+        "event_type": "model_started",
+        "step": 4,
+        "workflow_id": "bug_fix",
+        "call_id": "model-21065232e54144b39e1bbfedc166859b",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 18,
+        "event_id": "b230cc69e78b41b4905ddb7535ee746e",
+        "wall_time_utc": "2026-10-13T11:28:19.759519+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 18,
+        "sha256": "534e24623740201cb4e0c90c42fb4f40143153177f56895902c48f8d2bce7be0"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.019000+08:00",
+        "event_type": "model_terminal",
+        "step": 4,
+        "workflow_id": "bug_fix",
+        "call_id": "model-21065232e54144b39e1bbfedc166859b",
+        "status": "success",
+        "model": null,
+        "usage": null,
+        "usage_unknown": true,
+        "schema_version": "chimera-event/1",
+        "event_seq": 19,
+        "event_id": "88197430a4d74c878a4f62c3adb4b610",
+        "wall_time_utc": "2026-10-13T11:28:19.759587+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 19,
+        "sha256": "8a619358cd85669e95a5d0283351e4843e665a55ed432fa39e1d8a878dbd59cd"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.020000+08:00",
+        "step": 4,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-8d49bdacf6cd47abb69fe9744131214b",
+        "provider_call_id": "fixture-call-4",
+        "from_state": "tested",
+        "tool_name": "pull_request",
+        "requested_tool_name": "pull_request",
+        "event_type": "tool_started",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 20,
+        "event_id": "46332ced2fb54ec88fc91d09d08704ba",
+        "wall_time_utc": "2026-10-13T11:28:19.759753+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_START",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 20,
+        "sha256": "f8e5223c52d42daad3c6a4962b721eadcb5c20e0b67cd02338dcf0831ea3affd"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.021000+08:00",
+        "step": 4,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-8d49bdacf6cd47abb69fe9744131214b",
+        "provider_call_id": "fixture-call-4",
+        "from_state": "tested",
+        "tool_name": "pull_request",
+        "requested_tool_name": "pull_request",
+        "event_type": "tool_call",
+        "to_state": "in_review",
+        "arguments": {
+          "input_artifact_id": "23f0899166d8",
+          "title": "Fixture change"
+        },
+        "result": {
+          "tool_name": "pull_request",
+          "message": "pull request opened",
+          "output_artifact_ids": [
+            "ea838838f200"
+          ],
+          "output_paths": [
+            "artifacts/ea838838f200.json"
+          ],
+          "evidence_level": "simulation_only",
+          "business_status": "not_measured",
+          "payload": {
+            "title": "Fixture change",
+            "source_artifact_id": "23f0899166d8"
+          },
+          "output_paths_kind": "read_only_capture_evidence",
+          "business_path": null,
+          "workspace": "study/workspaces/t0001",
+          "execution_environment": {
+            "cwd": "study/workspaces/t0001",
+            "python_executable": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python",
+            "default_build_command": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python -m compileall -q src",
+            "build_kind": "python_bytecode_compilation",
+            "optional_modules": {
+              "pytest": true,
+              "build": false,
+              "pip": false,
+              "setuptools": false
+            }
+          }
+        },
+        "status": "success",
+        "schema_version": "chimera-event/1",
+        "event_seq": 21,
+        "event_id": "c43768c9fbca4b99a0fd0c389b5fca4b",
+        "wall_time_utc": "2026-10-13T11:28:19.760691+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 21,
+        "sha256": "0fdbf690ce907df91447162af025f3f0718ae01aab634d3c067de160b10ada56"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.022000+08:00",
+        "event_type": "model_started",
+        "step": 5,
+        "workflow_id": "bug_fix",
+        "call_id": "model-06130238ce7a4b8f81ce45ec694eb260",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 22,
+        "event_id": "7d6cc9e97cb943608c00ef1f4acd9550",
+        "wall_time_utc": "2026-10-13T11:28:19.760755+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 22,
+        "sha256": "8cd1a4afe69737746be4c4d0ff371a8f711c65d8a96726f35bea961a7bd57986"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.023000+08:00",
+        "event_type": "model_terminal",
+        "step": 5,
+        "workflow_id": "bug_fix",
+        "call_id": "model-06130238ce7a4b8f81ce45ec694eb260",
+        "status": "success",
+        "model": null,
+        "usage": null,
+        "usage_unknown": true,
+        "schema_version": "chimera-event/1",
+        "event_seq": 23,
+        "event_id": "957d6690c9f740c59ddcd9943f4a4f2d",
+        "wall_time_utc": "2026-10-13T11:28:19.760810+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 23,
+        "sha256": "5e0a708c1ddba588f49c67c1e6e6c3e4887dafe93e0f3e580e92f54516fa31f3"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.024000+08:00",
+        "step": 5,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-10a1abe4dad64d63b7a3fc57d9932ccb",
+        "provider_call_id": "fixture-call-5",
+        "from_state": "in_review",
+        "tool_name": "approve",
+        "requested_tool_name": "approve",
+        "event_type": "tool_started",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 24,
+        "event_id": "ad76a422d7cb4ae0b12fb874dbdd0c0b",
+        "wall_time_utc": "2026-10-13T11:28:19.760848+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_START",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 24,
+        "sha256": "6392e4490f27fffb6d146834d7a3ecf0db9d244869eb87c8abe8b62e8fedabda"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.025000+08:00",
+        "step": 5,
+        "workflow_id": "bug_fix",
+        "call_id": "tool-10a1abe4dad64d63b7a3fc57d9932ccb",
+        "provider_call_id": "fixture-call-5",
+        "from_state": "in_review",
+        "tool_name": "approve",
+        "requested_tool_name": "approve",
+        "event_type": "tool_call",
+        "to_state": "completed",
+        "arguments": {
+          "input_artifact_id": "ea838838f200"
+        },
+        "result": {
+          "tool_name": "approve",
+          "message": "change approved",
+          "output_artifact_ids": [
+            "0cc185dbc3bf"
+          ],
+          "output_paths": [
+            "artifacts/0cc185dbc3bf.json"
+          ],
+          "evidence_level": "simulation_only",
+          "business_status": "not_measured",
+          "payload": {
+            "approved": true,
+            "source_artifact_id": "ea838838f200"
+          },
+          "output_paths_kind": "read_only_capture_evidence",
+          "business_path": null,
+          "workspace": "study/workspaces/t0001",
+          "execution_environment": {
+            "cwd": "study/workspaces/t0001",
+            "python_executable": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python",
+            "default_build_command": "/Users/ayang/Desktop/project_work/Chimera/.venv/bin/python -m compileall -q src",
+            "build_kind": "python_bytecode_compilation",
+            "optional_modules": {
+              "pytest": true,
+              "build": false,
+              "pip": false,
+              "setuptools": false
+            }
+          }
+        },
+        "status": "success",
+        "schema_version": "chimera-event/1",
+        "event_seq": 25,
+        "event_id": "b4008079b4504e579b682b8554433a5b",
+        "wall_time_utc": "2026-10-13T11:28:19.763238+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "TOOL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 25,
+        "sha256": "d7dc9cfebdc55eee93161c82154e8fbb9e9ea7ab61efa65150fbe0298f43567e"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.026000+08:00",
+        "event_type": "model_started",
+        "step": 6,
+        "workflow_id": "bug_fix",
+        "call_id": "model-a9f43a29d9f94124aae5cf9092eb675d",
+        "status": "started",
+        "schema_version": "chimera-event/1",
+        "event_seq": 26,
+        "event_id": "c8b49a661b48436cb66cad4ff948c80f",
+        "wall_time_utc": "2026-10-13T11:28:19.763309+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 26,
+        "sha256": "da9ed221c28724bfa4a8e9c88da854aebdac585defba7e384e5f64890f057b5f"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.027000+08:00",
+        "event_type": "model_terminal",
+        "step": 6,
+        "workflow_id": "bug_fix",
+        "call_id": "model-a9f43a29d9f94124aae5cf9092eb675d",
+        "status": "success",
+        "model": null,
+        "usage": null,
+        "usage_unknown": true,
+        "schema_version": "chimera-event/1",
+        "event_seq": 27,
+        "event_id": "39883ef8aae046c391ba335ecf9139b7",
+        "wall_time_utc": "2026-10-13T11:28:19.763349+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "MODEL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 27,
+        "sha256": "04b2aecb0f5a32509cbf57947c336c00f38ea162e44bc1b0686d5e6b46908080"
+      }
+    },
+    {
+      "payload": {
+        "run_id": "r-f4e345d449da-0",
+        "task_id": "t0001",
+        "trace_id": "trace0001",
+        "member_id": "m00",
+        "planned_activity_id": "p0001",
+        "phase_id": "phase1",
+        "workday": 1,
+        "simulation_time": "2025-05-05T09:00:00.028000+08:00",
+        "event_type": "final_answer",
+        "workflow_id": "bug_fix",
+        "state": "completed",
+        "answer": "Fixture execution ended.",
+        "status": "completed",
+        "schema_version": "chimera-event/1",
+        "event_seq": 28,
+        "event_id": "342003795118476aa4891e2167c82d4f",
+        "wall_time_utc": "2026-10-13T11:28:19.763384+00:00",
+        "simulation_clock_kind": "task_start_plus_logical_order"
+      },
+      "marker": "FINAL_EVENT",
+      "source": {
+        "path": "study/workspaces/t0001/execution.log",
+        "line": 28,
+        "sha256": "04b3855ce7a055e039dfdb4603df4bf4dcd9ba004f5493c92c313fd57574f492"
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "225267400134",
+      "artifact_type": "ticket",
+      "producer_tool": "issue_create",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "issue.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/225267400134.json",
+      "encoding": "json",
+      "inputs": [],
+      "version": 1,
+      "sha256": "cefd9d3084da31e09530f65f82b11c5dce26ecf2cb44c6a2e76ceec9a4baa9b5",
+      "created_at": "2026-10-13T11:28:19.741253+00:00",
+      "root_type": "simulation_source",
+      "input_versions": {},
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "0da859b491f0",
+      "artifact_type": "file",
+      "producer_tool": "reproduce_bug",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "reproduction.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/0da859b491f0.json",
+      "encoding": "json",
+      "inputs": [
+        "missing-input"
+      ],
+      "version": 1,
+      "sha256": "31f823fcac1cd67a07045d17aab46e4ddf51200b3d4644d12b31538e0e642132",
+      "created_at": "2026-10-13T11:28:19.742216+00:00",
+      "root_type": null,
+      "input_versions": {
+        "225267400134": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "7e7af75a6fc1",
+      "artifact_type": "file",
+      "producer_tool": "code_edit",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "src/main.py",
+      "trace_id": "trace0001",
+      "path": "artifacts/7e7af75a6fc1.py",
+      "encoding": "text",
+      "inputs": [
+        "0da859b491f0"
+      ],
+      "version": 1,
+      "sha256": "1043ef52e8b2145382368acfe3244720f319f539a54f1542a9c3c857ed3d2111",
+      "created_at": "2026-10-13T11:28:19.743283+00:00",
+      "root_type": null,
+      "input_versions": {
+        "0da859b491f0": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "23f0899166d8",
+      "artifact_type": "file",
+      "producer_tool": "test_run",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "test_report.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/23f0899166d8.json",
+      "encoding": "json",
+      "inputs": [
+        "7e7af75a6fc1"
+      ],
+      "version": 1,
+      "sha256": "f7fcadc0039c85922de37a6b08f2a8953f5e4b28bfd708d2792daf1eb75da08c",
+      "created_at": "2026-10-13T11:28:19.759253+00:00",
+      "root_type": null,
+      "input_versions": {
+        "7e7af75a6fc1": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "ea838838f200",
+      "artifact_type": "ticket",
+      "producer_tool": "pull_request",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "pull_request.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/ea838838f200.json",
+      "encoding": "json",
+      "inputs": [
+        "23f0899166d8"
+      ],
+      "version": 1,
+      "sha256": "962a32bb8efd67e8d999d44792cf86c98978e781c187a1c76968677a87df3c2d",
+      "created_at": "2026-10-13T11:28:19.760554+00:00",
+      "root_type": null,
+      "input_versions": {
+        "23f0899166d8": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    },
+    {
+      "artifact_id": "0cc185dbc3bf",
+      "artifact_type": "event",
+      "producer_tool": "approve",
+      "owner_id": "m00",
+      "acl": [
+        "m00"
+      ],
+      "name": "approval.json",
+      "trace_id": "trace0001",
+      "path": "artifacts/0cc185dbc3bf.json",
+      "encoding": "json",
+      "inputs": [
+        "ea838838f200"
+      ],
+      "version": 1,
+      "sha256": "08e364ed999af77a9d52e1422c95452c248bc3ef107461a09b7470041d9be4cd",
+      "created_at": "2026-10-13T11:28:19.763125+00:00",
+      "root_type": null,
+      "input_versions": {
+        "ea838838f200": 1
+      },
+      "workspace": "workspaces/t0001",
+      "task_id": "t0001"
+    }
+  ]
+}
