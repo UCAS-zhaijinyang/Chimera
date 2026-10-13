@@ -132,3 +132,12 @@ def test_acceptance_rejects_missing_duplicate_or_unknown_execution_rows(tmp_path
     manifest.write_text(json.dumps(study))
     assert evaluate_execution(root)['status']=='FAIL'
     assert evaluate_business(root)['status']=='FAIL'
+
+
+def test_multifile_mutation_handles_package_imports(tmp_path):
+    from evaluation.business import check_multifile
+    (tmp_path/'src').mkdir();(tmp_path/'tests').mkdir()
+    (tmp_path/'src/helper.py').write_text('def mean_values(a,b):\n    return (a+b)/2\n')
+    (tmp_path/'src/main.py').write_text('from helper import mean_values\ndef compute(a,b):\n    return mean_values(a,b)\n')
+    (tmp_path/'tests/test_compute.py').write_text('import sys, pathlib, unittest\nsys.path.insert(0,str(pathlib.Path(__file__).resolve().parents[1]))\nfrom src.main import compute\nclass Test(unittest.TestCase):\n    def test_mean(self):\n        self.assertEqual(compute(2,3),2.5)\n')
+    assert check_multifile(tmp_path)['status']=='PASS'

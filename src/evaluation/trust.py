@@ -31,6 +31,12 @@ EXPECTED_MARKER = {"task_started": "TASK_EVENT", "task_terminal": "TASK_EVENT",
                    "model_started": "MODEL_EVENT", "model_terminal": "MODEL_EVENT", "final_answer": "FINAL_EVENT"}
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z][A-Za-z0-9-]*)")
 
+# Frozen native-tool observation contracts, independently listed from the
+# producer implementation. Only the first observation may be an external root.
+NATIVE_OBSERVATIONS = {'write_to_file', 'file_find_in_content', 'file_find_by_name',
+    'shell_exec', 'shell_view', 'shell_wait', 'shell_write_to_process', 'shell_kill_process',
+    'browse_url', 'search_brave', 'browser_action'}
+
 def pii_candidates(text):
     # Contact candidates are not asserted to be real PII. Reserved simulation
     # domains are explicitly synthetic; other contacts require review.
@@ -335,11 +341,12 @@ def evaluate_study(study_dir: str | Path) -> dict:
                 if producer.get("tool_name") in {"data_transform", "file_write", "shared_storage", "message_send",
                        "design_document", "reproduce_bug", "pull_request", "approve"} and not required:
                     fail("L0.4", "tool contract requires recorded input dependency", task_id=task_id, artifact_id=identifier)
-                if not inputs and producer.get("tool_name") not in {"source_query", "issue_create", "code_edit", "test_run", "build"}:
+                native_root = producer.get('tool_name') in NATIVE_OBSERVATIONS and artifact.get('root_type') == 'native_environment_observation'
+                if not inputs and not native_root and producer.get("tool_name") not in {"source_query", "issue_create", "code_edit", "test_run", "build"}:
                     fail("L0.4", "tool contract forbids unexplained root", task_id=task_id, artifact_id=identifier)
                 if required and required not in inputs:
                     fail("L0.4", "declared lineage omits executed input", task_id=task_id, artifact_id=identifier)
-                if producer.get("tool_name") in {"code_edit", "test_run", "build"}:
+                if producer.get("tool_name") in {"code_edit", "test_run", "build", "finish_task", *NATIVE_OBSERVATIONS}:
                     prior = [(e.get("event_seq", -1), i) for i, e in produced.items()
                              if e.get("event_seq", -1) < producer.get("event_seq", -1)]
                     if prior and max(prior)[1] not in inputs:

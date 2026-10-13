@@ -17,7 +17,6 @@ from camel.societies.workforce import Workforce
 from camel.tasks.task import Task
 from camel.toolkits import (
     FunctionTool,
-    SearchToolkit,
 )
 import logging
 import os
@@ -26,6 +25,7 @@ from camel.logger import set_log_level
 import config
 import json
 from foundation_model import create_meeting_camel_model
+from search_runtime import search_brave
 
 
 from dotenv import load_dotenv
@@ -95,11 +95,7 @@ def load_member_profile(
 def WeeklyPlan(member_dir: str):
     search_tools = []
     if not config.offline_mode:
-        search_toolkit = SearchToolkit()
-        search_tools = [
-            FunctionTool(search_toolkit.search_google),
-            FunctionTool(search_toolkit.search_duckduckgo),
-        ]
+        search_tools = [FunctionTool(search_brave)]
 
     agent_kwargs = {
         "model": create_meeting_camel_model(),

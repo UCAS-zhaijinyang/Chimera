@@ -1,0 +1,45 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_production_arbitrary_code_task_keeps_native_terminal ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10aeedb40>
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-68/test_production_arbitrary_code0')
+
+    def test_production_arbitrary_code_task_keeps_native_terminal(monkeypatch, tmp_path):
+        import task
+        import config
+        import json
+        from test_base_tool_workflows import call
+        replies = iter([call('shell_exec', id='s', command='printf native > task.txt'),
+                        call('finish_task', summary='verified'), {'content': 'done'}])
+        monkeypatch.setattr(task, 'OpenAICompatibleChatClient', lambda: lambda r: next(replies))
+        monkeypatch.setattr(config, 'offline_mode', True)
+        task.run_workflow_task(week=1, date='Monday', task='Read existing source code and copy selected files',
+            member_id='m1', log_dir=str(tmp_path / 'logs'), event_index=0, output_dir=str(tmp_path / 'output'))
+>       assert (tmp_path / 'output/business_workspace/task.txt').read_text() == 'native'
+
+tests/test_task_workflow_wiring.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py:1134: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-68/test_production_arbitrary_code0/output/business_workspace/task.txt')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return self._accessor.open(self, mode, buffering, encoding, errors,
+                                   newline)
+E       FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-68/test_production_arbitrary_code0/output/business_workspace/task.txt'
+
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py:1119: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_task_workflow_wiring.py::test_production_arbitrary_code_task_keeps_native_terminal
+1 failed in 0.04s

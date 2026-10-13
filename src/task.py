@@ -23,7 +23,9 @@ import json
 import inspect
 import hashlib
 import traceback
-from http.client import HTTPConnection, HTTPSConnection
+import socket
+import ssl
+from http.client import HTTPConnection, HTTPSConnection, IncompleteRead
 from pathlib import Path
 import shutil
 from urllib.error import HTTPError, URLError
@@ -45,11 +47,52 @@ def _bounded_connection(connection_type, connect_timeout):
     def create(host, **kwargs):
         connection = connection_type(host, **kwargs)
         original = connection._create_connection
+        original_connect = connection.connect
+        endpoints = []
+        index = 0
+        last_error = None
         def _workflow_dial(address, timeout, source_address=None, **options):
-            sock = original(address, min(timeout, connect_timeout), source_address, **options)
-            sock.settimeout(timeout)
-            return sock
+            nonlocal endpoints, index, last_error
+            if connection_type is not HTTPSConnection:
+                sock = original(address, min(timeout, connect_timeout), source_address, **options)
+                sock.settimeout(timeout)
+                return sock
+            if not endpoints:
+                endpoints = socket.getaddrinfo(*address, type=socket.SOCK_STREAM)
+            while index < len(endpoints):
+                family, kind, protocol, _, endpoint = endpoints[index]
+                index += 1
+                sock = socket.socket(family, kind, protocol)
+                try:
+                    sock.settimeout(min(timeout, connect_timeout))
+                    if source_address: sock.bind(source_address)
+                    sock.connect(endpoint)
+                    return sock
+                except OSError as exc:
+                    last_error = exc
+                    sock.close()
+            raise last_error or OSError('no usable resolved address')
         connection._create_connection = _workflow_dial
+        if connection_type is HTTPSConnection:
+            def connect_with_tls_failover():
+                nonlocal last_error
+                while True:
+                    try:
+                        original_connect()
+                        connection.sock.settimeout(connection.timeout)
+                        return
+                    except ssl.SSLCertVerificationError:
+                        # Fail closed; never weaken certificate verification.
+                        raise
+                    except (ssl.SSLError, TimeoutError) as exc:
+                        # connect() has not sent the generation HTTP request.
+                        # Keep the original host/SNI, change only the TCP endpoint.
+                        last_error = exc
+                        if connection.sock is not None:
+                            connection.sock.close()
+                            connection.sock = None
+                        if index >= len(endpoints): raise
+            connection.connect = connect_with_tls_failover
         return connection
     return create
 
@@ -74,6 +117,7 @@ class _WorkflowHTTPSHandler(HTTPSHandler):
 
 
 class OpenAICompatibleChatClient:
+    supports_images = True
     """Minimal OpenAI-compatible client for the filesystem workflow runner."""
 
     def __init__(self, *, api_key: str | None = None, base_url: str | None = None,
@@ -101,7 +145,7 @@ class OpenAICompatibleChatClient:
         self.last_usage = self.last_model = self.last_finish_reason = self.last_request_id = None
         self.last_error_metadata = None
         payload = {"model": self.model, "messages": request_payload["messages"],
-                   "temperature": request_payload.get("temperature", 0), "max_tokens": self.max_tokens}
+                   "temperature": request_payload.get("temperature", getattr(self, 'temperature', 0)), "max_tokens": self.max_tokens}
         if request_payload.get("tools"):
             payload.update(tools=request_payload["tools"], tool_choice=request_payload.get("tool_choice", "auto"),
                            parallel_tool_calls=False)
@@ -116,6 +160,13 @@ class OpenAICompatibleChatClient:
         try:
             with self.opener.open(request, timeout=self.timeout) as response:
                 body = json.loads(response.read().decode("utf-8"))
+        except IncompleteRead:
+            # Complete JSON is parsed before any returned tool can execute.
+            # A truncated generation may be regenerated in place, but it is
+            # still potentially billed and never treated as request-not-sent.
+            self.last_error_metadata = {'type':'IncompleteRead', 'request_not_sent':False,
+                                        'response_not_delivered':True}
+            raise RuntimeError('workflow LLM response was truncated before delivery') from None
         except TimeoutError:
             self.last_error_metadata = {"type":"TimeoutError"}
             raise TimeoutError("workflow LLM request timed out") from None
@@ -176,12 +227,17 @@ def run_workflow_task(
             metadata["simulation_time"] = (date_start + timedelta(days=link["workday"]-1)).replace(hour=hour, minute=minute, second=second).isoformat()
     metadata.update(context or {})
     workspace = Path(output_dir) / "workflow_workspaces" / trace_id
-    loop = WorkflowToolLoop(workspace, member_id=member_id, trace_id=trace_id, context=metadata)
+    loop = WorkflowToolLoop(workspace, member_id=member_id, trace_id=trace_id, context=metadata,
+                            base_tools=True, business_workspace=Path(output_dir) / "business_workspace",
+                            offline=config.offline_mode)
     member_log_dir = Path(log_dir)
     member_log_dir.mkdir(parents=True, exist_ok=True)
     detailed_log = member_log_dir / f"{member_id}_week_{week}_{date}_executio_task_{event_index}.log"
     try:
-        result = loop.run(task, chat_fn=OpenAICompatibleChatClient(), max_steps=getattr(config, "workflow_max_steps", 24))
+        client = OpenAICompatibleChatClient()
+        client.temperature = temperature
+        result = loop.run(task, chat_fn=client, workflow_id=metadata.get("workflow_id", "general"),
+                          max_steps=getattr(config, "workflow_max_steps", 24))
     finally:
         if (workspace / "execution.log").exists():
             shutil.copyfile(workspace / "execution.log", detailed_log)
@@ -208,7 +264,6 @@ def construct_society(
     from camel.logger import set_log_level
     from camel.societies import RolePlaying
     from camel.toolkits import (
-        SearchToolkit,
         BrowserToolkit,
         FileWriteToolkit,
         TerminalToolkit,
@@ -229,43 +284,9 @@ def construct_society(
         config.foundation_corp == "openai_compatible"
         and getattr(config, "local_llm_disable_tools", False)
     ):
-        terminal_kwargs = {
-            "working_dir": output_dir,
-            "log_path": output_dir,
-            "need_terminal": False,
-        }
-        # ``log_path`` is provided by Chimera's patched Camel toolkit.  The
-        # public Camel release used for local fallback does not have it.  The
-        # MCP decorator hides the original signature, so inspect its wrapped
-        # initializer when available instead of constructing a half-initialized
-        # toolkit and catching a TypeError afterward.
-        init_signature = inspect.signature(TerminalToolkit.__init__)
-        if "log_path" not in init_signature.parameters:
-            for cell in TerminalToolkit.__init__.__closure__ or ():
-                candidate = cell.cell_contents
-                if callable(candidate) and getattr(candidate, "__name__", "") == "__init__":
-                    try:
-                        init_signature = inspect.signature(candidate)
-                    except (TypeError, ValueError):
-                        continue
-                    break
-        if "log_path" not in init_signature.parameters:
-            terminal_kwargs.pop("log_path")
-        tools = [
-            *FileWriteToolkit(output_dir=output_dir).get_tools(),
-            *TerminalToolkit(**terminal_kwargs).get_tools(),
-        ]
-        if not config.offline_mode:
-            tools += [
-                *BrowserToolkit(
-                    headless=True,
-                    web_agent_model=models["browsing"],
-                    planning_agent_model=models["planning"],
-                    cache_dir=output_dir,
-                ).get_tools(),
-                SearchToolkit().search_duckduckgo,
-                SearchToolkit().search_google,
-            ]
+        from base_tools import create_base_tools
+        registry = create_base_tools(output_dir, offline=config.offline_mode, models=models)
+        tools = registry.function_tools()
 
     # Configure agent roles and parameters
     user_agent_kwargs = {
@@ -294,6 +315,7 @@ def construct_society(
         assistant_agent_kwargs=assistant_agent_kwargs,
     )
 
+    society._chimera_base_registry = registry if tools else None
     return society
 
 
@@ -371,6 +393,8 @@ def run_task(
             date=date,
         )
     finally:
+        registry = getattr(society, "_chimera_base_registry", None)
+        if registry: registry.close()
         # Remove the file handler after use
         logger.removeHandler(file_handler)
 

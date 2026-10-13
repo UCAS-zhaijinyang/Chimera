@@ -17,6 +17,7 @@ import re
 from pathlib import Path
 import shlex
 import subprocess
+import time
 import uuid
 from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Sequence
 
@@ -28,6 +29,12 @@ WORKFLOW_KEYWORDS = {
     "bug_fix": ("bug", "fix", "failure", "failing", "error", "regression"),
     "data_report": ("analyze", "analyse", "data", "report", "trend", "aggregate"),
 }
+
+NATIVE_OBSERVATION_TOOLS = frozenset({
+    'write_to_file', 'file_find_in_content', 'file_find_by_name', 'shell_exec', 'shell_view',
+    'shell_wait', 'shell_write_to_process', 'shell_kill_process', 'browse_url',
+    'search_brave', 'browser_action',
+})
 
 
 def classify_workflow(task: str) -> str:
@@ -42,7 +49,9 @@ def classify_workflow(task: str) -> str:
         return "bug_fix"
     if any(re.search(r"\b" + re.escape(keyword) + r"\b", text) for keyword in WORKFLOW_KEYWORDS["software_feature"]):
         return "software_feature"
-    return "data_report"
+    if any(re.search(r"\b" + re.escape(keyword) + r"\b", text) for keyword in WORKFLOW_KEYWORDS["data_report"]):
+        return "data_report"
+    return "general"
 
 
 @dataclass(frozen=True)
@@ -56,6 +65,7 @@ class WorkflowSpec:
 
 
 WORKFLOWS: dict[str, WorkflowSpec] = {
+    "general": WorkflowSpec("general", {"requested": {}, "working": {"finish_task": "completed"}}),
     "data_report": WorkflowSpec(
         "data_report",
         {
@@ -93,7 +103,8 @@ WORKFLOWS: dict[str, WorkflowSpec] = {
 
 
 class WorkflowRouter:
-    def __init__(self, workflow_id: str):
+    def __init__(self, workflow_id: str, base_tools: Iterable[str] = ()):
+        self.base_tools = tuple(base_tools)
         try:
             self.spec = WORKFLOWS[workflow_id]
         except KeyError as exc:
@@ -108,9 +119,14 @@ class WorkflowRouter:
         return self.spec.initial_state
 
     def tools_for_state(self, state: str) -> tuple[str, ...]:
-        return tuple(self.spec.transitions.get(state, {}).keys())
+        semantic = tuple(self.spec.transitions.get(state, {}).keys())
+        if state in self.spec.transitions:
+            return (*semantic, *self.base_tools)
+        return semantic
 
     def apply(self, state: str, tool_name: str) -> str:
+        if tool_name in self.base_tools and state in self.spec.transitions:
+            return "working" if self.workflow_id == "general" else state
         try:
             return self.spec.transitions[state][tool_name]
         except KeyError as exc:
@@ -140,12 +156,14 @@ class FilesystemToolRuntime:
 
     def __init__(self, workspace: str | os.PathLike[str], *, member_id: str, trace_id: str,
                  source_rows: Optional[Sequence[Mapping[str, Any]]] = None,
-                 reproduction_command: Optional[str] = None):
+                 reproduction_command: Optional[str] = None, business_workspace=None):
         self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.member_id = member_id
         self.trace_id = trace_id
         self.bus = FilesystemArtifactBus(self.workspace)
+        self.workspace = Path(business_workspace or self.workspace).resolve()
+        self.workspace.mkdir(parents=True, exist_ok=True)
         self._last_artifact_id = None
         self.source_rows = list(source_rows) if source_rows is not None else [{"week": "W1", "count": 3}, {"week": "W2", "count": 5}]
         self.reproduction_command = reproduction_command
@@ -167,7 +185,7 @@ class FilesystemToolRuntime:
         return artifact
 
     def _put(self, artifact_type: str, tool_name: str, payload: Any, *, name: str, inputs=()):
-        if tool_name in {"code_edit", "test_run", "build"} and not inputs and self._last_artifact_id:
+        if tool_name in {"code_edit", "test_run", "build", "finish_task", *NATIVE_OBSERVATION_TOOLS} and not inputs and self._last_artifact_id:
             inputs = (self._last_artifact_id,)
         artifact = self.bus.put(
             artifact_type,
@@ -178,7 +196,8 @@ class FilesystemToolRuntime:
             acl=(self.member_id,),
             trace_id=self.trace_id,
             inputs=tuple(inputs),
-            root_type="simulation_source" if tool_name in {"source_query", "issue_create"} else "standalone_generated_input",
+            root_type=("native_environment_observation" if tool_name in NATIVE_OBSERVATION_TOOLS else
+                       "simulation_source" if tool_name in {"source_query", "issue_create"} else "standalone_generated_input"),
         )
         self._last_artifact_id = artifact.artifact_id
         return artifact
@@ -371,6 +390,7 @@ class FilesystemToolRuntime:
 
 
 TOOL_SCHEMAS: dict[str, dict[str, Any]] = {
+    "finish_task": {"type": "object", "properties": {"summary": {"type": "string"}}, "required": ["summary"]},
     "source_query": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
     "data_transform": {"type": "object", "properties": {"input_artifact_id": {"type": "string"}, "group_by": {"type": "string"}}, "required": ["input_artifact_id"]},
     "file_write": {"type": "object", "properties": {"input_artifact_id": {"type": "string"}, "path": {"type": "string"}, "content": {"type": "string"}}, "required": ["input_artifact_id", "path"]},
@@ -422,13 +442,23 @@ class WorkflowRunResult:
 
 class WorkflowToolLoop:
     def __init__(self, workspace: str | os.PathLike[str], *, member_id: str, trace_id: str, context: Optional[Mapping] = None,
-                 source_rows: Optional[Sequence[Mapping[str, Any]]] = None, reproduction_command: Optional[str] = None):
+                 source_rows: Optional[Sequence[Mapping[str, Any]]] = None, reproduction_command: Optional[str] = None,
+                 base_tools: bool = False, business_workspace=None, offline: bool = False, base_models=None):
         self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.member_id = member_id
         self.trace_id = trace_id
         self.runtime = FilesystemToolRuntime(self.workspace, member_id=member_id, trace_id=trace_id,
-                                            source_rows=source_rows, reproduction_command=reproduction_command)
+                                            source_rows=source_rows, reproduction_command=reproduction_command,
+                                            business_workspace=(business_workspace or self.workspace / "business") if base_tools else None)
+        self.base_registry = None
+        if base_tools:
+            from base_tools import BaseToolRegistry
+            business_workspace = Path(business_workspace or self.workspace / "business").resolve()
+            if business_workspace == self.workspace or business_workspace in self.workspace.parents:
+                raise ValueError("capture must stay outside the business workspace")
+            self.base_registry = BaseToolRegistry(business_workspace, offline=offline, models=base_models)
+        self.native_schemas = {s["function"]["name"]: s for s in self.base_registry.schemas()} if self.base_registry else {}
         self.log_path = self.workspace / "execution.log"
         self.context = {"run_id": "r-" + uuid.uuid4().hex, "task_id": trace_id,
                         "trace_id": trace_id, "member_id": member_id,
@@ -456,11 +486,65 @@ class WorkflowToolLoop:
         chat_fn: Callable[[dict[str, Any]], dict[str, Any]],
         max_steps: int = 24,
         max_tool_errors: int = 2,
+        workflow_id: Optional[str] = None,
     ) -> WorkflowRunResult:
-        workflow_id = classify_workflow(task)
+        workflow_id = workflow_id or classify_workflow(task)
         if self.log_path.exists():
             raise FileExistsError("workflow log already exists; use a fresh task workspace")
-        router = WorkflowRouter(workflow_id)
+        router = WorkflowRouter(workflow_id, self.native_schemas)
+        if self.base_registry:
+            def browser_chat(request):
+                # Retry only this unsubmitted request. Replaying browse_url would
+                # replay previously committed page actions.
+                generation_retries = 0
+                for attempt in range(11):
+                    call_id = 'browser-model-' + uuid.uuid4().hex
+                    self._log('MODEL_EVENT', {'event_type': 'model_started', 'workflow_id': 'browser',
+                              'call_id': call_id, 'status': 'started'})
+                    try:
+                        response = chat_fn(request)
+                        if not isinstance(response, dict): raise ValueError('browser model message must be an object')
+                    except Exception as exc:
+                        metadata = getattr(chat_fn, 'last_error_metadata', None)
+                        if metadata is None:
+                            metadata = getattr(getattr(chat_fn, 'client', None), 'last_error_metadata', None)
+                        self._log('MODEL_EVENT', {'event_type': 'model_terminal', 'workflow_id': 'browser',
+                                  'call_id': call_id, 'status': 'timeout' if isinstance(exc, TimeoutError) else 'failed',
+                                  'error_type': type(exc).__name__, 'transport_metadata': metadata,
+                                  'usage': getattr(chat_fn, 'last_usage', None),
+                                  'usage_unknown': getattr(chat_fn, 'last_usage', None) is None})
+                        if metadata and metadata.get('response_not_delivered') is True and generation_retries < 2:
+                            generation_retries += 1
+                            time.sleep(generation_retries)
+                            continue
+                        if metadata and metadata.get('request_not_sent') is True and attempt < 8:
+                            time.sleep(min(2 ** attempt, 8))
+                            continue
+                        raise
+                    self._log('MODEL_EVENT', {'event_type': 'model_terminal', 'workflow_id': 'browser',
+                              'call_id': call_id, 'status': 'success', 'usage': getattr(chat_fn, 'last_usage', None),
+                              'model': getattr(chat_fn, 'last_model', None),
+                              'usage_unknown': getattr(chat_fn, 'last_usage', None) is None})
+                    return response
+            browser_chat.supports_images = getattr(chat_fn, "supports_images", False)
+            def browser_action(arguments):
+                call_id = 'browser-tool-' + uuid.uuid4().hex
+                base = {'workflow_id': 'browser', 'tool_name': 'browser_action', 'call_id': call_id,
+                        'from_state': 'interacting', 'to_state': 'interacting'}
+                self._log('TOOL_START', {**base, 'event_type': 'tool_started', 'status': 'started'})
+                try:
+                    payload = self.base_registry.browser.action(arguments)
+                    artifact = self.runtime._put('webpage', 'browser_action', payload, name='browser-observation.json')
+                    result = self.runtime._result('browser_action', artifact, 'real Chromium observation')
+                except Exception as exc:
+                    self._log('TOOL_EVENT', {**base, 'event_type': 'tool_call', 'arguments': arguments,
+                              'status': 'failed', 'error_type': type(exc).__name__})
+                    raise
+                self._log('TOOL_EVENT', {**base, 'event_type': 'tool_call', 'arguments': arguments,
+                          'status': 'success', 'result': result})
+                return payload
+            self.base_registry.browser_chat_fn = browser_chat
+            self.base_registry.browser_execute_action = browser_action
         state = router.initial_state
         tool_calls: list[str] = []
         messages: list[dict[str, Any]] = [
@@ -477,9 +561,15 @@ class WorkflowToolLoop:
         ]
         final_answer = ""
         tool_errors = 0
+        transport_retries = generation_retries = 0
         self._log("TASK_EVENT", {"event_type": "task_started", "workflow_id": workflow_id, "status": "started"})
         try:
-            for step in range(max_steps):
+            step = -1
+            for iteration in range(max_steps * 11):
+                if transport_retries == 0 and generation_retries == 0:
+                    step += 1
+                if step >= max_steps:
+                    break
                 allowed = router.tools_for_state(state)
                 sequence = " -> ".join(name for transitions in router.spec.transitions.values() for name in transitions)
                 # State must be in messages: OpenAI-compatible APIs do not transmit
@@ -499,7 +589,7 @@ class WorkflowToolLoop:
                     "code_edit remains available to write additional source/test files and repair failed checks; "
                     "test_run advances only on success. Finish every required file before testing. "
                     f"Available Python interpreter: {shlex.quote(os.sys.executable)}. "
-                    f"Command working directory and business file root: {self.workspace}. "
+                    f"Command working directory and business file root: {self.runtime.workspace}. "
                     "The interpreter installation directory is NOT the task workspace. "
                     "Run commands relative to the task workspace; do not cd to the framework repository. "
                     f"Execution environment: {json.dumps(self.runtime.execution_environment)}. "
@@ -510,7 +600,17 @@ class WorkflowToolLoop:
                 )
                 request = {"workflow_id": workflow_id, "state": state,
                            "messages": [{"role": "system", "content": progress}, *messages[1:]],
-                           "tools": schemas_for_tools(allowed)}
+                           "tools": [self.native_schemas[name] if name in self.native_schemas else schemas_for_tools([name])[0] for name in allowed]}
+                if workflow_id == "general":
+                    request["messages"][0]["content"] = (
+                        "Complete the employee task using the offered native tools in the experiment environment. "
+                        "Make one tool call per turn. Read actual results; a nonzero returncode is a failure. "
+                        "shell_exec may return running=true: wait/read/write/kill that session before finishing. "
+                        "Call finish_task only after checking all required outcomes, then give a final answer. "
+                        "Do not modify framework capture evidence. "
+                        f"Business cwd: {self.base_registry.workspace if self.base_registry else self.workspace}. "
+                        f"Python: {shlex.quote(os.sys.executable)}. State: {state}."
+                    )
                 if len(allowed) == 1:
                     request["tool_choice"] = {"type": "function", "function": {"name": allowed[0]}}
                 elif allowed:
@@ -523,12 +623,27 @@ class WorkflowToolLoop:
                     if not isinstance(response, dict):
                         raise ValueError("model message must be an object")
                 except Exception as exc:
+                    transport = getattr(chat_fn, 'last_error_metadata', None)
+                    if transport is None:
+                        transport = getattr(getattr(chat_fn, 'client', None), 'last_error_metadata', None)
                     self._log("MODEL_EVENT", {"event_type": "model_terminal", "step": step,
                               "workflow_id": workflow_id, "call_id": model_call_id,
                               "status": "timeout" if isinstance(exc, (TimeoutError, subprocess.TimeoutExpired)) else "failed",
                               "error_type": type(exc).__name__, "usage": getattr(chat_fn, "last_usage", None),
-                              "usage_unknown": getattr(chat_fn, "last_usage", None) is None})
+                              "usage_unknown": getattr(chat_fn, "last_usage", None) is None,
+                              "transport_metadata": transport})
+                    # Retry only a request proved not to have left the client.
+                    # A sent request with an uncertain outcome is never replayed.
+                    if (transport or {}).get('response_not_delivered') is True and generation_retries < 2:
+                        generation_retries += 1
+                        time.sleep(generation_retries)
+                        continue
+                    if (transport or {}).get('request_not_sent') is True and transport_retries < 8:
+                        transport_retries += 1
+                        time.sleep(min(2 ** (transport_retries - 1), 8))
+                        continue
                     raise
+                transport_retries = generation_retries = 0
                 self._log("MODEL_EVENT", {"event_type": "model_terminal", "step": step,
                           "workflow_id": workflow_id, "call_id": model_call_id, "status": "success",
                           "model": getattr(chat_fn, "last_model", None) or getattr(chat_fn, "model", None), "usage": getattr(chat_fn, "last_usage", None),
@@ -575,7 +690,7 @@ class WorkflowToolLoop:
                                       "status": "rejected", "to_state": state})
                             tool_closed = True
                             raise ValueError(f"tool {requested_tool_name!r} is not allowed in state {state!r}")
-                        schema = TOOL_SCHEMAS[tool_name]
+                        schema = self.native_schemas[tool_name]["function"]["parameters"] if tool_name in self.native_schemas else TOOL_SCHEMAS[tool_name]
                         for name in schema.get("required", []):
                             if name not in arguments or arguments[name] is None:
                                 raise ValueError(f"missing required tool argument: {name}")
@@ -583,7 +698,20 @@ class WorkflowToolLoop:
                             kind = schema.get("properties", {}).get(name, {}).get("type")
                             if kind == "string" and not isinstance(value, str) or kind == "array" and not isinstance(value, list):
                                 raise ValueError(f"invalid type for tool argument: {name}")
-                        result = self.runtime.execute(tool_name, arguments)
+                        if tool_name == "finish_task":
+                            if not self.base_registry or not self.base_registry.can_finish():
+                                raise ValueError("cannot finish: observe terminal status of every shell session; repair failed sessions or explicitly cancel")
+                            artifact = self.runtime._put("event", tool_name, dict(arguments), name="completion.json")
+                            result = self.runtime._result(tool_name, artifact, "completion recorded; independent acceptance required")
+                        elif tool_name in self.native_schemas:
+                            payload = self.base_registry.execute(tool_name, arguments)
+                            artifact = self.runtime._put("file", tool_name, payload, name=tool_name + ".json")
+                            result = self.runtime._result(tool_name, artifact, "native tool executed")
+                            result["evidence_level"] = "executed_tool"
+                            result["business_workspace"] = str(self.base_registry.workspace)
+                            result["business_status"] = "failed" if isinstance(payload, dict) and payload.get("returncode") not in (None, 0) and tool_name != "shell_kill_process" else "not_measured"
+                        else:
+                            result = self.runtime.execute(tool_name, arguments)
                         failed = result.get("business_status") == "failed"
                         if not failed:
                             state = router.apply(state, tool_name)
@@ -618,3 +746,7 @@ class WorkflowToolLoop:
             self._log("TASK_EVENT", {"event_type": "task_terminal", "workflow_id": workflow_id, "state": state,
                       "status": "timeout" if isinstance(exc, (TimeoutError, subprocess.TimeoutExpired)) else "failed", "error_type": type(exc).__name__})
             raise
+
+        finally:
+            if self.base_registry:
+                self.base_registry.close()

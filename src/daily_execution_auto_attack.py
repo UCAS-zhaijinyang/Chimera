@@ -33,7 +33,7 @@ from task import run_task
 from member_email import get_email_members, get_email_content, reply_email_content
 from daily_plan_update import update_daily_schedule_attack
 from attack_schedule import select_attack_date
-from daily_attack_schedule import update_daily_schedule_with_attack
+from daily_attack_schedule import update_daily_schedule_with_attack, validate_attack_schedule
 from foundation_model import run_llm
 from activity_utils import is_email_send_activity
 from process_registry import (
@@ -434,6 +434,9 @@ class Member:
             old_schedule = self.schedule
             old_schedule_index = self.schedule_index
             try:
+                if self.attacker:
+                    # Email-driven updates must preserve the canonical injection too.
+                    updated_schedule = validate_attack_schedule(updated_schedule, self.attack_info)
                 self.schedule = purturbation_schedule(updated_schedule)
             except Exception as e:
                 print(

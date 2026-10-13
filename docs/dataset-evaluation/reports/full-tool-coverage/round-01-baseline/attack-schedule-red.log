@@ -1,0 +1,46 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+____________________ test_attack_prompt_preserves_all_steps ____________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107742fe0>
+
+    def test_attack_prompt_preserves_all_steps(monkeypatch):
+        import daily_attack_schedule as module
+        seen = {}
+        def respond(system, user, **kw):
+            seen['user'] = user
+            return '[]'
+        monkeypatch.setattr(module, 'run_llm', respond)
+        info = {'attack_id': 'multi', 'how': [{'step': i, 'description': f'unique-step-{i}'} for i in range(1, 6)]}
+        module.attack_daily_schedule_with_gpt([], {'name': 'x', 'role': 'r'}, info, {})
+>       assert 'unique-step-5' in seen['user']
+E       assert 'unique-step-5' in "Previous schedule: []\nAttack details: {'attack_id': 'multi', 'what': None, 'type': None, 'how': [{'step': 1, 'description': 'unique-step-1'}, {'step': 2, 'description': 'unique-step-2'}]}"
+
+tests/test_attack_schedule_coverage.py:14: AssertionError
+__________________ test_schedule_rejects_missing_attack_steps __________________
+
+    def test_schedule_rejects_missing_attack_steps():
+>       from daily_attack_schedule import validate_attack_schedule
+E       ImportError: cannot import name 'validate_attack_schedule' from 'daily_attack_schedule' (/Users/ayang/Desktop/project_work/Chimera/src/daily_attack_schedule.py)
+
+tests/test_attack_schedule_coverage.py:18: ImportError
+_________ test_schedule_accepts_complete_ordered_steps_and_after_hours _________
+
+    def test_schedule_accepts_complete_ordered_steps_and_after_hours():
+>       from daily_attack_schedule import validate_attack_schedule
+E       ImportError: cannot import name 'validate_attack_schedule' from 'daily_attack_schedule' (/Users/ayang/Desktop/project_work/Chimera/src/daily_attack_schedule.py)
+
+tests/test_attack_schedule_coverage.py:25: ImportError
+_______________ test_schedule_rejects_empty_and_unsorted_records _______________
+
+    def test_schedule_rejects_empty_and_unsorted_records():
+>       from daily_attack_schedule import validate_attack_schedule
+E       ImportError: cannot import name 'validate_attack_schedule' from 'daily_attack_schedule' (/Users/ayang/Desktop/project_work/Chimera/src/daily_attack_schedule.py)
+
+tests/test_attack_schedule_coverage.py:32: ImportError
+=========================== short test summary info ============================
+FAILED tests/test_attack_schedule_coverage.py::test_attack_prompt_preserves_all_steps
+FAILED tests/test_attack_schedule_coverage.py::test_schedule_rejects_missing_attack_steps
+FAILED tests/test_attack_schedule_coverage.py::test_schedule_accepts_complete_ordered_steps_and_after_hours
+FAILED tests/test_attack_schedule_coverage.py::test_schedule_rejects_empty_and_unsorted_records
+4 failed in 0.28s

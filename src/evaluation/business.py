@@ -102,7 +102,7 @@ def check_multifile(workspace):
             (root/'helper_check.py').write_text(helper)
             dependency=prelude+"import helper\nhelper.mean_values=lambda a,b: 9137\nfrom main import compute\nassert compute(2,3)==9137, 'main does not use helper'\n"
             (root/'dependency_check.py').write_text(dependency)
-            test_runner=prelude+"import unittest, json\nimport main\nif '--mutant' in sys.argv:\n    main.compute=lambda a,b: -9137\nsys.path.insert(0,str(root/'tests'))\nimport test_compute\nsuite=unittest.defaultTestLoader.loadTestsFromModule(test_compute)\nassert suite.countTestCases()>0, 'no behavioral tests'\nresult=unittest.TextTestRunner().run(suite)\nprint('CHECK_RESULT '+json.dumps({'tests':result.testsRun,'failures':len(result.failures),'errors':len(result.errors)}))\nsys.exit(0 if result.wasSuccessful() else 1)\n"
+            test_runner=prelude+"import unittest, json\nimport main\n# Package and bare imports must identify the same candidate.\nsys.path.insert(0,str(root))\nsys.modules['src.main']=main\nif '--mutant' in sys.argv:\n    main.compute=lambda a,b: -9137\nsys.path.insert(0,str(root/'tests'))\nimport test_compute\nsuite=unittest.defaultTestLoader.loadTestsFromModule(test_compute)\nassert suite.countTestCases()>0, 'no behavioral tests'\nresult=unittest.TextTestRunner().run(suite)\nprint('CHECK_RESULT '+json.dumps({'tests':result.testsRun,'failures':len(result.failures),'errors':len(result.errors)}))\nsys.exit(0 if result.wasSuccessful() else 1)\n"
             (root/'test_check.py').write_text(test_runner)
             for name in ('helper','dependency','test'):
                 completed=subprocess.run([sys.executable,'-I',str(root/(name+'_check.py'))],cwd=root,

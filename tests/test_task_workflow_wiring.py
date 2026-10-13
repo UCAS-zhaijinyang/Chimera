@@ -92,3 +92,20 @@ def test_saved_plan_sidecar_is_joined_without_guessing_event_index(monkeypatch, 
     row = json.loads((logs / "m1_week_1_Monday_executio_task_42.log").read_text().splitlines()[0].split(" ",1)[1])
     assert row["planned_activity_id"] == "p-stable"
     assert row["phase_id"] == "P1" and row["workday"] == 1
+
+
+def test_production_arbitrary_code_task_keeps_native_terminal(monkeypatch, tmp_path):
+    import task
+    import config
+    import json
+    from test_base_tool_workflows import call
+    replies = iter([call('shell_exec', id='s', command='printf native > task.txt'),
+                    call('finish_task', summary='verified'), {'content': 'done'}])
+    monkeypatch.setattr(task, 'OpenAICompatibleChatClient', lambda: lambda r: next(replies))
+    monkeypatch.setattr(config, 'offline_mode', True)
+    task.run_workflow_task(week=1, date='Monday', task='Read existing source code and copy selected files',
+        member_id='m1', log_dir=str(tmp_path / 'logs'), event_index=0, output_dir=str(tmp_path / 'output'))
+    assert (tmp_path / 'output/business_workspace/task.txt').read_text() == 'native'
+    rows = [json.loads(s.split(' ', 1)[1]) for s in
+            (tmp_path / 'logs/m1_week_1_Monday_executio_task_0.log').read_text().splitlines()]
+    assert rows[0]['workflow_id'] == 'general'

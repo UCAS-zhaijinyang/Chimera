@@ -139,3 +139,60 @@ def test_tls_handshake_failure_proves_http_request_was_not_sent(tmp_path):
     assert client.last_error_metadata['request_not_sent'] is True
     ledger.finish(number,client,{'task_id':'t','run_id':'r'},'RuntimeError')
     assert ledger.spent==0
+
+
+def test_truncated_generation_is_identified_and_conservatively_billed(tmp_path):
+    from evaluation.live import PaidLedger,REQUEST_RESERVE
+    canary='private-response-canary'
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self,*args):pass
+        def do_POST(self):
+            self.rfile.read(int(self.headers['Content-Length']))
+            self.send_response(200);self.send_header('Content-Length','10000');self.end_headers()
+            self.wfile.write(canary.encode());self.close_connection=True
+    server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+    thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+    try:
+        client=OpenAICompatibleChatClient(api_key='test-only',base_url=f'http://127.0.0.1:{server.server_port}',timeout=1)
+        ledger=PaidLedger(tmp_path/'costs.jsonl');number=ledger.begin()
+        with pytest.raises(RuntimeError) as exc:client({'messages':[]})
+        assert canary not in str(exc.value)
+        assert client.last_error_metadata['response_not_delivered'] is True
+        assert client.last_error_metadata['request_not_sent'] is False
+        ledger.finish(number,client,{'task_id':'t','run_id':'r'},'RuntimeError')
+        assert ledger.spent==REQUEST_RESERVE
+    finally:server.shutdown();server.server_close()
+
+
+def test_tls_failover_tries_other_resolved_address_before_sending_http(tmp_path,monkeypatch):
+    import socket,ssl,subprocess
+    from http.client import HTTPSConnection
+    from task import _bounded_connection
+    cert,key=tmp_path/'cert.pem',tmp_path/'key.pem'
+    subprocess.run(['openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',str(key),'-out',str(cert),'-days','1','-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost'],capture_output=True,check=True)
+    seen=[]
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self,*args):pass
+        def do_POST(self):
+            seen.append(self.rfile.read(int(self.headers['Content-Length'])))
+            self.send_response(200);self.send_header('Content-Length','2');self.end_headers();self.wfile.write(b'ok')
+    server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+    context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER);context.load_cert_chain(str(cert),str(key))
+    server.socket=context.wrap_socket(server.socket,server_side=True)
+    threading.Thread(target=server.serve_forever,daemon=True).start()
+    bad=socket.socket();bad.bind(('127.0.0.1',0));bad.listen(1)
+    bad_port=bad.getsockname()[1];handshakes=[]
+    def reject_tls():
+        conn,_=bad.accept();handshakes.append(conn.recv(2048));conn.close();bad.close()
+    threading.Thread(target=reject_tls,daemon=True).start()
+    original=socket.getaddrinfo
+    def resolved(host,port,*args,**kwargs):
+        if host=='localhost':return [(socket.AF_INET,socket.SOCK_STREAM,6,'',('127.0.0.1',bad_port)),(socket.AF_INET,socket.SOCK_STREAM,6,'',('127.0.0.1',server.server_port))]
+        return original(host,port,*args,**kwargs)
+    monkeypatch.setattr(socket,'getaddrinfo',resolved)
+    client=_bounded_connection(HTTPSConnection,1)('localhost',timeout=3,context=ssl.create_default_context(cafile=str(cert)))
+    try:
+        client.request('POST','/chat/completions',body=b'{}')
+        assert client.getresponse().read()==b'ok'
+        assert seen==[b'{}'] and handshakes and handshakes[0].startswith(b'\x16')
+    finally:client.close();server.shutdown();server.server_close()

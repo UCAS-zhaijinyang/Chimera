@@ -1,0 +1,72 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+_________ test_general_workflow_runs_terminal_and_records_real_result __________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-65/test_general_workflow_runs_ter0')
+
+    def test_general_workflow_runs_terminal_and_records_real_result(tmp_path):
+        from workflow_runtime import WorkflowToolLoop
+>       loop = WorkflowToolLoop(tmp_path / 'capture', member_id='m1', trace_id='t1',
+                                base_tools=True, business_workspace=tmp_path / 'business')
+E       TypeError: WorkflowToolLoop.__init__() got an unexpected keyword argument 'base_tools'
+
+tests/test_base_tool_workflows.py:15: TypeError
+_______________ test_general_cannot_finish_without_tool_evidence _______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-65/test_general_cannot_finish_wit0')
+
+    def test_general_cannot_finish_without_tool_evidence(tmp_path):
+        from workflow_runtime import WorkflowToolLoop
+>       loop = WorkflowToolLoop(tmp_path, member_id='m1', trace_id='t1', base_tools=True)
+E       TypeError: WorkflowToolLoop.__init__() got an unexpected keyword argument 'base_tools'
+
+tests/test_base_tool_workflows.py:32: TypeError
+________________ test_failed_terminal_command_does_not_complete ________________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-65/test_failed_terminal_command_d0')
+
+    def test_failed_terminal_command_does_not_complete(tmp_path):
+        from workflow_runtime import WorkflowToolLoop
+>       loop = WorkflowToolLoop(tmp_path, member_id='m1', trace_id='t1', base_tools=True)
+E       TypeError: WorkflowToolLoop.__init__() got an unexpected keyword argument 'base_tools'
+
+tests/test_base_tool_workflows.py:40: TypeError
+________________ test_native_file_write_and_find_schema_execute ________________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-65/test_native_file_write_and_fin0')
+
+    def test_native_file_write_and_find_schema_execute(tmp_path):
+>       from base_tools import BaseToolRegistry
+E       ModuleNotFoundError: No module named 'base_tools'
+
+tests/test_base_tool_workflows.py:51: ModuleNotFoundError
+____________ test_business_state_is_shared_but_capture_is_per_task _____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-65/test_business_state_is_shared_0')
+
+    def test_business_state_is_shared_but_capture_is_per_task(tmp_path):
+        from workflow_runtime import WorkflowToolLoop
+        business = tmp_path / 'business'
+        for trace, command in [('t1', 'printf shared > shared.txt'), ('t2', 'cat shared.txt')]:
+>           loop = WorkflowToolLoop(tmp_path / trace, member_id='m1', trace_id=trace,
+                                    base_tools=True, business_workspace=business)
+E           TypeError: WorkflowToolLoop.__init__() got an unexpected keyword argument 'base_tools'
+
+tests/test_base_tool_workflows.py:68: TypeError
+______________ test_native_session_interaction_wait_view_and_kill ______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-65/test_native_session_interactio0')
+
+    def test_native_session_interaction_wait_view_and_kill(tmp_path):
+>       from base_tools import BaseToolRegistry
+E       ModuleNotFoundError: No module named 'base_tools'
+
+tests/test_base_tool_workflows.py:79: ModuleNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_base_tool_workflows.py::test_general_workflow_runs_terminal_and_records_real_result
+FAILED tests/test_base_tool_workflows.py::test_general_cannot_finish_without_tool_evidence
+FAILED tests/test_base_tool_workflows.py::test_failed_terminal_command_does_not_complete
+FAILED tests/test_base_tool_workflows.py::test_native_file_write_and_find_schema_execute
+FAILED tests/test_base_tool_workflows.py::test_business_state_is_shared_but_capture_is_per_task
+FAILED tests/test_base_tool_workflows.py::test_native_session_interaction_wait_view_and_kill
+6 failed in 0.05s

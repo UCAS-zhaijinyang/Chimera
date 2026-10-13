@@ -70,6 +70,7 @@ class PaidLedger:
 
 
 class LiveEmployee:
+    supports_images = True
     def __init__(self, case, context, api_key, ledger):
         self.client = OpenAICompatibleChatClient(api_key=api_key, base_url='https://api.deepseek.com',
             model='deepseek-flash', thinking=False, max_tokens=OUTPUT_LIMIT, timeout=90)

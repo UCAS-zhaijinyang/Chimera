@@ -118,6 +118,7 @@ uv pip install 'docx2markdown>=0.1.1' 'gradio>=3.50.2' 'xmltodict>=0.14.2'
 uv pip install pre-commit mypy
 uv pip install -U google-genai
 uv pip install json5 playwright python-dotenv
+uv pip install -r "${ROOT}/requirements.workflow.txt"
 # camel 0.2.45 imports FastMCP from mcp.server; mcp 2.x moved that symbol.
 uv pip install 'mcp>=1.3.0,<2'
 python -m playwright install-deps || true

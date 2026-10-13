@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 import os
 
 import json
+from datetime import datetime
 
 from foundation_model import run_llm
 
@@ -31,19 +32,65 @@ def attack_daily_schedule_with_gpt(
         "attack_id": attack_info.get("attack_id"),
         "what": attack_info.get("what"),
         "type": attack_info.get("type"),
-        "how": attack_info.get("how", [])[:2],
+        "how": attack_info.get("how", []),
+        "when": attack_info.get("when", {}),
+        "who": attack_info.get("who", {}),
     }
     system_prompt = f"""You are {member_profile['name']}, {member_profile['role']} at a {config.company_type}.
 You are also the insider attacker. Goal: {attack_summary['what']}.
 Work hours: {config.work_start}-{config.work_end}. Team: {id_role_map}.
 Update today's schedule JSON to blend normal work with attack steps.
-Return ONLY a JSON array of objects with keys "Time", "Activity", and optional "Attack": true.
-Use @id for email contacts. Keep 3-5 time slots."""
+Return ONLY a JSON array of objects with keys "Time" (HH:MM:SS), "Activity", and optional "Attack": true.
+Every attack slot must include "AttackSteps": [step numbers covered by that activity].
+Cover ALL how steps in order, exactly once; combine steps only when the activity explicitly includes them.
+Use @id for email contacts. Preserve normal work; allocate as many slots as needed.
+Respect the attack time_window: after-hours steps must be outside work hours."""
     user_prompt = f"""Previous schedule: {initial_schedule}
 Attack details: {attack_summary}"""
 
     llm_output = run_llm(system_prompt, user_prompt, temperature=0.7)
     return llm_output
+
+
+def validate_attack_schedule(schedule, attack_info):
+    """Reject lost steps and malformed schedules before committing injection."""
+    if not isinstance(schedule, list) or not schedule:
+        raise ValueError('attack schedule must be a nonempty array')
+    expected = [row['step'] for row in attack_info.get('how', [])]
+    covered, times = [], []
+    window = attack_info.get('when', {}).get('time_window')
+    start = datetime.strptime(config.work_start, '%H:%M').time()
+    end = datetime.strptime(config.work_end, '%H:%M').time()
+    for row in schedule:
+        if not isinstance(row, dict) or not isinstance(row.get('Activity'), str) or not row['Activity'].strip():
+            raise ValueError('invalid attack activity')
+        timestamp = datetime.strptime(row['Time'], '%H:%M:%S').time()
+        times.append(timestamp)
+        if 'Attack' in row and type(row['Attack']) is not bool:
+            raise ValueError('Attack must be a boolean')
+        if row.get('Attack'):
+            steps = row.get('AttackSteps')
+            if not isinstance(steps, list) or not steps or any(type(n) is not int for n in steps):
+                raise ValueError('attack activity must identify covered steps')
+            covered.extend(steps)
+            if window == 'after hours' and start <= timestamp < end:
+                raise ValueError('after-hours attack scheduled during work')
+            if window == 'work hours' and not start <= timestamp < end:
+                raise ValueError('work-hours attack scheduled outside work')
+    if times != sorted(times) or len(times) != len(set(times)):
+        raise ValueError('schedule times must be ordered and unique')
+    if covered != expected:
+        raise ValueError('attack schedule must cover every specified step in order')
+    by_step = {step['step']: step for step in attack_info.get('how', [])}
+    for row in schedule:
+        if row.get('Attack'):
+            requirements = [by_step[n] for n in row['AttackSteps']]
+            # The executor consumes Activity. Bind canonical text deterministically
+            # rather than relying on an LLM's step-number claim.
+            base = row['Activity'].split('\nCanonical attack requirements:\n', 1)[0]
+            row['AttackRequirements'] = requirements
+            row['Activity'] = base + '\nCanonical attack requirements:\n' + json.dumps(requirements, ensure_ascii=False)
+    return schedule
 
 
 def update_daily_schedule_with_attack(week, date, member_id, attack_id, id_role_map):
@@ -82,13 +129,13 @@ def update_daily_schedule_with_attack(week, date, member_id, attack_id, id_role_
             )
 
         try:
-            new_schedule = json.loads(output_schedule)
+            new_schedule = validate_attack_schedule(json.loads(output_schedule), attack_info)
             break
         except Exception as e:
             print("[WARN] Error parsing JSON:", e, "Retrying...")
             if attempt == config.max_attempt - 1:
                 print("[Error] Max attempts reached. Do not update the schedule.")
-                print(f"### Errored JSON ### : {output_schedule}")
+                raise ValueError('attack schedule generation exhausted retries; previous schedule preserved') from e
 
     # print(f"### New Schedule ### : {new_schedule}")
     if not os.path.exists(config.attack_schedule_dir):

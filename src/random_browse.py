@@ -15,7 +15,6 @@ import sys
 import config
 
 from camel.toolkits import (
-    SearchToolkit,
     BrowserToolkit,
     FileWriteToolkit,
 )
@@ -25,6 +24,7 @@ from owl.utils import run_society
 
 from camel.societies import RolePlaying
 from foundation_model import create_camel_model
+from search_runtime import search_brave
 
 set_log_level(level="DEBUG")
 
@@ -63,9 +63,7 @@ def construct_society(question: str) -> RolePlaying:
                     web_agent_model=models["browsing"],
                     planning_agent_model=models["planning"],
                 ).get_tools(),
-                SearchToolkit().search_duckduckgo,
-                SearchToolkit().search_google,
-                SearchToolkit().search_wiki,
+                search_brave,
             ]
 
     # Configure agent roles and parameters
