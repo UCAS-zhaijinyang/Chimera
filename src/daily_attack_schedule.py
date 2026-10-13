@@ -93,58 +93,83 @@ def validate_attack_schedule(schedule, attack_info):
     return schedule
 
 
-def update_daily_schedule_with_attack(week, date, member_id, attack_id, id_role_map):
-    # Load the member profile
-    member_profile = json.load(open(f"{config.profile_output_dir}/{member_id}.jsonc"))
-    # Load initial schedule
-    # if the schedule does not exist, use an empty schedule as default
-    if os.path.exists(
-        f"{config.init_schedule_dir}/week_{week}/{member_id}_week_{week}_{date}.json"
-    ):
-        # if not exist then choose the first schedule in the week as default
-        with open(
-            f"{config.init_schedule_dir}/week_{week}/{member_id}_week_{week}_{date}.json",
-            "r",
-        ) as f:
-            initial_schedule = json.load(f)
-    else:
-        with open(
-            f"{config.init_schedule_dir}/week_{week}/{member_id}_week_{week}_Monday.json",
-            "r",
-        ) as f:
-            initial_schedule = json.load(f)
-    # Load the attack info
-    with open(f"{config.attack_dir}/{attack_id}.json", "r") as f:
-        attack_info = json.load(f)
-
-    # Generate new schedule
+def generate_attack_schedule(initial_schedule, member_profile, attack_info, id_role_map):
+    """Generate and validate one edited day without writing it to disk."""
     for attempt in range(config.max_attempt):
         output_schedule = attack_daily_schedule_with_gpt(
             initial_schedule, member_profile, attack_info, id_role_map
         )
-        # # Parse the response to extract the updated schedule
-        if "```json" in output_schedule:
-            output_schedule = (
-                output_schedule.replace("```json", "").replace("```", "").strip()
-            )
-
+        if isinstance(output_schedule, (list, dict)):
+            parsed_output = output_schedule
+        else:
+            parsed_output = str(output_schedule)
+            if "```" in parsed_output:
+                parsed_output = parsed_output.replace("```json", "").replace("```", "").strip()
+            try:
+                parsed_output = json.loads(parsed_output)
+            except json.JSONDecodeError as exc:
+                if attempt == config.max_attempt - 1:
+                    raise ValueError("attack schedule generation exhausted retries; previous schedule preserved") from exc
+                print("[WARN] Error parsing JSON:", exc, "Retrying...")
+                continue
         try:
-            new_schedule = validate_attack_schedule(json.loads(output_schedule), attack_info)
-            break
-        except Exception as e:
-            print("[WARN] Error parsing JSON:", e, "Retrying...")
+            return validate_attack_schedule(parsed_output, attack_info)
+        except Exception as exc:
+            print("[WARN] Error validating attack schedule:", exc, "Retrying...")
             if attempt == config.max_attempt - 1:
-                print("[Error] Max attempts reached. Do not update the schedule.")
-                raise ValueError('attack schedule generation exhausted retries; previous schedule preserved') from e
+                raise ValueError("attack schedule generation exhausted retries; previous schedule preserved") from exc
+    raise AssertionError("unreachable")
+
+
+def update_daily_schedule_with_attack(
+    week,
+    date,
+    member_id,
+    attack_id,
+    id_role_map,
+    *,
+    initial_schedule=None,
+    attack_info_override=None,
+    output_path=None,
+):
+    # Load the member profile
+    member_profile = json.load(open(f"{config.profile_output_dir}/{member_id}.jsonc"))
+    if initial_schedule is None:
+        schedule_file = (
+            f"{config.init_schedule_dir}/week_{week}/"
+            f"{member_id}_week_{week}_{date}.json"
+        )
+        if not os.path.exists(schedule_file):
+            schedule_file = (
+                f"{config.init_schedule_dir}/week_{week}/"
+                f"{member_id}_week_{week}_Monday.json"
+            )
+        with open(schedule_file, "r") as f:
+            initial_schedule = json.load(f)
+
+    if attack_info_override is None:
+        with open(f"{config.attack_dir}/{attack_id}.json", "r") as f:
+            attack_info = json.load(f)
+    else:
+        attack_info = attack_info_override
+
+    new_schedule = generate_attack_schedule(
+        initial_schedule, member_profile, attack_info, id_role_map
+    )
 
     # print(f"### New Schedule ### : {new_schedule}")
     if not os.path.exists(config.attack_schedule_dir):
         os.makedirs(config.attack_schedule_dir, exist_ok=True)
     # Save the new schedule
-    with open(
-        f"{config.attack_schedule_dir}/{member_id}_week_{week}_{date}_attack.json", "w"
-    ) as f:
+    if output_path is None:
+        output_path = os.path.join(
+            config.attack_schedule_dir,
+            f"{member_id}_week_{week}_{date}_attack.json",
+        )
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w") as f:
         json.dump(new_schedule, f, indent=4)
+    return new_schedule
 
 
 if __name__ == "__main__":

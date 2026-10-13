@@ -32,7 +32,13 @@ import config
 from task import run_task
 from member_email import get_email_members, get_email_content, reply_email_content
 from daily_plan_update import update_daily_schedule_attack
-from attack_schedule import select_attack_date
+from attack_schedule import (
+    inject_attack_campaigns,
+    load_campaign_bundle,
+    restore_campaign_files,
+    select_attack_date,
+    write_campaign_bundle,
+)
 from daily_attack_schedule import update_daily_schedule_with_attack, validate_attack_schedule
 from foundation_model import run_llm
 from activity_utils import is_email_send_activity
@@ -197,16 +203,19 @@ class Member:
 
         self.start_to_work = False
 
-        self.schedule_file = os.path.join(
+        normal_schedule_file = os.path.join(
             schedule_dir,
             f"week_{self.week}",
             f"{member_id}_week_{self.week}_{self.date}.json",
         )
-        if attacker:
-            self.schedule_file = os.path.join(
-                config.attack_schedule_dir,
-                f"{member_id}_week_{self.week}_{self.date}_attack.json",
-            )
+        attack_schedule_file = os.path.join(
+            config.attack_schedule_dir,
+            f"{member_id}_week_{self.week}_{self.date}_attack.json",
+        )
+        # A campaign may select only some days.  On unselected days an attacker
+        # must execute the frozen normal schedule, rather than becoming idle.
+        self.attacker = bool(attacker and os.path.exists(attack_schedule_file))
+        self.schedule_file = attack_schedule_file if self.attacker else normal_schedule_file
         self.no_more_task = False
 
         if not os.path.exists(self.schedule_file):
@@ -247,7 +256,6 @@ class Member:
                 f"[INFO] {self.id} loaded previous day summary (week {self.previous_summary['week']} - {self.previous_summary['date']})."
             )
 
-        self.attacker = attacker
         if self.attacker:
             # cdev-1_week_1_Friday_attack.json
             with open(
@@ -917,6 +925,21 @@ if __name__ == "__main__":
         type=str,
         help="Output subdirectory tag under attack_logs/ (overrides manifest log_tag)",
     )
+    parser.add_argument(
+        "--prepare-campaign",
+        action="store_true",
+        help="Plan and materialize all LLM-selected attack days, then exit.",
+    )
+    parser.add_argument(
+        "--campaign-manifest",
+        type=str,
+        help="Previously saved campaign bundle to reuse across daily runs.",
+    )
+    parser.add_argument(
+        "--campaign-output",
+        type=str,
+        help="Path for the campaign bundle written by --prepare-campaign.",
+    )
     parser.add_argument("--week", type=int, help="Simulation week, e.g., 2")
     parser.add_argument(
         "--date", type=str, help="Simulation weekday, e.g., Wednesday"
@@ -959,26 +982,55 @@ if __name__ == "__main__":
             profile_list.append(member_profile)  # add profile
     ########################
 
+    campaign_manifests = None
+    if args.campaign_manifest:
+        campaign_manifests = load_campaign_bundle(args.campaign_manifest)
+        restore_campaign_files(campaign_manifests)
+        print(f"[INFO] Reusing campaign bundle: {args.campaign_manifest}")
+    elif args.prepare_campaign:
+        campaign_manifests = inject_attack_campaigns(
+            attacker_attack_map, id_role_map
+        )
+        bundle_path = args.campaign_output or os.path.join(
+            config.attack_schedule_dir, "campaign_bundle.json"
+        )
+        write_campaign_bundle(campaign_manifests, bundle_path)
+        print(f"[INFO] Campaign bundle prepared: {bundle_path}")
+        sys.exit(0)
+
     if not args.week or not args.date:
-        if len(attacker_ids) == 1:
-            attack_week, attack_date = select_attack_date(
-                attacker_ids[0],
-                attacker_attack_map[attacker_ids[0]],
-                id_role_map,
+        if campaign_manifests is None:
+            campaign_manifests = inject_attack_campaigns(
+                attacker_attack_map, id_role_map
             )
-        else:
-            parser.error(
-                "Multi-attacker runs require --week and --date "
-                "(LLM day-selection supports only a single attacker)."
-            )
+        selected_dates = sorted(
+            {
+                date_key
+                for manifest in campaign_manifests.values()
+                for date_key in manifest["selected_dates"]
+            }
+        )
+        if not selected_dates:
+            parser.error("The campaign planner selected no executable dates.")
+        first_date = selected_dates[0]
+        match = __import__("re").fullmatch(r"week_(\d+)_(.+)", first_date)
+        if not match:
+            parser.error(f"Campaign date is not executable by the daily runner: {first_date}")
+        attack_week, attack_date = int(match.group(1)), match.group(2)
+        print(
+            f"[INFO] Multi-day campaigns materialized for {len(selected_dates)} dates; "
+            f"executing first selected date week {attack_week} - {attack_date}."
+        )
     else:
         attack_week = args.week
         attack_date = args.date
-        inject_attack_schedules(
-            attack_week, attack_date, attacker_attack_map, id_role_map
-        )
+        if campaign_manifests is None:
+            inject_attack_schedules(
+                attack_week, attack_date, attacker_attack_map, id_role_map
+            )
         print(
             f"[INFO] Using fixed simulation day: week {attack_week} - {attack_date}"
+            + (" from campaign bundle" if campaign_manifests is not None else "")
         )
 
     # attack execution log directory

@@ -10,6 +10,7 @@ END_WEEK="${END_WEEK:-20}"
 # Set RESUME=1 to skip days whose per-day log already contains the completion marker.
 RESUME="${RESUME:-0}"
 PROGRESS_LOG="${ROOT}/chimera_scenario_100d/attack_100d_progress.log"
+CAMPAIGN_BUNDLE="${CAMPAIGN_BUNDLE:-${ROOT}/chimera_scenario_100d/attack_schedule/campaign_bundle.json}"
 
 cd "$ROOT"
 
@@ -22,6 +23,16 @@ elif [ -f "$ROOT/activate.sh" ]; then
 fi
 
 export PYTHONPATH="$ROOT/src:${PYTHONPATH:-}"
+
+# Plan each attack once from the complete frozen normal calendar.  Daily runs
+# reuse this bundle so an LLM-selected multi-day campaign is not replanned or
+# replaced with a new single-day injection on every invocation.
+if [ ! -f "$CAMPAIGN_BUNDLE" ] || [ "$RESUME" != "1" ]; then
+  python "$ROOT/src/daily_execution_auto_attack.py" \
+    --attack-manifest "$MANIFEST" \
+    --prepare-campaign \
+    --campaign-output "$CAMPAIGN_BUNDLE"
+fi
 
 dates=("Monday" "Tuesday" "Wednesday" "Thursday" "Friday")
 
@@ -46,6 +57,7 @@ for week in $(seq "$START_WEEK" "$END_WEEK"); do
     python "$ROOT/src/daily_execution_auto_attack.py" \
       --attack-manifest "$MANIFEST" \
       --log-tag "$LOG_TAG" \
+      --campaign-manifest "$CAMPAIGN_BUNDLE" \
       --week "$week" \
       --date "$date" \
       > "$ROOT/chimera_scenario_100d/attack_week${week}_${date}.log" 2>&1
