@@ -1,0 +1,27 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______________ test_browser_popup_and_back_preserve_navigation ________________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-91/test_browser_popup_and_back_pr0')
+
+    def test_browser_popup_and_back_preserve_navigation(tmp_path):
+        from browser_runtime import BrowserSession
+        page=tmp_path/'home.html';target=tmp_path/'target.html'
+        target.write_text('<p>popup target</p>')
+        page.write_text('<a id="open" href="target.html" target="_blank">Open popup</a>')
+        browser=BrowserSession(tmp_path)
+        try:
+            browser.action({'action':'navigate','url':page.as_uri()})
+>           assert browser.action({'action':'click','selector':'#open'})['url']==target.as_uri()
+E           AssertionError: assert 'file:///priv...pr0/home.html' == 'file:///priv...0/target.html'
+E             
+E             Skipping 112 identical leading characters in diff, use -v to show
+E             - _back_pr0/target.html
+E             ?           ^^^^ -
+E             + _back_pr0/home.html
+E             ?           ^^^
+
+tests/test_browser_workflow.py:132: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_browser_workflow.py::test_browser_popup_and_back_preserve_navigation
+1 failed in 0.60s

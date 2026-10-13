@@ -1,0 +1,74 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______ test_tls_failover_tries_other_resolved_address_before_sending_http ______
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-98/test_tls_failover_tries_other_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108e152d0>
+
+    def test_tls_failover_tries_other_resolved_address_before_sending_http(tmp_path,monkeypatch):
+        import socket,ssl,subprocess
+        from http.client import HTTPSConnection
+        from task import _bounded_connection
+        cert,key=tmp_path/'cert.pem',tmp_path/'key.pem'
+        subprocess.run(['openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',str(key),'-out',str(cert),'-days','1','-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost'],capture_output=True,check=True)
+        seen=[]
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self,*args):pass
+            def do_POST(self):
+                seen.append(self.rfile.read(int(self.headers['Content-Length'])))
+                self.send_response(200);self.send_header('Content-Length','2');self.end_headers();self.wfile.write(b'ok')
+        server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+        context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER);context.load_cert_chain(str(cert),str(key))
+        server.socket=context.wrap_socket(server.socket,server_side=True)
+        threading.Thread(target=server.serve_forever,daemon=True).start()
+        bad=socket.socket();bad.bind(('127.0.0.1',0));bad.listen(1)
+        bad_port=bad.getsockname()[1];handshakes=[]
+        def reject_tls():
+            conn,_=bad.accept();handshakes.append(conn.recv(2048));conn.close();bad.close()
+        threading.Thread(target=reject_tls,daemon=True).start()
+        original=socket.getaddrinfo
+        def resolved(host,port,*args,**kwargs):
+            if host=='localhost':return [(socket.AF_INET,socket.SOCK_STREAM,6,'',('127.0.0.1',bad_port)),(socket.AF_INET,socket.SOCK_STREAM,6,'',server.server_port and ('127.0.0.1',server.server_port))]
+            return original(host,port,*args,**kwargs)
+        monkeypatch.setattr(socket,'getaddrinfo',resolved)
+        client=_bounded_connection(HTTPSConnection,1)('localhost',timeout=3,context=ssl.create_default_context(cafile=str(cert)))
+        try:
+>           client.request('POST','/chat/completions',body=b'{}')
+
+tests/test_stage1_boundaries.py:195: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/client.py:1303: in request
+    self._send_request(method, url, body, headers, encode_chunked)
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/client.py:1349: in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/client.py:1298: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/client.py:1058: in _send_output
+    self.send(msg)
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/client.py:996: in send
+    self.connect()
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/client.py:1475: in connect
+    self.sock = self._context.wrap_socket(self.sock,
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/ssl.py:515: in wrap_socket
+    return self.sslsocket_class._create(
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/ssl.py:1116: in _create
+    self.do_handshake()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <ssl.SSLSocket [closed] fd=-1, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0>
+block = False
+
+    @_sslcopydoc
+    def do_handshake(self, block=False):
+        self._check_connected()
+        timeout = self.gettimeout()
+        try:
+            if timeout == 0.0 and block:
+                self.settimeout(None)
+>           self._sslobj.do_handshake()
+E           ssl.SSLEOFError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1017)
+
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/ssl.py:1387: SSLEOFError
+=========================== short test summary info ============================
+FAILED tests/test_stage1_boundaries.py::test_tls_failover_tries_other_resolved_address_before_sending_http
+1 failed in 0.80s

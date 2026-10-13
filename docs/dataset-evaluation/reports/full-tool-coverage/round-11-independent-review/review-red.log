@@ -1,0 +1,260 @@
+.......F.F.FF..FFF                                                       [100%]
+=================================== FAILURES ===================================
+_______ test_async_nonzero_exit_cannot_finish_without_recorded_terminal ________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-82/test_async_nonzero_exit_cannot0')
+
+    def test_async_nonzero_exit_cannot_finish_without_recorded_terminal(tmp_path):
+        import time
+        from workflow_runtime import WorkflowToolLoop
+        replies=iter([call('shell_exec',id='s',command='sleep 1.1; exit 7'),call('finish_task',summary='done')])
+        def employee(request):
+            if request['state']=='working':time.sleep(.25)
+            return next(replies)
+        loop=WorkflowToolLoop(tmp_path,member_id='m',trace_id='t',base_tools=True,offline=True)
+        with pytest.raises(ValueError):
+>           loop.run('Operate',workflow_id='general',chat_fn=employee,max_tool_errors=0)
+
+tests/test_base_tool_workflows.py:122: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/workflow_runtime.py:598: in run
+    response = chat_fn(request)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = {'workflow_id': 'general', 'state': 'completed', 'messages': [{'role': 'system', 'content': 'Complete the employee tas...ompilation", "optional_modules": {"pytest": true, "build": false, "pip": false, "setuptools": false}}}'}], 'tools': []}
+
+    def employee(request):
+        if request['state']=='working':time.sleep(.25)
+>       return next(replies)
+E       StopIteration
+
+tests/test_base_tool_workflows.py:119: StopIteration
+_______ test_legacy_function_tool_objects_accept_their_native_arguments ________
+
+self = <camel.toolkits.function_tool.FunctionTool object at 0x10ff705b0>
+args = (), kwargs = {'id': 's', 'command': 'printf callable > native.txt'}
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        if self.synthesize_output:
+            result = self.synthesize_execution_output(args, kwargs)
+            return result
+        else:
+            # Pass the extracted arguments to the indicated function
+            try:
+>               result = self.func(*args, **kwargs)
+E               TypeError: BaseToolRegistry.execute() got an unexpected keyword argument 'id'
+
+.venv/lib/python3.10/site-packages/camel/toolkits/function_tool.py:392: TypeError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-82/test_legacy_function_tool_obje0')
+
+    def test_legacy_function_tool_objects_accept_their_native_arguments(tmp_path):
+        from base_tools import BaseToolRegistry
+        registry=BaseToolRegistry(tmp_path,offline=True)
+        tools={t.get_openai_tool_schema()['function']['name']:t for t in registry.function_tools()}
+>       result=tools['shell_exec'](id='s',command='printf callable > native.txt')
+
+tests/test_base_tool_workflows.py:137: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <camel.toolkits.function_tool.FunctionTool object at 0x10ff705b0>
+args = (), kwargs = {'id': 's', 'command': 'printf callable > native.txt'}
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        if self.synthesize_output:
+            result = self.synthesize_execution_output(args, kwargs)
+            return result
+        else:
+            # Pass the extracted arguments to the indicated function
+            try:
+                result = self.func(*args, **kwargs)
+                return result
+            except Exception as e:
+                raise ValueError(
+>                   f"Execution of function {self.func.__name__} failed with "
+                    f"arguments {args} and {kwargs}. "
+                    f"Error: {e}"
+                )
+E               AttributeError: 'functools.partial' object has no attribute '__name__'. Did you mean: '__ne__'?
+
+.venv/lib/python3.10/site-packages/camel/toolkits/function_tool.py:396: AttributeError
+____________ test_cleanup_terminates_child_after_shell_leader_exits ____________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-82/test_cleanup_terminates_child_0')
+
+    def test_cleanup_terminates_child_after_shell_leader_exits(tmp_path):
+        import time
+        from base_tools import BaseToolRegistry
+        registry=BaseToolRegistry(tmp_path,offline=True)
+        result=registry.execute('shell_exec',{'id':'s','command':'(sleep 2; printf late > late.txt) &'})
+>       assert result['running']
+E       assert False
+
+tests/test_base_tool_workflows.py:155: AssertionError
+__________ test_semantic_and_native_tools_share_actual_business_root ___________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-82/test_semantic_and_native_tools0')
+
+    def test_semantic_and_native_tools_share_actual_business_root(tmp_path):
+        from workflow_runtime import WorkflowToolLoop
+        loop=WorkflowToolLoop(tmp_path/'capture',member_id='m',trace_id='t',base_tools=True,business_workspace=tmp_path/'business',offline=True)
+        loop.runtime.execute('code_edit',{'path':'src/main.py','content':'shared business code'})
+        result=loop.base_registry.execute('shell_exec',{'id':'s','command':'cat src/main.py'})
+>       assert result['returncode']==0 and result['stdout']=='shared business code'
+E       assert (1 == 0)
+
+tests/test_base_tool_workflows.py:166: AssertionError
+_________________ test_browser_press_enter_submits_a_real_form _________________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-82/test_browser_press_enter_submi0')
+
+    def test_browser_press_enter_submits_a_real_form(tmp_path):
+        from browser_runtime import BrowserSession
+        page=tmp_path/'keyboard.html'
+        page.write_text('<input id="search" onkeydown="if(event.key===\'Enter\')document.querySelector(\'#result\').textContent=this.value"><p id="result"></p>')
+        browser=BrowserSession(tmp_path)
+        try:
+            browser.action({'action':'navigate','url':page.as_uri()})
+            browser.action({'action':'fill','selector':'#search','value':'keyboard verified'})
+>           result=browser.action({'action':'press','selector':'#search','value':'Enter'})
+
+tests/test_browser_workflow.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <browser_runtime.BrowserSession object at 0x110a5e080>
+args = {'action': 'press', 'selector': '#search', 'value': 'Enter'}
+
+    def action(self, args):
+        action = args['action']
+        selector, value = args.get('selector', ''), args.get('value', '')
+        if action == 'navigate': self.page.goto(args['url'], wait_until='domcontentloaded')
+        elif action == 'click': self.page.locator(selector).click()
+        elif action == 'fill': self.page.locator(selector).fill(value)
+        elif action == 'back': self.page.go_back(wait_until='domcontentloaded')
+        elif action == 'hover': self.page.locator(selector).hover()
+        elif action == 'select': self.page.locator(selector).select_option(value)
+        elif action == 'scroll':
+            self.page.mouse.wheel(0, int(value or '800'))
+        elif action in {'upload', 'download', 'screenshot'}:
+            path = (self.workspace / value).resolve()
+            if self.workspace not in path.parents: raise PermissionError('browser file must stay inside business workspace')
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if action == 'upload': self.page.locator(selector).set_input_files(str(path))
+            elif action == 'download':
+                with self.page.expect_download() as pending: self.page.locator(selector).click()
+                pending.value.save_as(str(path))
+            else: self.page.screenshot(path=str(path), full_page=True)
+>       elif action != 'read': raise ValueError('unknown browser action')
+E       ValueError: unknown browser action
+
+src/browser_runtime.py:61: ValueError
+________ test_browser_unsent_model_retry_keeps_already_committed_click _________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-82/test_browser_unsent_model_retr0')
+
+    def test_browser_unsent_model_retry_keeps_already_committed_click(tmp_path):
+        from workflow_runtime import WorkflowToolLoop
+        page=tmp_path/'counter.html'
+        page.write_text('''<button id="send" onclick="localStorage.setItem('count',String(Number(localStorage.getItem('count')||0)+1));document.querySelector('#count').textContent=localStorage.getItem('count')">Send</button><p id="count"></p><script>document.querySelector('#count').textContent=localStorage.getItem('count')||'0'</script>''')
+        class Employee:
+            last_error_metadata=None
+            def __init__(self):self.failed=False
+            def __call__(self,request):
+                if request['workflow_id']=='browser':
+                    observation=json.loads(request['messages'][-1]['content'])
+                    if observation['last_action'] is None:return call('browser_action',action='click',selector='#send',value='',url='')
+                    if not self.failed:
+                        self.failed=True;self.last_error_metadata={'request_not_sent':True};raise RuntimeError('unsent TLS failure')
+                    self.last_error_metadata=None
+                    assert observation['text'].endswith('1'), observation
+                    return {'content':'one click verified'}
+                if request['state']=='requested':return call('browse_url',task_prompt='Click Send once',start_url=page.as_uri(),round_limit=5)
+                if request['state']=='working':return call('finish_task',summary='verified')
+                return {'content':'done'}
+        loop=WorkflowToolLoop(tmp_path/'capture',member_id='m',trace_id='t',base_tools=True)
+>       assert loop.run('Browse',workflow_id='general',chat_fn=Employee()).state=='completed'
+
+tests/test_browser_workflow.py:83: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/workflow_runtime.py:679: in run
+    payload = self.base_registry.execute(tool_name, arguments)
+src/base_tools.py:125: in execute
+    return self.browser.browse(**args, chat_fn=self.browser_chat_fn,
+src/browser_runtime.py:79: in browse
+    response = chat_fn(request)
+src/workflow_runtime.py:498: in browser_chat
+    response = chat_fn(request)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_browser_workflow.test_browser_unsent_model_retry_keeps_already_committed_click.<locals>.Employee object at 0x110a5de10>
+request = {'workflow_id': 'browser', 'state': 'interacting', 'messages': [{'role': 'system', 'content': 'Complete the browser ta...tion': {...}, 'selector': {...}, 'value': {...}, 'url': {...}}, 'required': ['action', 'selector', 'value', 'url']}}}]}
+
+    def __call__(self,request):
+        if request['workflow_id']=='browser':
+            observation=json.loads(request['messages'][-1]['content'])
+            if observation['last_action'] is None:return call('browser_action',action='click',selector='#send',value='',url='')
+            if not self.failed:
+                self.failed=True;self.last_error_metadata={'request_not_sent':True};raise RuntimeError('unsent TLS failure')
+            self.last_error_metadata=None
+>           assert observation['text'].endswith('1'), observation
+E           AssertionError: {'url': 'file:///private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-82/test_browser_unsent..., 'name': '', 'type': 'submit', ...}], 'last_action': {'action': 'click', 'selector': '#send', 'value': '', 'url': ''}}
+E           assert False
+E            +  where False = <built-in method endswith of str object at 0x110bb3f70>('1')
+E            +    where <built-in method endswith of str object at 0x110bb3f70> = 'Send\n\n2'.endswith
+
+tests/test_browser_workflow.py:77: AssertionError
+___ test_trace_oracle_rejects_a_skipped_step_even_if_later_step_makes_files ____
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-82/test_trace_oracle_rejects_a_sk0')
+
+    def test_trace_oracle_rejects_a_skipped_step_even_if_later_step_makes_files(tmp_path):
+>       from evaluation.attack_lab import AttackLab,evaluate_lab,evaluate_trace_steps
+E       ImportError: cannot import name 'evaluate_trace_steps' from 'evaluation.attack_lab' (/Users/ayang/Desktop/project_work/Chimera/src/evaluation/attack_lab.py)
+
+tests/test_attack_lab_coverage.py:45: ImportError
+=============================== warnings summary ===============================
+tests/test_base_tool_workflows.py::test_general_workflow_runs_terminal_and_records_real_result
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/cohere_config.py:77: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    COHERE_API_PARAMS = {param for param in CohereConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_general_workflow_runs_terminal_and_records_real_result
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/mistral_config.py:79: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    MISTRAL_API_PARAMS = {param for param in MistralConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_general_workflow_runs_terminal_and_records_real_result
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/reka_config.py:69: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    REKA_API_PARAMS = {param for param in RekaConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_general_workflow_runs_terminal_and_records_real_result
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:68: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaVerseAPIConfig().model_fields.keys()
+
+tests/test_base_tool_workflows.py::test_general_workflow_runs_terminal_and_records_real_result
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:163: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaCloudAPIConfig().model_fields.keys()
+
+tests/test_base_tool_workflows.py::test_general_workflow_runs_terminal_and_records_real_result
+tests/test_base_tool_workflows.py::test_general_cannot_finish_without_tool_evidence
+tests/test_base_tool_workflows.py::test_failed_terminal_command_does_not_complete
+tests/test_base_tool_workflows.py::test_business_state_is_shared_but_capture_is_per_task
+tests/test_base_tool_workflows.py::test_unsent_transport_failure_is_retried_with_closed_attempts
+tests/test_browser_workflow.py::test_browser_real_form_updates_dom_and_records_nested_calls
+tests/test_browser_workflow.py::test_browser_no_completion_at_limit_is_failure
+tests/test_browser_workflow.py::test_browser_unsent_model_retry_keeps_already_committed_click
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/toolkits/function_tool.py:461: UserWarning: Parameter description is missing for 
+                              {'enum': ['searchResults', 'sourcedAnswer', 'structured'], 'type': 'string'}. This may affect the quality of tool 
+                              calling.
+    warnings.warn(f"""Parameter description is missing for
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_base_tool_workflows.py::test_async_nonzero_exit_cannot_finish_without_recorded_terminal
+FAILED tests/test_base_tool_workflows.py::test_legacy_function_tool_objects_accept_their_native_arguments
+FAILED tests/test_base_tool_workflows.py::test_cleanup_terminates_child_after_shell_leader_exits
+FAILED tests/test_base_tool_workflows.py::test_semantic_and_native_tools_share_actual_business_root
+FAILED tests/test_browser_workflow.py::test_browser_press_enter_submits_a_real_form
+FAILED tests/test_browser_workflow.py::test_browser_unsent_model_retry_keeps_already_committed_click
+FAILED tests/test_attack_lab_coverage.py::test_trace_oracle_rejects_a_skipped_step_even_if_later_step_makes_files
+7 failed, 11 passed, 13 warnings in 8.76s

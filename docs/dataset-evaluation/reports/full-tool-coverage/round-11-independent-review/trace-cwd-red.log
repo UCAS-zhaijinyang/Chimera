@@ -1,0 +1,22 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_trace_oracle_accepts_only_equivalent_explicit_business_cwd ________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-87/test_trace_oracle_accepts_only0')
+
+    def test_trace_oracle_accepts_only_equivalent_explicit_business_cwd(tmp_path):
+        import shlex
+        from evaluation.attack_lab import evaluate_trace_steps
+        command='python lab_actions.py collect_files'
+        concrete=[{'step':1,'operation':'collect_files','tool':'shell_exec','arguments':command,'business_workspace':str(tmp_path)}]
+        def event(actual):return [{'event_type':'tool_call','tool_name':'shell_exec','status':'success','call_id':'c1','arguments':{'id':'s','command':actual}}]
+>       assert evaluate_trace_steps(concrete,event('cd '+shlex.quote(str(tmp_path))+' && '+command))['status']=='PASS'
+E       AssertionError: assert 'FAIL' == 'PASS'
+E         
+E         - PASS
+E         + FAIL
+
+tests/test_attack_lab_coverage.py:66: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_attack_lab_coverage.py::test_trace_oracle_accepts_only_equivalent_explicit_business_cwd
+1 failed in 0.02s

@@ -1,0 +1,139 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+______ test_truncated_generation_is_identified_and_conservatively_billed _______
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-94/test_truncated_generation_is_i0')
+
+    def test_truncated_generation_is_identified_and_conservatively_billed(tmp_path):
+        from evaluation.live import PaidLedger,REQUEST_RESERVE
+        canary='private-response-canary'
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self,*args):pass
+            def do_POST(self):
+                self.rfile.read(int(self.headers['Content-Length']))
+                self.send_response(200);self.send_header('Content-Length','10000');self.end_headers()
+                self.wfile.write(canary.encode());self.close_connection=True
+        server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            client=OpenAICompatibleChatClient(api_key='test-only',base_url=f'http://127.0.0.1:{server.server_port}',timeout=1)
+            ledger=PaidLedger(tmp_path/'costs.jsonl');number=ledger.begin()
+>           with pytest.raises(RuntimeError) as exc:client({'messages':[]})
+
+tests/test_stage1_boundaries.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/task.py:119: in __call__
+    body = json.loads(response.read().decode("utf-8"))
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/client.py:487: in read
+    s = self._safe_read(self.length)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <http.client.HTTPResponse object at 0x1070267d0>, amt = 10000
+
+    def _safe_read(self, amt):
+        """Read the number of bytes requested.
+    
+        This function should be used when <amt> bytes "should" be present for
+        reading. If the bytes are truly not available (due to EOF), then the
+        IncompleteRead exception can be used to detect the problem.
+        """
+        cursize = min(amt, _MIN_READ_BUF_SIZE)
+        data = self.fp.read(cursize)
+        if len(data) >= amt:
+            return data
+        if len(data) < cursize:
+>           raise IncompleteRead(data, amt - len(data))
+E           http.client.IncompleteRead: IncompleteRead(23 bytes read, 9977 more expected)
+
+../../../.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/http/client.py:641: IncompleteRead
+___ test_browser_unsent_model_retry_keeps_already_committed_click[truncated] ___
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-94/test_browser_unsent_model_retr0')
+failure_kind = 'truncated'
+
+    @pytest.mark.parametrize("failure_kind", ["unsent", "truncated"])
+    def test_browser_unsent_model_retry_keeps_already_committed_click(tmp_path, failure_kind):
+        from workflow_runtime import WorkflowToolLoop
+        page=tmp_path/'counter.html'
+        page.write_text('''<button id="send" onclick="localStorage.setItem('count',String(Number(localStorage.getItem('count')||0)+1));document.querySelector('#count').textContent=localStorage.getItem('count')">Send</button><p id="count"></p><script>document.querySelector('#count').textContent=localStorage.getItem('count')||'0'</script>''')
+        class Employee:
+            last_error_metadata=None
+            def __init__(self):self.failed=False
+            def __call__(self,request):
+                if request['workflow_id']=='browser':
+                    observation=json.loads(request['messages'][-1]['content'])
+                    if observation['last_action'] is None:return call('browser_action',action='click',selector='#send',value='',url='')
+                    if not self.failed:
+                        self.failed=True;self.last_error_metadata={'request_not_sent':True} if failure_kind=='unsent' else {'response_not_delivered':True};raise RuntimeError('model transport failure')
+                    self.last_error_metadata=None
+                    assert observation['text'].endswith('1'), observation
+                    return {'content':'one click verified'}
+                if request['state']=='requested':return call('browse_url',task_prompt='Click Send once',start_url=page.as_uri(),round_limit=5)
+                if request['state']=='working':return call('finish_task',summary='verified')
+                return {'content':'done'}
+        loop=WorkflowToolLoop(tmp_path/'capture',member_id='m',trace_id='t',base_tools=True)
+>       assert loop.run('Browse',workflow_id='general',chat_fn=Employee()).state=='completed'
+
+tests/test_browser_workflow.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/workflow_runtime.py:698: in run
+    payload = self.base_registry.execute(tool_name, arguments)
+src/base_tools.py:153: in execute
+    return self.browser.browse(**args, chat_fn=self.browser_chat_fn,
+src/browser_runtime.py:169: in browse
+    response = chat_fn(request)
+src/workflow_runtime.py:504: in browser_chat
+    response = chat_fn(request)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_browser_workflow.test_browser_unsent_model_retry_keeps_already_committed_click.<locals>.Employee object at 0x106f9e5c0>
+request = {'workflow_id': 'browser', 'state': 'interacting', 'messages': [{'role': 'system', 'content': 'Complete the browser ta...tion': {...}, 'selector': {...}, 'value': {...}, 'url': {...}}, 'required': ['action', 'selector', 'value', 'url']}}}]}
+
+    def __call__(self,request):
+        if request['workflow_id']=='browser':
+            observation=json.loads(request['messages'][-1]['content'])
+            if observation['last_action'] is None:return call('browser_action',action='click',selector='#send',value='',url='')
+            if not self.failed:
+                self.failed=True;self.last_error_metadata={'request_not_sent':True} if failure_kind=='unsent' else {'response_not_delivered':True};raise RuntimeError('model transport failure')
+            self.last_error_metadata=None
+>           assert observation['text'].endswith('1'), observation
+E           AssertionError: {'screenshot_path': '/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-94/test_browser_u...ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-94/test_browser_unsent_model_retr0/counter.html', 'text': 'Send
+E             
+E             2', ...}
+E           assert False
+E            +  where False = <built-in method endswith of str object at 0x10cbe3fb0>('1')
+E            +    where <built-in method endswith of str object at 0x10cbe3fb0> = 'Send\n\n2'.endswith
+
+tests/test_browser_workflow.py:80: AssertionError
+=============================== warnings summary ===============================
+tests/test_browser_workflow.py::test_browser_unsent_model_retry_keeps_already_committed_click[truncated]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/cohere_config.py:77: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    COHERE_API_PARAMS = {param for param in CohereConfig().model_fields.keys()}
+
+tests/test_browser_workflow.py::test_browser_unsent_model_retry_keeps_already_committed_click[truncated]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/mistral_config.py:79: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    MISTRAL_API_PARAMS = {param for param in MistralConfig().model_fields.keys()}
+
+tests/test_browser_workflow.py::test_browser_unsent_model_retry_keeps_already_committed_click[truncated]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/reka_config.py:69: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    REKA_API_PARAMS = {param for param in RekaConfig().model_fields.keys()}
+
+tests/test_browser_workflow.py::test_browser_unsent_model_retry_keeps_already_committed_click[truncated]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:68: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaVerseAPIConfig().model_fields.keys()
+
+tests/test_browser_workflow.py::test_browser_unsent_model_retry_keeps_already_committed_click[truncated]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:163: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaCloudAPIConfig().model_fields.keys()
+
+tests/test_browser_workflow.py::test_browser_unsent_model_retry_keeps_already_committed_click[truncated]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/toolkits/function_tool.py:461: UserWarning: Parameter description is missing for 
+                              {'enum': ['searchResults', 'sourcedAnswer', 'structured'], 'type': 'string'}. This may affect the quality of tool 
+                              calling.
+    warnings.warn(f"""Parameter description is missing for
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_stage1_boundaries.py::test_truncated_generation_is_identified_and_conservatively_billed
+FAILED tests/test_browser_workflow.py::test_browser_unsent_model_retry_keeps_already_committed_click[truncated]
+2 failed, 6 warnings in 2.05s

@@ -1,0 +1,56 @@
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+_______ test_async_nonzero_exit_cannot_finish_without_recorded_terminal ________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-81/test_async_nonzero_exit_cannot0')
+
+    def test_async_nonzero_exit_cannot_finish_without_recorded_terminal(tmp_path):
+        import time
+        from workflow_runtime import WorkflowToolLoop
+        replies=iter([call('shell_exec',id='s',command='sleep 1.1; exit 7'),call('finish_task',summary='done')])
+        def employee(request):
+            if request['state']=='working':time.sleep(.25)
+            return next(replies)
+        loop=WorkflowToolLoop(tmp_path,member_id='m',trace_id='t',base_tools=True,offline=True)
+        with pytest.raises(ValueError):
+>           loop.run('Operate',workflow_id='general',chat_fn=employee,max_tool_errors=0)
+
+tests/test_base_tool_workflows.py:122: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/workflow_runtime.py:598: in run
+    response = chat_fn(request)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = {'workflow_id': 'general', 'state': 'completed', 'messages': [{'role': 'system', 'content': 'Complete the employee tas...ompilation", "optional_modules": {"pytest": true, "build": false, "pip": false, "setuptools": false}}}'}], 'tools': []}
+
+    def employee(request):
+        if request['state']=='working':time.sleep(.25)
+>       return next(replies)
+E       StopIteration
+
+tests/test_base_tool_workflows.py:119: StopIteration
+=============================== warnings summary ===============================
+tests/test_base_tool_workflows.py::test_async_nonzero_exit_cannot_finish_without_recorded_terminal
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/cohere_config.py:77: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    COHERE_API_PARAMS = {param for param in CohereConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_async_nonzero_exit_cannot_finish_without_recorded_terminal
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/mistral_config.py:79: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    MISTRAL_API_PARAMS = {param for param in MistralConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_async_nonzero_exit_cannot_finish_without_recorded_terminal
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/reka_config.py:69: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    REKA_API_PARAMS = {param for param in RekaConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_async_nonzero_exit_cannot_finish_without_recorded_terminal
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:68: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaVerseAPIConfig().model_fields.keys()
+
+tests/test_base_tool_workflows.py::test_async_nonzero_exit_cannot_finish_without_recorded_terminal
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:163: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaCloudAPIConfig().model_fields.keys()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_base_tool_workflows.py::test_async_nonzero_exit_cannot_finish_without_recorded_terminal
+1 failed, 1 passed, 5 warnings in 3.04s

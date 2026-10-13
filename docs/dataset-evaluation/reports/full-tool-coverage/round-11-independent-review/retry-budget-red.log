@@ -1,0 +1,305 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_unsent_retries_do_not_consume_business_steps _______________
+
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-89/test_unsent_retries_do_not_con0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b4d2b00>
+
+    def test_unsent_retries_do_not_consume_business_steps(tmp_path, monkeypatch):
+        import workflow_runtime as module
+        monkeypatch.setattr(module.time,'sleep',lambda seconds:None)
+        class Employee:
+            last_error_metadata=None
+            def __init__(self):self.failures=6;self.replies=iter([call('shell_exec',id='s',command='printf recovered'),call('finish_task',summary='done'),{'content':'done'}])
+            def __call__(self,request):
+                if self.failures:
+                    self.failures-=1;self.last_error_metadata={'request_not_sent':True};raise RuntimeError('pre-send transport')
+                self.last_error_metadata=None;return next(self.replies)
+        loop=module.WorkflowToolLoop(tmp_path,member_id='m',trace_id='t',base_tools=True,offline=True)
+>       assert loop.run('Operate',workflow_id='general',chat_fn=Employee(),max_steps=3).state=='completed'
+
+tests/test_base_tool_workflows.py:182: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <workflow_runtime.WorkflowToolLoop object at 0x10b35bd00>
+task = 'Operate'
+chat_fn = <test_base_tool_workflows.test_unsent_retries_do_not_consume_business_steps.<locals>.Employee object at 0x10b35b970>
+max_steps = 3, max_tool_errors = 2, workflow_id = 'general'
+
+    def run(
+        self,
+        task: str,
+        *,
+        chat_fn: Callable[[dict[str, Any]], dict[str, Any]],
+        max_steps: int = 24,
+        max_tool_errors: int = 2,
+        workflow_id: Optional[str] = None,
+    ) -> WorkflowRunResult:
+        workflow_id = workflow_id or classify_workflow(task)
+        if self.log_path.exists():
+            raise FileExistsError("workflow log already exists; use a fresh task workspace")
+        router = WorkflowRouter(workflow_id, self.native_schemas)
+        if self.base_registry:
+            def browser_chat(request):
+                # Retry only this unsubmitted request. Replaying browse_url would
+                # replay previously committed page actions.
+                for attempt in range(5):
+                    call_id = 'browser-model-' + uuid.uuid4().hex
+                    self._log('MODEL_EVENT', {'event_type': 'model_started', 'workflow_id': 'browser',
+                              'call_id': call_id, 'status': 'started'})
+                    try:
+                        response = chat_fn(request)
+                        if not isinstance(response, dict): raise ValueError('browser model message must be an object')
+                    except Exception as exc:
+                        metadata = getattr(chat_fn, 'last_error_metadata', None)
+                        if metadata is None:
+                            metadata = getattr(getattr(chat_fn, 'client', None), 'last_error_metadata', None)
+                        self._log('MODEL_EVENT', {'event_type': 'model_terminal', 'workflow_id': 'browser',
+                                  'call_id': call_id, 'status': 'timeout' if isinstance(exc, TimeoutError) else 'failed',
+                                  'error_type': type(exc).__name__, 'transport_metadata': metadata,
+                                  'usage': getattr(chat_fn, 'last_usage', None),
+                                  'usage_unknown': getattr(chat_fn, 'last_usage', None) is None})
+                        if metadata and metadata.get('request_not_sent') is True and attempt < 4:
+                            time.sleep(.5 * (attempt + 1))
+                            continue
+                        raise
+                    self._log('MODEL_EVENT', {'event_type': 'model_terminal', 'workflow_id': 'browser',
+                              'call_id': call_id, 'status': 'success', 'usage': getattr(chat_fn, 'last_usage', None),
+                              'model': getattr(chat_fn, 'last_model', None),
+                              'usage_unknown': getattr(chat_fn, 'last_usage', None) is None})
+                    return response
+            browser_chat.supports_images = getattr(chat_fn, "supports_images", False)
+            def browser_action(arguments):
+                call_id = 'browser-tool-' + uuid.uuid4().hex
+                base = {'workflow_id': 'browser', 'tool_name': 'browser_action', 'call_id': call_id,
+                        'from_state': 'interacting', 'to_state': 'interacting'}
+                self._log('TOOL_START', {**base, 'event_type': 'tool_started', 'status': 'started'})
+                try:
+                    payload = self.base_registry.browser.action(arguments)
+                    artifact = self.runtime._put('webpage', 'browser_action', payload, name='browser-observation.json')
+                    result = self.runtime._result('browser_action', artifact, 'real Chromium observation')
+                except Exception as exc:
+                    self._log('TOOL_EVENT', {**base, 'event_type': 'tool_call', 'arguments': arguments,
+                              'status': 'failed', 'error_type': type(exc).__name__})
+                    raise
+                self._log('TOOL_EVENT', {**base, 'event_type': 'tool_call', 'arguments': arguments,
+                          'status': 'success', 'result': result})
+                return payload
+            self.base_registry.browser_chat_fn = browser_chat
+            self.base_registry.browser_execute_action = browser_action
+        state = router.initial_state
+        tool_calls: list[str] = []
+        messages: list[dict[str, Any]] = [
+            {
+                "role": "system",
+                "content": (
+                    "You are an employee completing a structured work task. "
+                    "Use only the tools offered for the current workflow state. "
+                    "When a tool returns artifact IDs, pass those IDs to the next tool. "
+                    "If the task is complete or no useful next call is offered, answer briefly."
+                ),
+            },
+            {"role": "user", "content": task},
+        ]
+        final_answer = ""
+        tool_errors = 0
+        transport_retries = 0
+        self._log("TASK_EVENT", {"event_type": "task_started", "workflow_id": workflow_id, "status": "started"})
+        try:
+            for step in range(max_steps):
+                allowed = router.tools_for_state(state)
+                sequence = " -> ".join(name for transitions in router.spec.transitions.values() for name in transitions)
+                # State must be in messages: OpenAI-compatible APIs do not transmit
+                # the Python-only `state`/`workflow_id` request fields.
+                progress = (
+                    "You are completing an isolated simulated structured work task. "
+                    f"Workflow: {workflow_id}; full sequence: {sequence}. Current state: {state}. "
+                    f"Current allowed tools: {', '.join(allowed) or '<none: terminal>'}. "
+                    "Tools for later phases become available after the current phase succeeds. "
+                    "Use the latest output_artifact_ids as input_artifact_id. Ticket artifacts are valid inputs "
+                    "for design_document and reproduce_bug. Tool payload contains the actual input/output values. "
+                    "output_paths are read-only capture evidence; never write to artifacts/, manifest.jsonl, "
+                    "manifest.lock or execution.log. Write business files to reports/, shared/ or src/. "
+                    "Follow the specified business requirements and do not invent missing requirements. "
+                    "Use only the current offered tools. Only after the workflow reaches its terminal state "
+                    "give a brief final answer. Make ONE tool call per response. In implemented/fixed states "
+                    "code_edit remains available to write additional source/test files and repair failed checks; "
+                    "test_run advances only on success. Finish every required file before testing. "
+                    f"Available Python interpreter: {shlex.quote(os.sys.executable)}. "
+                    f"Command working directory and business file root: {self.runtime.workspace}. "
+                    "The interpreter installation directory is NOT the task workspace. "
+                    "Run commands relative to the task workspace; do not cd to the framework repository. "
+                    f"Execution environment: {json.dumps(self.runtime.execution_environment)}. "
+                    "For this local simulation, unless packaging is explicitly required, build with the "
+                    "advertised default_build_command (Python bytecode compilation). Do not assume optional "
+                    "packaging modules or install dependencies. Compilation alone is not a functional test. "
+                    "Message/review/approval tools are local simulation records."
+                )
+                request = {"workflow_id": workflow_id, "state": state,
+                           "messages": [{"role": "system", "content": progress}, *messages[1:]],
+                           "tools": [self.native_schemas[name] if name in self.native_schemas else schemas_for_tools([name])[0] for name in allowed]}
+                if workflow_id == "general":
+                    request["messages"][0]["content"] = (
+                        "Complete the employee task using the offered native tools in the experiment environment. "
+                        "Make one tool call per turn. Read actual results; a nonzero returncode is a failure. "
+                        "shell_exec may return running=true: wait/read/write/kill that session before finishing. "
+                        "Call finish_task only after checking all required outcomes, then give a final answer. "
+                        "Do not modify framework capture evidence. "
+                        f"Business cwd: {self.base_registry.workspace if self.base_registry else self.workspace}. "
+                        f"Python: {shlex.quote(os.sys.executable)}. State: {state}."
+                    )
+                if len(allowed) == 1:
+                    request["tool_choice"] = {"type": "function", "function": {"name": allowed[0]}}
+                elif allowed:
+                    request['tool_choice'] = 'required'
+                model_call_id = "model-" + uuid.uuid4().hex
+                self._log("MODEL_EVENT", {"event_type": "model_started", "step": step,
+                          "workflow_id": workflow_id, "call_id": model_call_id, "status": "started"})
+                try:
+                    response = chat_fn(request)
+                    if not isinstance(response, dict):
+                        raise ValueError("model message must be an object")
+                except Exception as exc:
+                    transport = getattr(chat_fn, 'last_error_metadata', None)
+                    if transport is None:
+                        transport = getattr(getattr(chat_fn, 'client', None), 'last_error_metadata', None)
+                    self._log("MODEL_EVENT", {"event_type": "model_terminal", "step": step,
+                              "workflow_id": workflow_id, "call_id": model_call_id,
+                              "status": "timeout" if isinstance(exc, (TimeoutError, subprocess.TimeoutExpired)) else "failed",
+                              "error_type": type(exc).__name__, "usage": getattr(chat_fn, "last_usage", None),
+                              "usage_unknown": getattr(chat_fn, "last_usage", None) is None,
+                              "transport_metadata": transport})
+                    # Retry only a request proved not to have left the client.
+                    # A sent request with an uncertain outcome is never replayed.
+                    if (transport or {}).get('request_not_sent') is True and transport_retries < 4:
+                        transport_retries += 1
+                        time.sleep(min(transport_retries * .5, 2))
+                        continue
+                    raise
+                transport_retries = 0
+                self._log("MODEL_EVENT", {"event_type": "model_terminal", "step": step,
+                          "workflow_id": workflow_id, "call_id": model_call_id, "status": "success",
+                          "model": getattr(chat_fn, "last_model", None) or getattr(chat_fn, "model", None), "usage": getattr(chat_fn, "last_usage", None),
+                          "usage_unknown": getattr(chat_fn, "last_usage", None) is None})
+                tool_calls_payload = response.get("tool_calls") or []
+                if not tool_calls_payload:
+                    final_answer = str(response.get("content") or "")
+                    self._log("FINAL_EVENT", {"event_type": "final_answer", "workflow_id": workflow_id,
+                              "state": state, "answer": final_answer,
+                              "status": "completed" if router.is_terminal(state) else "early_terminated"})
+                    return WorkflowRunResult(workflow_id, state, final_answer, tool_calls, str(self.workspace))
+                for call_index, call in enumerate(tool_calls_payload):
+                    function = call.get("function") or {}
+                    requested_tool_name = str(function.get("name") or "")
+                    tool_name = canonical_tool_name(requested_tool_name)
+                    call_id = "tool-" + uuid.uuid4().hex
+                    base = {"step": step, "workflow_id": workflow_id, "call_id": call_id,
+                            "provider_call_id": call.get("id"), "from_state": state,
+                            "tool_name": tool_name, "requested_tool_name": requested_tool_name}
+                    self._log("TOOL_START", {**base, "event_type": "tool_started", "status": "started"})
+                    tool_closed = False
+                    arguments = {}
+                    result = None
+                    try:
+                        raw_arguments = function.get("arguments") or {}
+                        arguments = json.loads(raw_arguments) if isinstance(raw_arguments, str) else dict(raw_arguments)
+                        if not isinstance(arguments, dict):
+                            raise ValueError("tool arguments must be an object")
+                        if call_index > 0:
+                            # The first call may already have committed a write.
+                            # Never replay it or execute speculative future calls.
+                            # Retain a rejection for every extra call and give the
+                            # model feedback at the next bounded loop iteration.
+                            self._log("TOOL_EVENT", {**base, "event_type": "tool_call", "arguments": arguments,
+                                      "status": "rejected", "to_state": state,
+                                      "rejection_reason": "one_tool_call_per_workflow_turn"})
+                            tool_closed = True
+                            messages.append({"role": "assistant", "tool_calls": [call]})
+                            messages.append({"role": "tool", "tool_call_id": call.get("id", tool_name),
+                                "content": json.dumps({"status":"rejected", "reason":"Only one tool call per turn is executed; the first call already committed. Continue from the current state with the latest successful artifact ID."})})
+                            continue
+                        if tool_name not in router.tools_for_state(state):
+                            self._log("TOOL_EVENT", {**base, "event_type": "tool_call", "arguments": arguments,
+                                      "status": "rejected", "to_state": state})
+                            tool_closed = True
+                            raise ValueError(f"tool {requested_tool_name!r} is not allowed in state {state!r}")
+                        schema = self.native_schemas[tool_name]["function"]["parameters"] if tool_name in self.native_schemas else TOOL_SCHEMAS[tool_name]
+                        for name in schema.get("required", []):
+                            if name not in arguments or arguments[name] is None:
+                                raise ValueError(f"missing required tool argument: {name}")
+                        for name, value in arguments.items():
+                            kind = schema.get("properties", {}).get(name, {}).get("type")
+                            if kind == "string" and not isinstance(value, str) or kind == "array" and not isinstance(value, list):
+                                raise ValueError(f"invalid type for tool argument: {name}")
+                        if tool_name == "finish_task":
+                            if not self.base_registry or not self.base_registry.can_finish():
+                                raise ValueError("cannot finish: observe terminal status of every shell session; repair failed sessions or explicitly cancel")
+                            artifact = self.runtime._put("event", tool_name, dict(arguments), name="completion.json")
+                            result = self.runtime._result(tool_name, artifact, "completion recorded; independent acceptance required")
+                        elif tool_name in self.native_schemas:
+                            payload = self.base_registry.execute(tool_name, arguments)
+                            artifact = self.runtime._put("file", tool_name, payload, name=tool_name + ".json")
+                            result = self.runtime._result(tool_name, artifact, "native tool executed")
+                            result["evidence_level"] = "executed_tool"
+                            result["business_workspace"] = str(self.base_registry.workspace)
+                            result["business_status"] = "failed" if isinstance(payload, dict) and payload.get("returncode") not in (None, 0) and tool_name != "shell_kill_process" else "not_measured"
+                        else:
+                            result = self.runtime.execute(tool_name, arguments)
+                        failed = result.get("business_status") == "failed"
+                        if not failed:
+                            state = router.apply(state, tool_name)
+                            tool_calls.append(tool_name)
+                            if state != base['from_state']:
+                                tool_errors = 0
+                        self._log("TOOL_EVENT", {**base, "event_type": "tool_call", "to_state": state,
+                                  "arguments": arguments, "result": result, "status": "failed" if failed else "success"})
+                        tool_closed = True
+                        if failed:
+                            raise RuntimeError("workflow command returned a nonzero exit status")
+                        messages.append({"role": "assistant", "tool_calls": [call]})
+                        messages.append({"role": "tool", "tool_call_id": call.get("id", tool_name),
+                                         "content": json.dumps(result, ensure_ascii=False)})
+                    except Exception as exc:
+                        if not tool_closed:
+                            self._log("TOOL_EVENT", {**base, "event_type": "tool_call", "to_state": state,
+                                      "arguments": arguments, "status": "timeout" if isinstance(exc, (TimeoutError, subprocess.TimeoutExpired)) else "failed",
+                                      "error_type": type(exc).__name__})
+                        if isinstance(exc, (ValueError, KeyError, PermissionError, RuntimeError)) and tool_errors < max_tool_errors:
+                            tool_errors += 1
+                            messages.append({"role":"assistant", "tool_calls":[call]})
+                            messages.append({"role":"tool", "tool_call_id":call.get("id", tool_name),
+                                "content":json.dumps({"status":"error", "error_type":type(exc).__name__,
+                                    "current_state":state, "allowed_tools":list(router.tools_for_state(state)),
+                                    "result":result,
+                                    "guidance":"The rejected/failed action did not advance state. Use ONLY the current allowed tool, use the latest successful artifact ID, and keep writes outside capture evidence. A failed command is not a successful test."})})
+                            continue
+                        raise
+>           raise RuntimeError(f"workflow exceeded max_steps={max_steps}")
+E           RuntimeError: workflow exceeded max_steps=3
+
+src/workflow_runtime.py:730: RuntimeError
+=============================== warnings summary ===============================
+tests/test_base_tool_workflows.py::test_unsent_retries_do_not_consume_business_steps
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/cohere_config.py:77: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    COHERE_API_PARAMS = {param for param in CohereConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_unsent_retries_do_not_consume_business_steps
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/mistral_config.py:79: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    MISTRAL_API_PARAMS = {param for param in MistralConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_unsent_retries_do_not_consume_business_steps
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/reka_config.py:69: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    REKA_API_PARAMS = {param for param in RekaConfig().model_fields.keys()}
+
+tests/test_base_tool_workflows.py::test_unsent_retries_do_not_consume_business_steps
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:68: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaVerseAPIConfig().model_fields.keys()
+
+tests/test_base_tool_workflows.py::test_unsent_retries_do_not_consume_business_steps
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:163: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaCloudAPIConfig().model_fields.keys()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_base_tool_workflows.py::test_unsent_retries_do_not_consume_business_steps
+1 failed, 5 warnings in 0.72s
