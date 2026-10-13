@@ -1,0 +1,47 @@
+{
+  "status": "DESIGN_ONLY_NOT_EXECUTED",
+  "protocol": "original-chimera-vs-current/v1",
+  "main_detectors": [
+    "RBF-SVM",
+    "Temporal CNN",
+    "GCN",
+    "DS-IID"
+  ],
+  "detector_names_source": "evidence/original-chimera-detectors.json",
+  "generation_cost": "shared with stage2; not charged again",
+  "main_detection_llm_api_usd": 0,
+  "fit_budget_example": {
+    "training_sources": 2,
+    "detectors": 4,
+    "hyperparameter_candidates": 5,
+    "grouped_training_cv_folds": 3,
+    "final_training_seeds": 5,
+    "formula": "2 * 4 * (5 * 3 + 5)",
+    "fits": 160,
+    "caveat": "starting workload example, not guaranteed sufficient or elapsed runtime; code/config and adequate CV groups must be available. SVM repeated deterministic seeds need not duplicate identical fits."
+  },
+  "compute_formula": "sum_m(n_fits_m * measured_hours_per_fit_m * price_per_hour_m) + prediction/feature/audit/bootstrap compute; report CPU/GPU separately",
+  "price_and_duration_per_detector": {
+    "RBF-SVM": null,
+    "Temporal CNN": null,
+    "GCN": null,
+    "DS-IID": null
+  },
+  "same_target_ci": "reuse frozen predictions for paired test resampling; no extra model fitting for ordinary test bootstrap",
+  "extra_fit_costs_not_in_160": [
+    "new target-adaptation protocol",
+    "negative-control refits",
+    "representation/noise ablations",
+    "external data augmentation",
+    "outer resampling of generated training data requiring refit"
+  ],
+  "unknowns": [
+    "GPU need and method runtime",
+    "implementation acquisition/adaptation time",
+    "reference/target licensing and preparation",
+    "storage",
+    "additional independent groups/episodes required by pilot"
+  ],
+  "result_policy": "Missing method or target is NOT_MEASURED; cheap debug models cannot stand in for the fixed four-method report.",
+  "seed_reporting_policy": "Mean of frozen per-seed metrics and paired differences, with all seed results preserved; no best-seed selection or score ensemble. Main CI conditional on fixed seed models, resamples identical target indices for all seeds, then averages metrics. Training-generation uncertainty requires extra refits."
+}

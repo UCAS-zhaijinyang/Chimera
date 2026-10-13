@@ -1,9 +1,15 @@
 {
   "status": "DESIGN_ONLY_NOT_EXECUTED",
-  "price_evidence": "evidence/stage2-pricing-2026-10-13.json",
+  "protocol": "original-chimera-vs-current/v1",
   "currency": "USD",
-  "all_costs_estimates_not_invoice_or_maximum": true,
-  "observed_task_cost_proxy": {
+  "not_invoice_or_maximum": true,
+  "price_evidence": "evidence/stage2-pricing-2026-10-13.json",
+  "superseded_estimate_archive": "evidence/stage2-cost-estimate-before-original-comparison.json",
+  "main_sources": [
+    "O_original_chimera",
+    "N_current_framework"
+  ],
+  "observed_current_task_cost_proxy": {
     "low_source": "round23 specified normal 54 tasks only",
     "low_known_peak_usd": 0.313505112,
     "low_tasks": 54,
@@ -14,55 +20,41 @@
     "high_usd_per_task": 0.008968586,
     "caveat": "Two different task sets, not confidence limits or bounds on longer multi-day tasks; observed cache hit rates may not recur."
   },
-  "workflow_pilot": {
+  "current_pilot": {
     "tasks": 720,
     "low_base_usd": 4.18006816,
     "high_base_usd": 6.45738192,
     "low_with_20_percent_usd": 5.016081792,
     "high_with_20_percent_usd": 7.748858304
   },
-  "workflow_confirmation": {
+  "current_confirmation": {
     "tasks": 8640,
     "low_base_usd": 50.16081792,
     "high_base_usd": 77.48858304,
     "low_with_20_percent_usd": 60.192981504,
     "high_with_20_percent_usd": 92.986299648
   },
-  "workflow_pilot_and_confirmation": {
+  "current_pilot_and_confirmation": {
     "tasks": 9360,
     "low_base_usd": 54.34088608,
     "high_base_usd": 83.94596496,
     "low_with_20_percent_usd": 65.209063296,
     "high_with_20_percent_usd": 100.735157952
   },
-  "legacy_golden_placeholder_only": {
-    "tasks": 90,
-    "low_base_usd": 0.52250852,
-    "high_base_usd": 0.80717274,
-    "low_with_20_percent_usd": 0.627010224,
-    "high_with_20_percent_usd": 0.968607288
-  },
-  "legacy_pilot_and_confirmation": {
-    "status": "UNMEASURED",
-    "tasks": 9360,
-    "required_formula": "measured legacy USD per task * 9360 * 1.2 + measured legacy planning/meetings/summaries",
-    "conditional_same_proxy_only": {
-      "tasks": 9360,
-      "low_base_usd": 54.34088608,
-      "high_base_usd": 83.94596496,
-      "low_with_20_percent_usd": 65.209063296,
-      "high_with_20_percent_usd": 100.735157952
-    }
-  },
-  "independent_single_shot_baseline": {
-    "input_tokens_per_request": 4000,
-    "output_tokens_per_request": 1000,
-    "pilot_requests": 360,
-    "confirmation_train_validation_requests": 2880,
-    "unit_peak_no_cache_usd": 0.0024,
-    "pilot_with_20_percent_usd": 1.0368,
-    "confirmation_with_20_percent_usd": 8.2944,
-    "total_with_20_percent_usd": 9.3312
+  "original_source": {
+    "status": "NOT_VERIFIED_NOT_PRICED",
+    "published_snapshot_incremental_generation_api_usd": 0,
+    "reproduction_cost_formula": "measured original cost per work unit * required matched units + planning/meetings/summaries and recorded failures/retries",
+    "same_current_short_task_proxy": "conditional illustration only; original request structure and context differ",
+    "conditional_same_proxy_generation_usd": {
+      "low": 65.209063296,
+      "high": 100.735157952
+    },
+    "conditional_original_90_golden_proxy_usd": {
+      "low": 0.627010224,
+      "high": 0.968607288
+    },
+    "golden_rule": "Only generate if original can support common executable task contracts; otherwise report original artifact oracle not measurable."
   },
   "judge": {
     "input_tokens_per_request": 3000,
@@ -102,53 +94,60 @@
         "unit_usd": 0.006336,
         "with_20_percent_usd": 0.456192,
         "expert_rating_person_hours_at_3_min": 0
-      },
-      {
-        "part": "independent_baseline_confirmation",
-        "requests": 120,
-        "unit_usd": 0.00162,
-        "with_20_percent_usd": 0.23328,
-        "expert_rating_person_hours_at_3_min": 18
       }
     ],
-    "total_requests": 540,
-    "total_with_20_percent_usd": 1.389312
+    "total_requests": 420,
+    "flash_requests": 360,
+    "pro_requests": 60,
+    "total_with_20_percent_usd": 1.156032
   },
   "expert_rating": {
     "calibration_packages": 60,
-    "main_confirmation_packages": 180,
-    "baseline_confirmation_packages": 120,
+    "confirmation_packages": 180,
     "experts_per_package": 3,
-    "person_hours_at_3_min": 54,
-    "person_hours_at_6_min": 108,
-    "cash_formula": "54*r to 108*r, in the currency of hourly rate r; excludes recruitment/training/packet preparation/challenge truth review/adjudication"
+    "person_hours_at_3_min": 36,
+    "person_hours_at_6_min": 72,
+    "cash_formula": "36*r to 72*r, excluding evidence preparation/training/challenge ground-truth review/adjudication",
+    "optional_four_source_packages_not_in_main": 120
   },
-  "subtotals": {
-    "workflow_plus_single_shot_plus_judge_excluding_legacy_and_other_calls": {
-      "low_usd": 75.929575296,
-      "high_usd": 111.455669952
+  "main_subtotals": {
+    "reuse_original_snapshot_current_generation_plus_judge": {
+      "low_usd": 66.365095296,
+      "high_usd": 101.891189952,
+      "excludes": "original acquisition/adaptation, planning/meetings/summaries, engineering, expert and compute costs"
     },
-    "both_paths_conditional_same_cost_proxy_plus_legacy_golden_single_shot_judge": {
-      "low_usd": 141.765648816,
-      "high_usd": 213.159435192,
-      "status": "CONDITIONAL_ILLUSTRATION_NOT_FULL_BUDGET"
+    "reproduce_original_conditional_same_proxy_including_optional_90_golden": {
+      "low_usd": 132.201168816,
+      "high_usd": 203.594955192,
+      "status": "CONDITIONAL_ILLUSTRATION_NOT_ORIGINAL_PRICE_OR_FULL_BUDGET"
     }
   },
+  "removed_from_default_budget": {
+    "single_shot_baseline_with_20_percent_usd": 9.3312,
+    "additional_120_package_judge_usd": 0.23328,
+    "additional_rating_hours_at_3_min": 18,
+    "rule_template": "optional implementation and local compute only"
+  },
+  "pilot_current_generation_plus_60_calibration": {
+    "low_usd": 5.132721792,
+    "high_usd": 7.865498304,
+    "original_generation": "0 if snapshot reuse; otherwise unmeasured extra",
+    "rating_person_hours_at_3_min": 9
+  },
   "excluded_unmeasured_costs": [
-    "planning/meetings/email/summaries beyond counted workflow requests",
-    "development/adaptation",
-    "fixture and attack truth authoring/review",
-    "reference acquisition/licensing/adaptation",
-    "local compute/storage or cloud rentals",
-    "expert recruitment/training/adjudication",
-    "additional runs/model escalations or longer context after pilot",
-    "optional 2x2 planning ablation and statistical generators"
+    "original dataset acquisition/licensing and adaptation",
+    "original architecture reproduction and API compatibility",
+    "new current planning/meetings/email/summaries beyond task requests",
+    "developer and fixture/attack truth review time",
+    "local/cloud compute and storage",
+    "expert preparation/recruitment/training/adjudication",
+    "longer packets or additional judge escalation after pilot",
+    "optional ablations, rule/single-shot/statistical generators and extra blind packages"
   ],
   "quality_rules": [
-    "pilot before freezing confirmatory budget and sample size",
-    "preserve all failures and uncertain/unmeasured outcomes",
-    "reference/test holdouts not exposed to generator or judge tuning",
-    "budget cap reached means incomplete, never relaxed acceptance",
-    "no automatic paid execution authorized by this analysis"
+    "pilot measures original and current complete generation costs separately",
+    "main sources O and N must be provenanced; current legacy toggle is not original",
+    "do not charge same generation again in stage3",
+    "budget limits never convert missing evidence or incomplete evaluation to PASS"
   ]
 }

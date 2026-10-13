@@ -1,0 +1,132 @@
+{
+  "status": "DESIGN_ONLY_NOT_EXECUTED",
+  "protocol": "original-chimera-vs-current/v1",
+  "main_sources": {
+    "O": {
+      "name": "原始 Chimera",
+      "availability": "NOT_VERIFIED",
+      "source_mode": null,
+      "allowed_modes": [
+        "published_original_snapshot",
+        "fixed_original_revision_reproduction"
+      ],
+      "dataset_sha256": null,
+      "repository": null,
+      "commit": null,
+      "model_requested": null,
+      "model_returned": null,
+      "scenario_config_hash": null,
+      "generation_config_hash": null,
+      "label_evidence_level": null,
+      "provenance_rule": "Current legacy toggle, old repair failures, and original-description replay do not establish original Chimera provenance."
+    },
+    "N": {
+      "name": "当前框架",
+      "availability": "CONFIRMATORY_DATA_NOT_GENERATED",
+      "source_mode": "current_framework_new_confirmatory_runs",
+      "generator_commit": null,
+      "dataset_sha256": null,
+      "model_family": "DeepSeek",
+      "scenario_config_hash": null,
+      "generation_config_hash": null,
+      "label_evidence_level": null
+    }
+  },
+  "candidate_scale": {
+    "pilot_employee_days_per_source": 360,
+    "confirmation_employee_days_per_source": 4320,
+    "tasks_per_employee_day_for_cost_only": 2,
+    "freeze_after_pilot": true
+  },
+  "common_comparison_contract": {
+    "fields_and_semantics_hash": null,
+    "role_mapping_hash": null,
+    "task_mapping_hash": null,
+    "label_definition_hash": null,
+    "normal_training_units": null,
+    "attack_episode_training_units": null,
+    "optional_methods_not_main": [
+      "current_legacy_toggle_ablation",
+      "rule_template",
+      "single_shot_deepseek",
+      "CTGAN_or_time_series_generator"
+    ]
+  },
+  "detectors": {
+    "status": "NAMES_VERIFIED_IMPLEMENTATIONS_NOT_FROZEN",
+    "evidence": "evidence/original-chimera-detectors.json",
+    "fixed_main_methods": [
+      "RBF-SVM",
+      "Temporal CNN",
+      "GCN",
+      "DS-IID"
+    ],
+    "registry_required_fields": [
+      "code_revision",
+      "dependencies",
+      "architecture_config_hash",
+      "preprocessing_spec_hash",
+      "window_or_graph_contract",
+      "hyperparameter_search_space_hash",
+      "validation_policy",
+      "training_seeds",
+      "fit_budget",
+      "training_compute"
+    ],
+    "replacement_policy": "Lightweight detectors may debug only; cannot silently replace a missing main method.",
+    "seed_aggregation_policy": {
+      "paired_seed_list": null,
+      "candidate_final_seed_count": 5,
+      "main_result": "arithmetic mean of per-seed metrics and paired N-minus-O differences; no seed selection or score ensemble",
+      "internal_domain_macro": "per-seed domain metrics weighted 0.5/0.5, then mean across seeds",
+      "preserve": "all per-seed metrics, predictions, validation thresholds, SD and range",
+      "main_ci": "conditional on fixed trained seed models; same target group/episode bootstrap indices for both sources and every seed, recompute metrics then mean; no seed resampling",
+      "training_generation_uncertainty": "separate outer training-group resampling and refit, additional compute",
+      "deterministic_reuse": "verify identical fits, register duplicate mapping; no independent sample claim",
+      "failed_seed": "report and rerun; incomplete results cannot become complete main row"
+    }
+  },
+  "validation": {
+    "default": "common_source_validation_holdout",
+    "description": "Freeze a shared validation pool from O/N source validation groups; both training sources receive the same tuning/threshold information. No external test/labels used. A source-only validation transfer experiment must be separate.",
+    "manifest_sha256": null
+  },
+  "target": {
+    "selection_status": "NOT_FROZEN",
+    "primary_preference": "independent_external_holdout_if_accessible_and_label_compatible",
+    "fallback": "same_frozen_target_pool_of_disjoint_O_and_N_holdout_groups",
+    "internal_domain_macro_weights": {
+      "O": 0.5,
+      "N": 0.5
+    },
+    "within_domain_prevalence": "retain native prevalence, never balance to improve metrics",
+    "manifest_sha256": null,
+    "no_feature_or_threshold_tuning_on_target": true
+  },
+  "stage2_primary": {
+    "common_log_dimensions": [
+      "business_content",
+      "role_capability",
+      "temporal_collaboration"
+    ],
+    "common_semantic_defect_rate": true,
+    "full_oracle_comparison": "only if both sources have the same task specification and verifiable artifacts",
+    "current_only_full_evidence": "separate_capability_or_engineering_table",
+    "serious_defect_definition": {
+      "estimand": "eligible packages with at least one independently confirmed serious defect / all eligible packages",
+      "range": [
+        0,
+        1
+      ],
+      "deduplication": "same package, event and defect type; repeated annotations count once",
+      "expert_confirmation": "at least 2 of 3 independent experts confirm the same evidenced defect; at least 2 judge package eligible; remaining disputes require blind adjudication",
+      "unresolved_or_missing_evidence": "abstain/UNKNOWN; report coverage and per-source reasons, not defect-free",
+      "separate_burden_metric": "confirmed distinct defects per 100 eligible packages"
+    }
+  },
+  "stage3_primary_metrics": [
+    "AP_difference_on_same_target",
+    "Recall_at_fixed_review_budget_difference"
+  ],
+  "result_policy": "No numerical scores, differences, intervals or PASS without actual evidence; retain missing capabilities and source acquisition limits."
+}
