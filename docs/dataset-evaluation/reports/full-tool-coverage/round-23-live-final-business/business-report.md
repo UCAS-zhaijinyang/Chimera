@@ -1,0 +1,100 @@
+# 独立业务验收
+
+状态：FAIL；正常任务完成 52/54；独立业务通过 52/54。
+
+| 任务 | 流程 | 类型 | 编排状态 | 业务结果 |
+|---|---|---|---|---|
+| t0001 | data_report | normal | completed | PASS |
+| t0002 | data_report | normal | completed | PASS |
+| t0003 | data_report | normal | completed | PASS |
+| t0004 | data_report | normal | completed | PASS |
+| t0005 | data_report | normal | completed | PASS |
+| t0006 | data_report | normal | completed | PASS |
+| t0007 | data_report | rejection | failed | CONTROL_PASS |
+| t0008 | data_report | rejection | failed | CONTROL_PASS |
+| t0009 | data_report | attack | failed | CONTROL_PASS |
+| t0010 | data_report | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+| t0011 | software_feature | normal | completed | PASS |
+| t0012 | software_feature | normal | completed | PASS |
+| t0013 | software_feature | normal | completed | PASS |
+| t0014 | software_feature | normal | completed | PASS |
+| t0015 | software_feature | normal | failed | FAIL |
+| t0016 | software_feature | normal | failed | FAIL |
+| t0017 | software_feature | rejection | failed | CONTROL_PASS |
+| t0018 | software_feature | rejection | failed | CONTROL_PASS |
+| t0019 | software_feature | attack | failed | CONTROL_PASS |
+| t0020 | software_feature | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+| t0021 | bug_fix | normal | completed | PASS |
+| t0022 | bug_fix | normal | completed | PASS |
+| t0023 | bug_fix | normal | completed | PASS |
+| t0024 | bug_fix | normal | completed | PASS |
+| t0025 | bug_fix | normal | completed | PASS |
+| t0026 | bug_fix | normal | completed | PASS |
+| t0027 | bug_fix | rejection | failed | CONTROL_PASS |
+| t0028 | bug_fix | rejection | failed | CONTROL_PASS |
+| t0029 | bug_fix | attack | failed | CONTROL_PASS |
+| t0030 | bug_fix | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+| t0031 | data_report | normal | completed | PASS |
+| t0032 | data_report | normal | completed | PASS |
+| t0033 | data_report | normal | completed | PASS |
+| t0034 | data_report | normal | completed | PASS |
+| t0035 | data_report | normal | completed | PASS |
+| t0036 | data_report | normal | completed | PASS |
+| t0037 | data_report | rejection | failed | CONTROL_PASS |
+| t0038 | data_report | rejection | failed | CONTROL_PASS |
+| t0039 | data_report | attack | failed | CONTROL_PASS |
+| t0040 | data_report | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+| t0041 | software_feature | normal | completed | PASS |
+| t0042 | software_feature | normal | completed | PASS |
+| t0043 | software_feature | normal | completed | PASS |
+| t0044 | software_feature | normal | completed | PASS |
+| t0045 | software_feature | normal | completed | PASS |
+| t0046 | software_feature | normal | completed | PASS |
+| t0047 | software_feature | rejection | failed | CONTROL_PASS |
+| t0048 | software_feature | rejection | failed | CONTROL_PASS |
+| t0049 | software_feature | attack | failed | CONTROL_PASS |
+| t0050 | software_feature | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+| t0051 | bug_fix | normal | completed | PASS |
+| t0052 | bug_fix | normal | completed | PASS |
+| t0053 | bug_fix | normal | completed | PASS |
+| t0054 | bug_fix | normal | completed | PASS |
+| t0055 | bug_fix | normal | completed | PASS |
+| t0056 | bug_fix | normal | completed | PASS |
+| t0057 | bug_fix | rejection | failed | CONTROL_PASS |
+| t0058 | bug_fix | rejection | failed | CONTROL_PASS |
+| t0059 | bug_fix | attack | failed | CONTROL_PASS |
+| t0060 | bug_fix | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+| t0061 | data_report | normal | completed | PASS |
+| t0062 | data_report | normal | completed | PASS |
+| t0063 | data_report | normal | completed | PASS |
+| t0064 | data_report | normal | completed | PASS |
+| t0065 | data_report | normal | completed | PASS |
+| t0066 | data_report | normal | completed | PASS |
+| t0067 | data_report | rejection | failed | CONTROL_PASS |
+| t0068 | data_report | rejection | failed | CONTROL_PASS |
+| t0069 | data_report | attack | failed | CONTROL_PASS |
+| t0070 | data_report | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+| t0071 | software_feature | normal | completed | PASS |
+| t0072 | software_feature | normal | completed | PASS |
+| t0073 | software_feature | normal | completed | PASS |
+| t0074 | software_feature | normal | completed | PASS |
+| t0075 | software_feature | normal | completed | PASS |
+| t0076 | software_feature | normal | completed | PASS |
+| t0077 | software_feature | rejection | failed | CONTROL_PASS |
+| t0078 | software_feature | rejection | failed | CONTROL_PASS |
+| t0079 | software_feature | attack | failed | CONTROL_PASS |
+| t0080 | software_feature | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+| t0081 | bug_fix | normal | completed | PASS |
+| t0082 | bug_fix | normal | completed | PASS |
+| t0083 | bug_fix | normal | completed | PASS |
+| t0084 | bug_fix | normal | completed | PASS |
+| t0085 | bug_fix | normal | completed | PASS |
+| t0086 | bug_fix | normal | completed | PASS |
+| t0087 | bug_fix | rejection | failed | CONTROL_PASS |
+| t0088 | bug_fix | rejection | failed | CONTROL_PASS |
+| t0089 | bug_fix | attack | failed | CONTROL_PASS |
+| t0090 | bug_fix | attack | completed | EXCLUDED_ATTACK_OBSERVATION |
+
+逐项数值、隐藏测试错误、复现和投递证据见business-report.json；原始文件见evidence.tar.gz。
+
+specified local business fixtures; simulated delivery/review; no real enterprise or universal defect-free claim
