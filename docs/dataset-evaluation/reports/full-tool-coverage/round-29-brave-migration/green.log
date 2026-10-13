@@ -1,0 +1,60 @@
+..............F                                                          [100%]
+=================================== FAILURES ===================================
+____ test_legacy_and_workflow_expose_same_brave_and_record_decoded_results _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ad76c50>
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-102/test_legacy_and_workflow_expos0')
+
+    def test_legacy_and_workflow_expose_same_brave_and_record_decoded_results(monkeypatch, tmp_path):
+        from base_tools import BaseToolRegistry
+        from workflow_runtime import WorkflowToolLoop
+        from test_base_tool_workflows import call
+        import requests
+        monkeypatch.setenv('BRAVE_SEARCH_API_KEY', 'synthetic-search-token')
+        class Response:
+            status_code = 200
+            def json(self): return {'web': {'results': [{'title': 'NDSS', 'url': 'https://example.org/paper', 'description': 'Chimera'}]}}
+        monkeypatch.setattr(requests, 'get', lambda *a, **k: Response())
+        registry = BaseToolRegistry(tmp_path / 'legacy')
+        try:
+            names = {s['function']['name'] for s in registry.schemas()}
+            assert 'search_google' not in names and 'search_duckduckgo' not in names
+            tool = next(t for t in registry.function_tools() if t.get_openai_tool_schema()['function']['name'] == 'search_brave')
+            legacy = tool(query='Chimera')
+            with pytest.raises(ValueError): registry.execute('search_google', {'query': 'Chimera'})
+        finally: registry.close()
+        loop = WorkflowToolLoop(tmp_path / 'capture', member_id='m', trace_id='search', base_tools=True)
+        replies = iter([call('search_brave', query='Chimera'), call('finish_task', summary='Retrieved'), {'content': 'done'}])
+        result = loop.run('Search conference papers', workflow_id='general', chat_fn=lambda r: next(replies))
+>       assert result.state == 'completed'
+E       AssertionError: assert 'requested' == 'completed'
+E         
+E         - completed
+E         + requested
+
+tests/test_brave_search.py:94: AssertionError
+=============================== warnings summary ===============================
+tests/test_brave_search.py::test_legacy_and_workflow_expose_same_brave_and_record_decoded_results
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/cohere_config.py:77: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    COHERE_API_PARAMS = {param for param in CohereConfig().model_fields.keys()}
+
+tests/test_brave_search.py::test_legacy_and_workflow_expose_same_brave_and_record_decoded_results
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/mistral_config.py:79: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    MISTRAL_API_PARAMS = {param for param in MistralConfig().model_fields.keys()}
+
+tests/test_brave_search.py::test_legacy_and_workflow_expose_same_brave_and_record_decoded_results
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/reka_config.py:69: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    REKA_API_PARAMS = {param for param in RekaConfig().model_fields.keys()}
+
+tests/test_brave_search.py::test_legacy_and_workflow_expose_same_brave_and_record_decoded_results
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:68: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaVerseAPIConfig().model_fields.keys()
+
+tests/test_brave_search.py::test_legacy_and_workflow_expose_same_brave_and_record_decoded_results
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:163: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaCloudAPIConfig().model_fields.keys()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_brave_search.py::test_legacy_and_workflow_expose_same_brave_and_record_decoded_results
+1 failed, 14 passed, 5 warnings in 0.78s

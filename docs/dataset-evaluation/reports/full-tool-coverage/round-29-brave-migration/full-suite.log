@@ -1,0 +1,117 @@
+......................................F................................. [ 32%]
+........................................................................ [ 65%]
+........................................................................ [ 98%]
+...                                                                      [100%]
+=================================== FAILURES ===================================
+______ test_missing_brave_auth_is_recorded_as_failed_tool_not_completion _______
+
+self = <camel.toolkits.function_tool.FunctionTool object at 0x10e6e2a40>
+args = (), kwargs = {'query': 'Chimera', 'source': 'text', 'max_results': 5}
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        if self.synthesize_output:
+            result = self.synthesize_execution_output(args, kwargs)
+            return result
+        else:
+            # Pass the extracted arguments to the indicated function
+            try:
+>               result = self.func(*args, **kwargs)
+
+.venv/lib/python3.10/site-packages/camel/toolkits/function_tool.py:392: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+query = 'Chimera', source = 'text', max_results = 5
+
+    def search_brave(query: str, source: str = 'text', max_results: int = 5) -> dict:
+        """Search Brave's index without generating an AI answer.
+    
+        Args:
+            query (str): Nonempty search query.
+            source (str): Search category: text, images, or videos.
+            max_results (int): Maximum results to return, between 1 and 20.
+    
+        Returns:
+            dict: Provider, query, category and decoded source results. Empty
+                results mean no matches, not successful completion of research.
+        """
+        endpoints = {'text': 'web', 'images': 'images', 'videos': 'videos'}
+        if not isinstance(query, str) or not query.strip() or len(query) > 400:
+            raise ValueError('search query must contain 1 to 400 characters')
+        if source not in endpoints:
+            raise ValueError('search source must be text, images, or videos')
+        if type(max_results) is not int or not 1 <= max_results <= 20:
+            raise ValueError('max_results must be an integer between 1 and 20')
+        token = os.getenv('BRAVE_SEARCH_API_KEY', '').strip()
+        if not token:
+>           raise RuntimeError('Brave search requires BRAVE_SEARCH_API_KEY')
+E           RuntimeError: Brave search requires BRAVE_SEARCH_API_KEY
+
+src/search_runtime.py:29: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e6e1a80>
+tmp_path = PosixPath('/private/var/folders/pq/dyf_7lss4mn2ysc1866pbqdh0000gn/T/pytest-of-ayang/pytest-104/test_missing_brave_auth_is_rec0')
+
+    def test_missing_brave_auth_is_recorded_as_failed_tool_not_completion(monkeypatch, tmp_path):
+        from workflow_runtime import WorkflowToolLoop
+        monkeypatch.delenv('BRAVE_SEARCH_API_KEY', raising=False)
+        loop = WorkflowToolLoop(tmp_path, member_id='m', trace_id='search', base_tools=True)
+        with pytest.raises(RuntimeError):
+>           loop.run('Search public documents', workflow_id='general', max_tool_errors=0,
+                     chat_fn=lambda r: call('search_brave', query='Chimera', source='text', max_results=5))
+
+tests/test_base_tool_workflows.py:202: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/workflow_runtime.py:707: in run
+    payload = self.base_registry.execute(tool_name, arguments)
+src/base_tools.py:173: in execute
+    result = self._tools[name](**args)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <camel.toolkits.function_tool.FunctionTool object at 0x10e6e2a40>
+args = (), kwargs = {'query': 'Chimera', 'source': 'text', 'max_results': 5}
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        if self.synthesize_output:
+            result = self.synthesize_execution_output(args, kwargs)
+            return result
+        else:
+            # Pass the extracted arguments to the indicated function
+            try:
+                result = self.func(*args, **kwargs)
+                return result
+            except Exception as e:
+>               raise ValueError(
+                    f"Execution of function {self.func.__name__} failed with "
+                    f"arguments {args} and {kwargs}. "
+                    f"Error: {e}"
+                )
+E               ValueError: Execution of function search_brave failed with arguments () and {'query': 'Chimera', 'source': 'text', 'max_results': 5}. Error: Brave search requires BRAVE_SEARCH_API_KEY
+
+.venv/lib/python3.10/site-packages/camel/toolkits/function_tool.py:395: ValueError
+=============================== warnings summary ===============================
+tests/test_attack_lab_coverage.py::test_all_original_steps_have_real_lab_side_effects[gen_attack_1]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/cohere_config.py:77: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    COHERE_API_PARAMS = {param for param in CohereConfig().model_fields.keys()}
+
+tests/test_attack_lab_coverage.py::test_all_original_steps_have_real_lab_side_effects[gen_attack_1]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/mistral_config.py:79: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    MISTRAL_API_PARAMS = {param for param in MistralConfig().model_fields.keys()}
+
+tests/test_attack_lab_coverage.py::test_all_original_steps_have_real_lab_side_effects[gen_attack_1]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/reka_config.py:69: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    REKA_API_PARAMS = {param for param in RekaConfig().model_fields.keys()}
+
+tests/test_attack_lab_coverage.py::test_all_original_steps_have_real_lab_side_effects[gen_attack_1]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:68: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaVerseAPIConfig().model_fields.keys()
+
+tests/test_attack_lab_coverage.py::test_all_original_steps_have_real_lab_side_effects[gen_attack_1]
+  /Users/ayang/Desktop/project_work/Chimera/.venv/lib/python3.10/site-packages/camel/configs/samba_config.py:163: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+    param for param in SambaCloudAPIConfig().model_fields.keys()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_base_tool_workflows.py::test_missing_brave_auth_is_recorded_as_failed_tool_not_completion
+1 failed, 218 passed, 5 warnings in 39.75s
