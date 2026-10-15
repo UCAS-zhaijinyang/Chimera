@@ -37,6 +37,8 @@ def dump(path, value):
 
 def parse_json(raw):
     raw = raw.strip()
+    if "</think>" in raw:
+        raw = raw.split("</think>", 1)[1].strip()
     if raw.startswith("```"):
         raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
     return json.loads(raw)

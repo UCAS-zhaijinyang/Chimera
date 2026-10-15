@@ -46,3 +46,26 @@ def test_full_report_measures_pairwise_planning_when_both_arms_complete(tmp_path
     assert report["status"] == "COMPLETE_AUTOMATED_SCOPE_WITH_LIMITATIONS"
     assert report["comparison"]["status"] == "MEASURED"
     assert report["metrics"]["Q4"]["by_group"]["O"]["events"] == 1
+
+
+def test_full_report_overlays_selected_attack_schedule_into_events(tmp_path):
+    from scripts.build_stage2_full_report import build_report
+
+    run = tmp_path / "stage2-full"
+    _write(run / "study_manifest.json", {
+        "status": "COMPLETE",
+        "scope": {"employees": 1, "workdays": 1, "runs": 1},
+        "arms": {"O": {"status": "COMPLETE"}, "N": {"status": "COMPLETE"}},
+    })
+    for arm in ("O", "N"):
+        _write(run / arm / "run" / "init_schedule" / "week_1" / "a-1_week_1_Monday.json",
+               [{"Time": "10:00:00", "Activity": f"{arm} normal"}])
+    _write(run / "O" / "campaigns.json", [{
+        "member_id": "a-1", "attack_id": "a1", "selected_dates": ["week_1_Monday"],
+        "modified_schedule": [{"Time": "10:00:00", "Activity": "O attack"}],
+    }])
+    _write(run / "N" / "campaigns.json", [])
+    output = tmp_path / "report"
+    report = build_report(run, output)
+
+    assert report["metrics"]["Q4"]["by_group"]["O"]["attack_events"] == 1

@@ -111,6 +111,15 @@ def test_glm_disables_reasoning_for_structured_meeting_outputs():
     original = config.foundation_model
     try:
         config.foundation_model = "GLM-5.3-Flash"
-        assert _qwen3_no_think_extra_body() == {"enable_thinking": False}
+        assert _qwen3_no_think_extra_body() == {
+            "enable_thinking": False,
+            "chat_template_kwargs": {"enable_thinking": False},
+        }
     finally:
         config.foundation_model = original
+
+
+def test_glm_inline_reasoning_wrapper_is_removed():
+    from foundation_model import _strip_reasoning_wrapper
+
+    assert _strip_reasoning_wrapper("analysis</think>{\"ok\":true}") == '{"ok":true}'

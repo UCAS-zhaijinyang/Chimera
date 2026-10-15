@@ -200,6 +200,8 @@ def semantic_campaign_metrics(campaigns: Sequence[Mapping[str, Any]], attack_spe
         rows.append({"attack_id": attack_id, "selected_days": len(selected_dates), "expected_steps": expected,
                      "covered_steps": covered, "integrity": pass_integrity,
                      "legal_dates": legal_dates,
+                     "attack_generation_fallback": bool(campaign.get("attack_generation_fallback", False)),
+                     "campaign_planning_fallback": bool(campaign.get("campaign_planning_fallback", False)),
                      "semantic_evidence": bool(campaign.get("attack_requirements") or campaign.get("campaign_plan") or expected)})
     n = len(rows)
     return {
@@ -207,6 +209,8 @@ def semantic_campaign_metrics(campaigns: Sequence[Mapping[str, Any]], attack_spe
         "semantic_evidence_coverage": _rate(sum(row["semantic_evidence"] for row in rows), n),
         "selected_date_legal_rate": _rate(sum(row["legal_dates"] for row in rows), n),
         "multi_day_episode_rate": _rate(sum(row["selected_days"] > 1 for row in rows), n),
+        "attack_generation_fallback_rate": _rate(sum(row["attack_generation_fallback"] for row in rows), n),
+        "campaign_planning_fallback_rate": _rate(sum(row["campaign_planning_fallback"] for row in rows), n),
         "selected_day_count": {"mean": round(sum(row["selected_days"] for row in rows) / n, 6) if n else None,
                                 "min": min((row["selected_days"] for row in rows), default=None),
                                 "max": max((row["selected_days"] for row in rows), default=None)},

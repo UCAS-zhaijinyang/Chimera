@@ -20,19 +20,42 @@ def read(path, default=None):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _events_for_arm(arm: str, arm_root: Path):
+def _events_for_arm(arm: str, arm_root: Path, campaigns=None):
+    """Read normal schedules and overlay every LLM-selected attack day.
+
+    Attack injection writes selected-day files under attack_schedule and keeps
+    the normal/modified schedules in campaigns.json.  The latter is the
+    immutable comparison manifest, so use it to ensure Q4/Q5 see the exact
+    modified schedule while unselected days remain the normal schedule.
+    """
+    overrides = {}
+    for campaign in campaigns or []:
+        member_id = campaign.get("member_id")
+        attack_id = campaign.get("attack_id")
+        days = campaign.get("days")
+        if isinstance(days, dict):
+            for key, value in days.items():
+                if value.get("selected"):
+                    overrides[(member_id, key)] = (value.get("modified_schedule", []), attack_id)
+        else:
+            for key in campaign.get("selected_dates", []):
+                overrides[(member_id, key)] = (campaign.get("modified_schedule", []), attack_id)
     schedules = list((arm_root / "run" / "init_schedule").glob("week_*/*_week_*_*.json"))
     rows = []
     for path in sorted(schedules):
         parts = path.stem.split("_")
         member_id = parts[0]
         key = f"week_{parts[2]}_{parts[3]}"
-        for index, row in enumerate(read(path, [])):
+        schedule = read(path, [])
+        attack_id = None
+        if (member_id, key) in overrides:
+            schedule, attack_id = overrides[(member_id, key)]
+        for index, row in enumerate(schedule):
             rows.append({"group": arm, "arm": arm, "pipeline": "original_weekly" if arm == "O" else "current_hierarchical",
                          "run_id": f"{arm.lower()}-r01", "member_id": member_id, "schedule_key": key,
                          "event_id": f"{arm.lower()}-r01:{member_id}:{key}:{index}",
                          "Time": row.get("Time"), "Activity": row.get("Activity"),
-                         "attack": bool(row.get("Attack", False)), "attack_id": row.get("attack_id"),
+                         "attack": bool(attack_id or row.get("Attack", False)), "attack_id": attack_id or row.get("attack_id"),
                          "attack_steps": row.get("AttackSteps", [])})
     return rows
 
@@ -49,13 +72,14 @@ def build_report(run_root: Path, output: Path):
     manifest = read(run_root / "study_manifest.json", {})
     scope = manifest.get("scope", {})
     employees, workdays = int(scope.get("employees", 0)), int(scope.get("workdays", 0))
-    events = _events_for_arm("O", run_root / "O") + _events_for_arm("N", run_root / "N")
     campaigns = []
     for arm in ("O", "N"):
         for row in read(run_root / arm / "campaigns.json", []) or []:
             row = dict(row)
             row["arm"] = arm
             campaigns.append(row)
+    events = _events_for_arm("O", run_root / "O", [row for row in campaigns if row["arm"] == "O"])
+    events += _events_for_arm("N", run_root / "N", [row for row in campaigns if row["arm"] == "N"])
     attacks = {}
     for path in sorted((Path(__file__).resolve().parents[1] / "attacks").glob("*.json")):
         value = read(path, {})
@@ -69,6 +93,11 @@ def build_report(run_root: Path, output: Path):
                               "Q4": "NOT_MEASURED", "Q5": "NOT_MEASURED", "Q6": "NOT_MEASURED", "Q7": "MEASURED"}}
     else:
         groups = ("O", "N")
+        compatibility_notes = []
+        for arm in groups:
+            result = (manifest.get("arms", {}).get(arm, {}).get("result", {}) or {})
+            if result.get("runtime_compatibility"):
+                compatibility_notes.append(f"{arm}: {result['runtime_compatibility']}")
         report = {"status": "COMPLETE_AUTOMATED_SCOPE_WITH_LIMITATIONS", "study": manifest,
                   "planning": {arm: _planning_coverage(run_root / arm, employees, workdays) for arm in groups},
                   "metrics": {"Q1": {arm: plan_alignment_metrics([row for row in events if row["group"] == arm]) for arm in groups},
@@ -83,11 +112,15 @@ def build_report(run_root: Path, output: Path):
                   "limitations": ["Third-stage detector metrics are not part of Stage 2.",
                                   "Q2/Q3 remain unmeasured if OWL execution or business oracles are unavailable.",
                                   "This run uses one independent generation per arm."]}
+        if compatibility_notes:
+            report["limitations"].append("Runtime compatibility used: " + "; ".join(compatibility_notes))
     output.mkdir(parents=True, exist_ok=True)
     (output / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    model_scope = scope.get("model_used") or scope.get("model_requested")
     lines = ["# 第二阶段完整从头生成评测报告", "", f"状态：**{report['status']}**。", "",
              "O 从原始 Chimera weekly meeting 链路生成，N 从当前框架分层会议链路生成；两者只共享公司画像输入，不共享会议结果或日程。", "",
              "## 运行范围", "", f"- 员工：{employees}；工作日：{workdays}；运行数：{scope.get('runs')}",
+             f"- 模型：请求 {scope.get('model_requested', model_scope)}；实际使用 {model_scope}",
              "- O：weekly meeting → legacy weekly summary → legacy daily plan → single-day attack",
              "- N：leadership meeting → department plan → department meetings → employee phase plan → daily plan → multi-day attack", "",
              "## 结果", "", "```json", json.dumps({"planning": report.get("planning"), "comparison": report.get("comparison"),

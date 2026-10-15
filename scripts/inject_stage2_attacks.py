@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -52,6 +53,7 @@ def inject_arm(arm_root: Path, *, mode: str, attack_ids: list[str], run_id: str)
     specs = {attack_id: _read(Path(config.attack_dir) / f"{attack_id}.json") for attack_id in attack_ids}
     manifests = []
     for index, attack_id in enumerate(attack_ids):
+        daily_attack_schedule.last_fallback_used = False
         member_id = profiles[index % len(profiles)]["id"]
         normal = _schedules(Path(config.init_schedule_dir), member_id)
         info = specs[attack_id]
@@ -69,14 +71,32 @@ def inject_arm(arm_root: Path, *, mode: str, attack_ids: list[str], run_id: str)
                         "attack_id": attack_id, "selected_dates": [key],
                         "normal_schedule": normal[key], "modified_schedule": modified,
                         "attack_steps": [step["step"] for step in info.get("how", [])],
-                        "mode": "legacy_single_day"}
+                        "mode": "legacy_single_day",
+                        "attack_generation_fallback": bool(getattr(daily_attack_schedule, "last_fallback_used", False))}
             _write(destination / "campaign_manifest.json", manifest)
         else:
-            plan = attack_schedule.plan_attack_campaign_with_gpt(normal, profile_map[member_id], info, id_role_map)
+            campaign_planning_fallback = False
+            try:
+                plan = attack_schedule.plan_attack_campaign_with_gpt(normal, profile_map[member_id], info, id_role_map)
+            except Exception:
+                if os.environ.get("CHIMERA_ATTACK_LLM_FALLBACK", "0").lower() not in {"1", "true", "yes"}:
+                    raise
+                # Preserve a complete, auditable multi-day episode if the
+                # endpoint cannot return a valid campaign JSON after retries.
+                # Normal runs use the LLM plan; this path is explicitly
+                # marked so it cannot be mistaken for an LLM decision.
+                expected = [step["step"] for step in info.get("how", [])]
+                keys = sorted(normal)
+                plan = {"days": [{"date": keys[i], "attack_steps": [step],
+                                   "purpose": "compatibility fallback after invalid LLM campaign"}
+                                  for i, step in enumerate(expected)]}
+                campaign_planning_fallback = True
             manifest = attack_schedule.apply_campaign_plan(
                 normal, plan, member_id, attack_id, id_role_map,
                 output_dir=str(destination), member_profile=profile_map[member_id], attack_info=info)
             manifest.update({"arm": "N", "run_id": run_id, "mode": "llm_multi_day"})
+            manifest["attack_generation_fallback"] = bool(getattr(daily_attack_schedule, "last_fallback_used", False))
+            manifest["campaign_planning_fallback"] = campaign_planning_fallback
             _write(destination / "campaign_manifest.json", manifest)
         manifests.append(manifest)
     _write(Path(arm_root) / "campaigns.json", manifests)

@@ -43,7 +43,11 @@ def _qwen3_no_think_extra_body():
             "chat_template_kwargs": {"enable_thinking": False},
         }
     if "glm" in model:
-        return {"enable_thinking": False}
+        # This endpoint reads chat_template_kwargs at the top level.  Keeping
+        # enable_thinking alone in extra_body does not disable reasoning and
+        # can consume the whole completion budget before JSON is emitted.
+        return {"enable_thinking": False,
+                "chat_template_kwargs": {"enable_thinking": False}}
     if "qwen3" not in model:
         return None
     return None
@@ -56,6 +60,14 @@ def _record_response(response):
     run_llm.last_finish_reason = (
         response.choices[0].finish_reason if getattr(response, "choices", None) else None
     )
+
+
+def _strip_reasoning_wrapper(value):
+    """Remove inline reasoning markers emitted by compatible GLM servers."""
+    text = str(value or "").strip()
+    if "</think>" in text:
+        text = text.split("</think>", 1)[1].strip()
+    return text
 
 
 def camel_model_backend_kwargs():
@@ -218,4 +230,6 @@ def run_llm(system_prompt, user_prompt, temperature=0):
             "Invalid foundation_corp. Please choose from 'openai', 'google', "
             "'deepseek', 'xai', or 'openai_compatible'."
         )
+    if config.foundation_corp == "openai_compatible" and "glm" in config.foundation_model.lower():
+        llm_output = _strip_reasoning_wrapper(llm_output)
     return llm_output

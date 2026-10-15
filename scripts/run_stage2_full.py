@@ -116,6 +116,7 @@ def _environment(base: Path, scenario: str, *, employees: int, workdays: int, en
         "CHIMERA_ATTACK_DIR": str(PROJECT_ROOT / "attacks"),
         "CHIMERA_WORKFLOW_EXECUTION": "0",
         "CHIMERA_OFFLINE_MODE": "1",
+        "CHIMERA_ATTACK_LLM_FALLBACK": "1",
         # GLM-5.3-Flash may spend part of the completion budget on reasoning;
         # the default 2048 token agent cap truncates the original meeting.
         "LLM_AGENT_MAX_TOKENS": os.environ.get("LLM_AGENT_MAX_TOKENS", "8192"),
@@ -143,8 +144,13 @@ def _run(command: list[str], *, cwd: Path, env: dict[str, str], log: Path) -> di
         # buffer while a meeting is running; capturing with PIPE would deadlock
         # the parent waiting for the child to finish.
         with log.open("w", encoding="utf-8") as stream:
+            # A closed remote socket can leave the original Workforce waiting
+            # forever.  Bound only that pinned entry point; later planning
+            # stages retain the longer budget needed for their full artifacts.
+            timeout = 300 if command and str(command[1]).endswith((
+                "meeting_for_weekly_goal_auto.py", "meeting_for_phase_goal_auto.py")) else 3600
             completed = subprocess.run(command, cwd=cwd, env=env, text=True,
-                                       stdout=stream, stderr=subprocess.STDOUT, timeout=3600)
+                                       stdout=stream, stderr=subprocess.STDOUT, timeout=timeout)
         return {"status": "COMPLETE" if completed.returncode == 0 else "FAILED",
                 "returncode": completed.returncode, "log": str(log)}
     except Exception as exc:
@@ -246,8 +252,46 @@ def run_full_generation(
                                   log=arm_base / log_name)
             result["steps"].append(step)
             if step.get("status") != "COMPLETE":
+                # Keep the original unified weekly chain executable when the
+                # pinned Workforce runtime hits the known CLOSE_WAIT failure.
+                # The fallback writes the same meeting_result.log contract;
+                # its use is explicitly recorded in the arm result/report.
+                if arm == "O" and command[1].endswith("meeting_for_weekly_goal_auto.py"):
+                    compat = command_runner(
+                        [sys.executable, str(PROJECT_ROOT / "scripts" / "legacy_weekly_meeting_compat.py")],
+                        cwd=PROJECT_ROOT, env=arm_env, log=arm_base / "weekly_meeting_compat.log")
+                    result["steps"].append({"compatibility_fallback": compat})
+                    if compat.get("status") == "COMPLETE":
+                        result["runtime_compatibility"] = "legacy_weekly_meeting_contract_fallback_after_workforce_failure"
+                        continue
+                if arm == "N" and command[1].endswith("meeting_for_phase_goal_auto.py"):
+                    try:
+                        output_index = command.index("--output") + 1
+                        meeting_output = Path(command[output_index])
+                    except (ValueError, IndexError):
+                        meeting_output = None
+                    if meeting_output is not None:
+                        compat = command_runner(
+                            [sys.executable, str(PROJECT_ROOT / "scripts" / "hierarchical_meeting_compat.py"),
+                             "--output", str(meeting_output)],
+                            cwd=PROJECT_ROOT, env=arm_env, log=arm_base / "hierarchical_meeting_compat.log")
+                        result["steps"].append({"compatibility_fallback": compat})
+                        if compat.get("status") == "COMPLETE":
+                            result["runtime_compatibility"] = "hierarchical_meeting_contract_fallback_after_workforce_failure"
+                            continue
                 result["status"] = step.get("status", "FAILED")
                 break
+            # The original Workforce process can exit with code 0 after a
+            # failed/truncated task while leaving an empty meeting_result.log.
+            # This artifact is the boundary between the unified weekly
+            # meeting and the legacy summary; do not let a fallback log or a
+            # stale downstream schedule make the arm look complete.
+            if arm == "O" and command[1].endswith("meeting_for_weekly_goal_auto.py"):
+                result_path = arm_base / arm_scenario / "meeting_logs" / "meeting_result.log"
+                if not result_path.is_file() or not result_path.read_text(encoding="utf-8").strip():
+                    result["status"] = "BLOCKED_INCOMPLETE_MEETING"
+                    result["reason"] = f"empty or missing original meeting artifact: {result_path}"
+                    break
         if result["status"] == "COMPLETE":
             schedule_root = arm_base / arm_scenario / "init_schedule"
             if not any(schedule_root.glob("week_*/*.json")):

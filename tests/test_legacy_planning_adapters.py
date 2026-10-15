@@ -30,6 +30,28 @@ def test_legacy_weekly_summary_preserves_employee_rows(tmp_path, monkeypatch):
     assert (meeting / "meeting_schedule_week_1.json").exists()
 
 
+def test_legacy_weekly_summary_rejects_empty_meeting_result(tmp_path, monkeypatch):
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+    import config
+    import post_meeting_summary_legacy as legacy
+
+    meeting = tmp_path / "meeting"
+    profiles = tmp_path / "profiles"
+    meeting.mkdir()
+    profiles.mkdir()
+    (meeting / "meeting_result.log").write_text("\n")
+    (profiles / "a-1.jsonc").write_text(json.dumps({"id": "a-1", "role": "analyst"}))
+    monkeypatch.setattr(config, "meeting_log_dir", str(meeting))
+    monkeypatch.setattr(config, "profile_output_dir", str(profiles))
+    monkeypatch.setattr(config, "company_type", "Test Company")
+    monkeypatch.setattr(config, "goal", "test goal")
+
+    import pytest
+    with pytest.raises(FileNotFoundError):
+        legacy.summarize_weekly_schedule(1, generate=lambda system, prompt: "[]")
+
+
 def test_legacy_daily_adapter_accepts_weekday_schedule(monkeypatch):
     import sys
     from pathlib import Path

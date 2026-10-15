@@ -27,7 +27,13 @@ def _meeting_text() -> str:
     for name in ("meeting_response.csv", "meeting_result.log", "meeting_detailed_actions.log"):
         path = root / name
         if path.exists():
-            return path.read_text(encoding="utf-8")
+            # A failed CAMEL workforce can create meeting_result.log before
+            # returning an empty result.  Treat that as incomplete input and
+            # continue looking for a non-empty artifact; never send an empty
+            # meeting to the weekly summarizer.
+            text = path.read_text(encoding="utf-8")
+            if text.strip():
+                return text
     raise FileNotFoundError(f"no legacy meeting output under {root}")
 
 
