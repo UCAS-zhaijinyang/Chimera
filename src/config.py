@@ -75,7 +75,7 @@ goal = os.environ.get(
     "The goal of your institution (small community hospital) is to complete electronic health record collection and seasonal influenza trend analysis from the beginning.",
 )
 
-period = 20  # Legacy weekly meeting only; the phase pipeline never reads this.
+period = int(os.environ.get("CHIMERA_PERIOD", "20"))  # Legacy weekly meeting only; the phase pipeline never reads this.
 total_workdays = int(os.environ.get("CHIMERA_TOTAL_WORKDAYS", "100"))
 employee_number = int(os.environ.get("CHIMERA_EMPLOYEE_NUMBER", "90"))
 
