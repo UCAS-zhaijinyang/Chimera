@@ -101,3 +101,16 @@ def test_stage2_environment_overrides_make_reproducible_small_scenario():
         "employee_number": 12,
         "total_workdays": 20,
     }
+
+
+def test_glm_disables_reasoning_for_structured_meeting_outputs():
+    sys.path.insert(0, str(ROOT / "src"))
+    import config
+    from foundation_model import _qwen3_no_think_extra_body
+
+    original = config.foundation_model
+    try:
+        config.foundation_model = "GLM-5.3-Flash"
+        assert _qwen3_no_think_extra_body() == {"enable_thinking": False}
+    finally:
+        config.foundation_model = original

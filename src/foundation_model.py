@@ -35,14 +35,18 @@ def _run_llm_max_tokens():
 
 
 def _qwen3_no_think_extra_body():
-    """Disable Qwen3 thinking so structured JSON outputs stay parseable."""
+    """Disable reasoning for providers where structured outputs need it off."""
     model = (config.foundation_model or "").lower()
+    if "qwen3" in model:
+        return {
+            "enable_thinking": False,
+            "chat_template_kwargs": {"enable_thinking": False},
+        }
+    if "glm" in model:
+        return {"enable_thinking": False}
     if "qwen3" not in model:
         return None
-    return {
-        "enable_thinking": False,
-        "chat_template_kwargs": {"enable_thinking": False},
-    }
+    return None
 
 
 def _record_response(response):
