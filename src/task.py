@@ -131,9 +131,17 @@ class OpenAICompatibleChatClient:
                          "https://api.openai.com/v1")).rstrip("/")
         self.model = model or getattr(config, "foundation_model", "deepseek-chat")
         self.max_tokens = max_tokens
-        # DeepSeek's named/required tool choices are unavailable in thinking
-        # mode. The workflow uses those choices and defaults to non-thinking.
-        self.thinking = False if thinking is None and self.model.startswith('deepseek') else thinking
+        # The workflow uses named/required tool choices and defaults to
+        # non-thinking for DeepSeek and OpenAI-compatible providers.
+        self.thinking = (
+            False
+            if thinking is None
+            and (
+                self.model.startswith("deepseek")
+                or getattr(config, "foundation_corp", "") == "openai_compatible"
+            )
+            else thinking
+        )
         self.timeout = timeout or getattr(config, "workflow_api_timeout", 90)
         if connect_timeout <= 0:
             raise ValueError('connect_timeout must be positive')

@@ -20,6 +20,16 @@ base_dir = os.environ.get("CHIMERA_BASE_DIR", os.path.dirname(os.path.dirname(os
 env_path = f"{base_dir}/.env"
 load_dotenv(env_path)
 
+
+def normalize_openai_compatible_base_url(value):
+    """Accept either an OpenAI base URL or a full chat-completions endpoint."""
+    url = (value or "").strip().rstrip("/")
+    for suffix in ("/chat/completions", "/completions"):
+        if url.endswith(suffix):
+            url = url[: -len(suffix)]
+            break
+    return url.rstrip("/")
+
 # scenario name
 scenario_name = os.environ.get("CHIMERA_SCENARIO", "chimera_scenario_100d")
 
@@ -115,8 +125,23 @@ offline_mode = True
 # Local OpenAI-compatible endpoint from .env (LLM_MODEL_ID + LLM_BASE_URL)
 # takes precedence over the cloud provider below.
 llm_model_id = os.environ.get("LLM_MODEL_ID", "").strip()
-llm_base_url = os.environ.get("LLM_BASE_URL", "").strip()
+llm_base_url = normalize_openai_compatible_base_url(
+    os.environ.get("LLM_BASE_URL", "")
+)
 llm_api_key = os.environ.get("LLM_API_KEY", "").strip() or "EMPTY"
+
+# Explicit GLM provider alias.  The endpoint may be supplied as either the
+# full /v1/chat/completions URL or its OpenAI-compatible /v1 base URL.
+glm_endpoint = (
+    os.environ.get("GLM_ENDPOINT", "").strip()
+    or os.environ.get("GLM_BASE_URL", "").strip()
+)
+glm_model_id = os.environ.get("GLM_MODEL_ID", "").strip()
+glm_api_key = os.environ.get("GLM_API_KEY", "").strip()
+if glm_endpoint:
+    llm_model_id = glm_model_id or "GLM-5.3"
+    llm_base_url = normalize_openai_compatible_base_url(glm_endpoint)
+    llm_api_key = glm_api_key or llm_api_key
 # Local vLLM endpoint (current server: max_model_len=16384, tool calling enabled).
 llm_max_tokens = int(os.environ.get("LLM_MAX_TOKENS", "4096"))
 llm_agent_max_tokens = int(os.environ.get("LLM_AGENT_MAX_TOKENS", "2048"))
