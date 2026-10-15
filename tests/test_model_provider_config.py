@@ -58,3 +58,46 @@ def test_glm_environment_selects_openai_compatible_provider_without_echoing_key(
         "base_url": "http://192.168.21.240/v1",
         "api_key": "test-glm-key",
     }
+
+
+def test_stage2_environment_overrides_make_reproducible_small_scenario():
+    env = os.environ.copy()
+    env.update(
+        {
+            "PYTHONPATH": str(ROOT / "src"),
+            "CHIMERA_SCENARIO": "stage2-medical-r01",
+            "CHIMERA_COMPANY_ID": "medical_institution",
+            "CHIMERA_COMPANY_TYPE": "Medical Institution",
+            "CHIMERA_GOAL": "test goal",
+            "CHIMERA_EMPLOYEE_NUMBER": "12",
+            "CHIMERA_TOTAL_WORKDAYS": "20",
+        }
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import config, json; print(json.dumps({"
+                "'scenario': config.scenario_name,"
+                "'company_id': config.company_id,"
+                "'company_type': config.company_type,"
+                "'goal': config.goal,"
+                "'employee_number': config.employee_number,"
+                "'total_workdays': config.total_workdays}))"
+            ),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert json.loads(result.stdout) == {
+        "scenario": "stage2-medical-r01",
+        "company_id": "medical_institution",
+        "company_type": "Medical Institution",
+        "goal": "test goal",
+        "employee_number": 12,
+        "total_workdays": 20,
+    }

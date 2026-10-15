@@ -35,16 +35,18 @@ scenario_name = os.environ.get("CHIMERA_SCENARIO", "chimera_scenario_100d")
 
 # company_id = "tech_company" ###### 2 #######
 # company_id = "finance_corporation"
-company_id = "medical_institution"
+company_id = os.environ.get("CHIMERA_COMPANY_ID", "medical_institution")
 
 # company_type = "Game Company"
 # company_type = "Finance Corporation (Quantitative Hedge Fund)" #
-company_type = "Medical Institution (Small Community Hospital)"  ###### 3 #######
+company_type = os.environ.get(
+    "CHIMERA_COMPANY_TYPE", "Medical Institution (Small Community Hospital)"
+)  ###### 3 #######
 
 # profile output directory
 profile_output_dir = f"{base_dir}/{scenario_name}/generated_members"
 # attack directory
-attack_dir = f"{base_dir}/attacks"
+attack_dir = os.environ.get("CHIMERA_ATTACK_DIR", f"{base_dir}/attacks")
 # attack log directory
 attack_schedule_dir = f"{base_dir}/{scenario_name}/attack_schedule"
 
@@ -68,11 +70,14 @@ attack_log_dir = f"{base_dir}/{scenario_name}/attack_logs"
 # goal of the company
 # goal = "The goal of your company is to construct a Third-person shooter game from the beginning." ####### 4 #######
 # goal = "The goal of your company is to design and register a market-neutral statistical arbitrage fund targeting UHNWIs (Ultra-High-Net-Worth Individuals) under SEC regulations from the beginning."
-goal = "The goal of your institution (small community hospital) is to complete electronic health record collection and seasonal influenza trend analysis from the beginning."
+goal = os.environ.get(
+    "CHIMERA_GOAL",
+    "The goal of your institution (small community hospital) is to complete electronic health record collection and seasonal influenza trend analysis from the beginning.",
+)
 
 period = 20  # Legacy weekly meeting only; the phase pipeline never reads this.
-total_workdays = 100  # Business phases must cover exactly this many working days.
-employee_number = 90  # IMPORTANT: to change the number of employees
+total_workdays = int(os.environ.get("CHIMERA_TOTAL_WORKDAYS", "100"))
+employee_number = int(os.environ.get("CHIMERA_EMPLOYEE_NUMBER", "90"))
 
 # date for starters
 base_date = "2026-08-28"
@@ -84,12 +89,12 @@ planning_hours_per_day = 8
 # Explicit overrides keyed by department ID / nested role-tree path joined with __.
 # Needed only when leader_id, is_leader or a unique reports_to root is unavailable.
 planning_department_leaders = {}
-planning_workers = 3
-planning_daily_batch_days = 5  # API output-size bound, independent of phase/calendar boundaries.
-planning_meeting_rounds = 3
-planning_meeting_timeout = 900
-planning_max_api_calls = 1000
-planning_agent_max_tokens = 4096
+planning_workers = int(os.environ.get("CHIMERA_PLANNING_WORKERS", "3"))
+planning_daily_batch_days = int(os.environ.get("CHIMERA_PLANNING_BATCH_DAYS", "5"))
+planning_meeting_rounds = int(os.environ.get("CHIMERA_PLANNING_MEETING_ROUNDS", "3"))
+planning_meeting_timeout = int(os.environ.get("CHIMERA_PLANNING_MEETING_TIMEOUT", "900"))
+planning_max_api_calls = int(os.environ.get("CHIMERA_PLANNING_MAX_API_CALLS", "1000"))
+planning_agent_max_tokens = int(os.environ.get("CHIMERA_PLANNING_AGENT_MAX_TOKENS", "4096"))
 # Hard stop for the Phase-2 day simulation loop (HH:MM:SS).
 sim_day_end = "19:00:00"
 

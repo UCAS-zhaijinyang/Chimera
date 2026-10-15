@@ -45,6 +45,15 @@ def _qwen3_no_think_extra_body():
     }
 
 
+def _record_response(response):
+    """Expose non-secret response accounting for run-scoped evaluation traces."""
+    run_llm.last_usage = response.usage.model_dump() if getattr(response, "usage", None) else None
+    run_llm.last_model = getattr(response, "model", None)
+    run_llm.last_finish_reason = (
+        response.choices[0].finish_reason if getattr(response, "choices", None) else None
+    )
+
+
 def camel_model_backend_kwargs():
     """Shared kwargs for camel.models.ModelFactory.create."""
     from camel.types import ModelPlatformType, ModelType
@@ -110,6 +119,9 @@ def create_camel_model(temperature=None):
 
 
 def run_llm(system_prompt, user_prompt, temperature=0):
+    run_llm.last_usage = None
+    run_llm.last_model = None
+    run_llm.last_finish_reason = None
     if config.foundation_corp == "openai":
         client = OpenAI()
         response = client.chat.completions.create(
@@ -122,6 +134,7 @@ def run_llm(system_prompt, user_prompt, temperature=0):
             top_p=0.9,
             max_tokens=_run_llm_max_tokens(),
         )
+        _record_response(response)
         llm_output = response.choices[0].message.content
 
     elif config.foundation_corp == "google":
@@ -136,6 +149,9 @@ def run_llm(system_prompt, user_prompt, temperature=0):
                 max_output_tokens=_run_llm_max_tokens(),
             ),
         )
+        run_llm.last_usage = None
+        run_llm.last_model = config.foundation_model
+        run_llm.last_finish_reason = None
         llm_output = response.text
 
     elif config.foundation_corp == "deepseek":
@@ -151,6 +167,7 @@ def run_llm(system_prompt, user_prompt, temperature=0):
             max_tokens=_run_llm_max_tokens(),
             stream=False,
         )
+        _record_response(response)
         llm_output = response.choices[0].message.content
 
     elif config.foundation_corp == "xai":
@@ -166,6 +183,7 @@ def run_llm(system_prompt, user_prompt, temperature=0):
             max_tokens=_run_llm_max_tokens(),
             stream=False,
         )
+        _record_response(response)
         llm_output = response.choices[0].message.content
 
     elif config.foundation_corp == "openai_compatible":
@@ -185,6 +203,7 @@ def run_llm(system_prompt, user_prompt, temperature=0):
         if extra_body:
             create_kwargs["extra_body"] = extra_body
         response = client.chat.completions.create(**create_kwargs)
+        _record_response(response)
         llm_output = response.choices[0].message.content
 
     else:
