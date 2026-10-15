@@ -96,6 +96,9 @@ def create_meeting_camel_model():
     if extra_body:
         model_config_dict["extra_body"] = extra_body
     kwargs["model_config_dict"] = model_config_dict
+    # Bound each original/current meeting request so a closed remote socket
+    # cannot hold a Workforce run indefinitely.
+    kwargs["timeout"] = int(getattr(config, "planning_meeting_timeout", 900))
     return ModelFactory.create(**kwargs)
 
 
