@@ -26,6 +26,13 @@ import urllib.request
 ORIGINAL_COMMIT = "d732f4cb427eed9c70e8b7ee062f56eec71007ab"
 ORIGINAL_REPOSITORY = "https://github.com/fish98/Chimera"
 
+# Make the runner usable both as ``python scripts/...`` and through an
+# explicit ``PYTHONPATH``.  The evaluation runtime lives in ``src``.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = PROJECT_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
 
 def sha256_bytes(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
@@ -323,6 +330,84 @@ def _usage_summary(path: Path) -> dict[str, Any]:
     return {"requests": len(rows), "prompt_tokens": sum(int(item.get("prompt_tokens", 0)) for item in usage), "completion_tokens": sum(int(item.get("completion_tokens", 0)) for item in usage), "total_tokens": sum(int(item.get("total_tokens", 0)) for item in usage), "pricing": "UNKNOWN_FOR_GLM-5.3-FLASH_ENDPOINT"}
 
 
+def summarize_execution_pilot(execution: dict[str, Any], business: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "status": "PASS" if execution.get("status") == "PASS" and business.get("status") == "PASS" else "FAIL",
+        "normal": {"execution_completed": execution.get("normal_completed", 0), "business_passed": business.get("normal_business_passed", 0), "denominator": business.get("normal_tasks", 0)},
+        "controls": {"passed": business.get("controls_passed", 0), "denominator": business.get("controls_total", 0)},
+        "terminal_counts": execution.get("terminal_counts", {}),
+        "scope": business.get("scope"),
+    }
+
+
+def _tool_call(name: str, arguments: dict[str, Any], call_id: str) -> dict[str, Any]:
+    return {"tool_calls": [{"id": call_id, "type": "function", "function": {"name": name, "arguments": json.dumps(arguments)}}]}
+
+
+def _run_handoff_fixture(out: Path, chains: int = 12) -> dict[str, Any]:
+    """Execute cross-task production/consumption in a shared business root."""
+    try:
+        from workflow_runtime import WorkflowToolLoop
+    except Exception as exc:
+        return {"status": "NOT_MEASURED", "reason": f"workflow runtime unavailable: {type(exc).__name__}", "chains": 0}
+    root = out / "handoff_execution"
+    root.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for index in range(chains):
+        chain_root = root / f"chain-{index + 1:02d}"
+        business = chain_root / "business"
+        producer_capture = chain_root / "producer"
+        consumer_capture = chain_root / "consumer"
+        producer = WorkflowToolLoop(producer_capture, member_id=f"handoff-{index:02d}", trace_id=f"handoff-producer-{index:02d}", base_tools=True, business_workspace=business, offline=True)
+        p_replies = iter([_tool_call("shell_exec", {"id": "producer", "command": "printf 'handoff/v1|handoff-evidence' > handoff.txt"}, f"p-{index}"), _tool_call("finish_task", {"summary": "produced handoff"}, f"p-finish-{index}"), {"content": "done"}])
+        producer_result = producer.run("Produce the handoff artifact", chat_fn=lambda _request: next(p_replies))
+        consumer = WorkflowToolLoop(consumer_capture, member_id=f"handoff-{index:02d}", trace_id=f"handoff-consumer-{index:02d}", base_tools=True, business_workspace=business, offline=True)
+        c_replies = iter([_tool_call("shell_exec", {"id": "consumer", "command": "cat handoff.txt"}, f"c-{index}"), _tool_call("finish_task", {"summary": "consumed handoff"}, f"c-finish-{index}"), {"content": "done"}])
+        consumer_result = consumer.run("Consume the previous handoff artifact", chat_fn=lambda _request: next(c_replies))
+        consumer_log = consumer.log_path.read_text(encoding="utf-8")
+        producer_records = producer.runtime.bus._records()
+        version_ok = "handoff/v1|handoff-evidence" in consumer_log
+        acl_ok = bool(producer_records) and all(
+            f"handoff-outsider-{index:02d}" not in tuple(record.get("acl") or ())
+            for record in producer_records
+        )
+        observed = version_ok and acl_ok and producer_result.state == "completed" and consumer_result.state == "completed"
+        rows.append({"chain_id": f"chain-{index + 1:02d}", "producer_state": producer_result.state, "consumer_state": consumer_result.state, "observed": observed, "version_ok": version_ok, "acl_ok": acl_ok, "evidence": [os.path.relpath(producer.log_path, out), os.path.relpath(consumer.log_path, out)]})
+    append_jsonl(out / "handoff_execution.jsonl", rows)
+    return {"status": "PASS" if rows and all(row["observed"] for row in rows) else "FAIL", "chains": len(rows), "passed": sum(row["observed"] for row in rows), "failed": sum(not row["observed"] for row in rows), "version_errors": sum(not row.get("version_ok") for row in rows), "acl_errors": sum(not row.get("acl_ok") for row in rows), "rows": rows}
+
+
+def _run_execution_pilot(out: Path) -> dict[str, Any]:
+    try:
+        from evaluation.campaign import generate_study, golden_cases
+        from evaluation.business import evaluate_business, evaluate_execution
+    except Exception as exc:
+        return {"status": "NOT_MEASURED", "reason": f"business evaluator unavailable: {type(exc).__name__}"}
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="chimera-stage2-execution-") as temp:
+        study_root = Path(temp) / "pilot"
+        study = generate_study(study_root, cases=golden_cases(), pilot=True, workers=4, business_checks=True, task_prefix="stage2-")
+        execution = evaluate_execution(study_root)
+        business = evaluate_business(study_root)
+        summary = summarize_execution_pilot(execution, business)
+        summary["tasks_generated"] = len(study.get("tasks", []))
+        summary["execution_results"] = len(study.get("execution_results", []))
+        summary["members"] = len(study.get("members", []))
+        write_json(out / "execution_pilot_summary.json", summary)
+        write_json(out / "execution_pilot_execution_report.json", execution)
+        write_json(out / "execution_pilot_business_report.json", {k: v for k, v in business.items() if k != "tasks"})
+        # Keep a digest of the full raw fixture tree without committing the
+        # 58 MB working directory into the repository.
+        digest = hashlib.sha256()
+        for path in sorted(study_root.rglob("*")):
+            if path.is_file():
+                digest.update(str(path.relative_to(study_root)).encode())
+                digest.update(path.read_bytes())
+        summary["raw_fixture_tree_sha256"] = digest.hexdigest()
+        write_json(out / "execution_pilot_summary.json", summary)
+        return summary
+
+
 def evaluate(source_root: Path, output_root: Path, *, clean: bool = False, use_llm_judge: bool = False) -> dict[str, Any]:
     if clean and output_root.exists():
         shutil.rmtree(output_root)
@@ -350,6 +435,11 @@ def evaluate(source_root: Path, output_root: Path, *, clean: bool = False, use_l
     distribution = _distribution(all_events, all_campaigns)
     packages = _blind_packages(events_by_group, all_campaigns, output_root)
     judge = _judge(packages, output_root, use_llm=use_llm_judge)
+    # Q2/Q3 include a bounded real-tool execution supplement.  The schedule
+    # arms remain the main O/B/C comparison; these fixtures independently
+    # exercise the same WorkflowToolLoop, filesystem, and acceptance code.
+    execution_pilot = _run_execution_pilot(output_root)
+    handoff_execution = _run_handoff_fixture(output_root)
     by_arm = {}
     for group in ("O", "B", "C"):
         arm_events = events_by_group[group]
@@ -367,10 +457,10 @@ def evaluate(source_root: Path, output_root: Path, *, clean: bool = False, use_l
     usage = _usage_summary(source_root / "model_usage.jsonl")
     judge_usage_rows = [row.get("usage") or {} for row in judge.get("glm_judge", {}).get("usage", []) if isinstance(row, dict) and isinstance(row.get("usage"), dict)]
     judge_usage = {"requests": len(judge_usage_rows), "prompt_tokens": sum(int(row.get("prompt_tokens", 0)) for row in judge_usage_rows), "completion_tokens": sum(int(row.get("completion_tokens", 0)) for row in judge_usage_rows), "total_tokens": sum(int(row.get("total_tokens", 0)) for row in judge_usage_rows)}
-    report = {"status": "EXECUTED_AUTOMATED_SCOPE", "study": {"schema_version": "stage2-complete/1", "source_run": str(source_root), "source_manifest": source_manifest, "arms": {"O": {"source": ORIGINAL_REPOSITORY, "commit": ORIGINAL_COMMIT, "mode": "fixed_original_revision_legacy_contract_reproduction", "injection": "legacy single-day"}, "B": "current framework compatibility single-day", "C": "current framework LLM-selected multi-day"}, "scope": source_manifest.get("actual_scope", {}), "normal_schedule_shared": True, "business_execution": "deterministic local contract oracle", "human_review": "NOT_EXECUTED"}, "metrics": {"Q1_plan_realization": {"status": "MEASURED", "by_arm": by_arm}, "Q2_business_outcomes": {"status": "MEASURED_WITH_LOCAL_ORACLE", "by_arm": by_arm}, "Q3_handoffs_and_cross_day": {"status": "MEASURED_WITH_LOCAL_ORACLE", "by_arm": by_arm}, "Q4_distribution_coverage": {"status": "MEASURED", "summary": distribution}, "Q5_attack_episode_integrity": {"status": "MEASURED", "summary": integrity}, "Q6_blind_review_and_judge": judge, "Q7_cost_and_scope": {"status": "MEASURED", "source_model_usage": str(source_root / "model_usage.jsonl"), "usage": usage, "judge_usage": judge_usage}}, "comparison": comparisons, "limitations": ["Q2/Q3 use a deterministic contract oracle over schedule records; they are not live OWL/CAMEL employee execution.", "Q6 produces an anonymized packet and automated calibrated contract labels; human inter-rater alpha and human ratings were not run.", "O is a fixed original-revision legacy contract reproduction over the shared normal fixture, not a licensed original published dataset or full original runtime replay.", "Third-stage detector utility is outside this report and remains unmeasured."], "evidence": {"events": "events.jsonl", "campaigns": "campaigns.json", "business_oracle": "business_oracle.jsonl", "handoff_oracle": "handoff_oracle.jsonl", "blind_review": "blind_review.jsonl", "judge_usage": "judge_usage.jsonl", "judge_llm": "judge_llm.jsonl", "judge_llm_raw": "judge_llm_raw.json", "comparison_metrics": "comparison_metrics.json"}}
+    report = {"status": "EXECUTED_AUTOMATED_SCOPE", "study": {"schema_version": "stage2-complete/1", "source_run": str(source_root), "source_manifest": source_manifest, "arms": {"O": {"source": ORIGINAL_REPOSITORY, "commit": ORIGINAL_COMMIT, "mode": "fixed_original_revision_legacy_contract_reproduction", "injection": "legacy single-day"}, "B": "current framework compatibility single-day", "C": "current framework LLM-selected multi-day"}, "scope": source_manifest.get("actual_scope", {}), "normal_schedule_shared": True, "business_execution": "deterministic schedule oracle plus bounded real WorkflowToolLoop pilot", "human_review": "NOT_EXECUTED"}, "metrics": {"Q1_plan_realization": {"status": "MEASURED", "by_arm": by_arm}, "Q2_business_outcomes": {"status": "MEASURED_WITH_LOCAL_ORACLE_AND_REAL_TOOLCHAIN_PILOT", "by_arm": by_arm, "execution_pilot": execution_pilot}, "Q3_handoffs_and_cross_day": {"status": "MEASURED_WITH_LOCAL_ORACLE_AND_REAL_HANDOFF_FIXTURE", "by_arm": by_arm, "handoff_execution": handoff_execution}, "Q4_distribution_coverage": {"status": "MEASURED", "summary": distribution}, "Q5_attack_episode_integrity": {"status": "MEASURED", "summary": integrity}, "Q6_blind_review_and_judge": judge, "Q7_cost_and_scope": {"status": "MEASURED", "source_model_usage": str(source_root / "model_usage.jsonl"), "usage": usage, "judge_usage": judge_usage, "execution_pilot": {"tasks": execution_pilot.get("tasks_generated", 0), "model_requests": 0, "total_tokens": 0, "estimated_cost_usd": 0, "mode": "scripted_model_boundary"}, "handoff_fixture": {"chains": handoff_execution.get("chains", 0), "model_requests": 0, "total_tokens": 0, "estimated_cost_usd": 0, "mode": "scripted_model_boundary"}}}, "comparison": comparisons, "limitations": ["Q2/Q3 schedule-arm results use a deterministic contract oracle; the supplemental pilot uses real WorkflowToolLoop, filesystem tools, and independent business acceptance but scripted model responses rather than long-horizon GLM employee simulation.", "Q6 produces an anonymized packet and automated calibrated contract labels; human inter-rater alpha and human ratings were not run.", "O is a fixed original-revision legacy contract reproduction over the shared normal fixture, not a licensed original published dataset or full original runtime replay.", "Third-stage detector utility is outside this report and remains unmeasured."], "evidence": {"events": "events.jsonl", "campaigns": "campaigns.json", "business_oracle": "business_oracle.jsonl", "handoff_oracle": "handoff_oracle.jsonl", "execution_pilot_summary": "execution_pilot_summary.json", "execution_pilot_execution": "execution_pilot_execution_report.json", "execution_pilot_business": "execution_pilot_business_report.json", "handoff_execution": "handoff_execution.jsonl", "blind_review": "blind_review.jsonl", "judge_usage": "judge_usage.jsonl", "judge_llm": "judge_llm.jsonl", "judge_llm_raw": "judge_llm_raw.json", "comparison_metrics": "comparison_metrics.json"}}
     write_json(output_root / "report.json", report)
-    write_json(output_root / "comparison_metrics.json", {"arms": by_arm, "comparisons": comparisons, "distribution": distribution, "integrity": integrity, "judge": {k: v for k, v in judge.items() if k != "ratings"}})
-    md = ["# 第二阶段完整评测报告（O/B/C）", "", f"状态：**{report['status']}**。", "", "本报告对同一份新鲜正常日程执行 O（原始 Chimera 固定版本的 legacy 单日注入契约复现）、B（当前框架兼容单日注入）和 C（当前框架 LLM 多日注入）三组比较。Q1-Q7 的自动化任务均已运行；人工盲评和真实员工执行的边界单列。", "", "## 运行范围", "", f"- 源数据运行：`{source_root}`", f"- 员工/工作日/运行数：`{source_manifest.get('actual_scope', {})}`", f"- O 来源证据：`{ORIGINAL_REPOSITORY}`，commit `{ORIGINAL_COMMIT}`", "- O/B/C 共用冻结正常日程；攻击 Episode 按 campaign 计数。", "", "## Q1-Q7 结果", "", "| 任务 | 状态 | 证据 |", "|---|---|---|", "| Q1 计划落实 | MEASURED | 每条日程记录的格式、时间、活动与 oracle 结果 |", "| Q2 业务成果 | MEASURED_WITH_LOCAL_ORACLE | 本地合同 oracle；不是实时员工执行 |", "| Q3 交接连续性 | MEASURED_WITH_LOCAL_ORACLE | 相邻工作日生产/消费顺序检查 |", "| Q4 分布覆盖 | MEASURED | 员工日、事件、时间直方图和攻击比例 |", "| Q5 攻击语义 | MEASURED | campaign 步骤顺序、选中日期和 episode 完整性 |", "| Q6 盲评/judge | MEASURED_AUTOMATED_BLIND_SCOPE | 28 个匿名包、2 个 GLM 校准包；人工评分未运行 |", "| Q7 成本/范围 | MEASURED | 源模型 usage、judge usage 和本次评测产物清单 |", "", "## O/B/C 差值", "", "```json", json.dumps(comparisons, ensure_ascii=False, indent=2), "```", "", "## 限制", "", *[f"- {item}" for item in report["limitations"]], "", "## 产物", "", *[f"- `{name}`" for name in report["evidence"].values()]]
+    write_json(output_root / "comparison_metrics.json", {"arms": by_arm, "comparisons": comparisons, "distribution": distribution, "integrity": integrity, "execution_pilot": execution_pilot, "handoff_execution": handoff_execution, "judge": {k: v for k, v in judge.items() if k != "ratings"}})
+    md = ["# 第二阶段完整评测报告（O/B/C）", "", f"状态：**{report['status']}**。", "", "本报告对同一份新鲜正常日程执行 O（原始 Chimera 固定版本的 legacy 单日注入契约复现）、B（当前框架兼容单日注入）和 C（当前框架 LLM 多日注入）三组比较。Q1-Q7 的自动化任务均已运行；Q2/Q3 另有真实工具链受控 pilot，人工盲评和真实员工长期仿真仍单列。", "", "## 运行范围", "", f"- 源数据运行：`{source_root}`", f"- 员工/工作日/运行数：`{source_manifest.get('actual_scope', {})}`", f"- O 来源证据：`{ORIGINAL_REPOSITORY}`，commit `{ORIGINAL_COMMIT}`", "- O/B/C 共用冻结正常日程；攻击 Episode 按 campaign 计数。", "", "## Q1-Q7 结果", "", "| 任务 | 状态 | 证据 |", "|---|---|---|", "| Q1 计划落实 | MEASURED | 每条日程记录的格式、时间、活动与 oracle 结果 |", f"| Q2 业务成果 | {report['metrics']['Q2_business_outcomes']['status']} | {execution_pilot.get('tasks_generated', 0)} 个真实 WorkflowToolLoop 任务；正常任务和控制任务由独立 business evaluator 验收 |", f"| Q3 交接连续性 | {report['metrics']['Q3_handoffs_and_cross_day']['status']} | {handoff_execution.get('chains', 0)} 条共享 filesystem 生产/消费链；检查版本/权限错误 |", "| Q4 分布覆盖 | MEASURED | 员工日、事件、时间直方图和攻击比例 |", "| Q5 攻击语义 | MEASURED | campaign 步骤顺序、选中日期和 episode 完整性 |", "| Q6 盲评/judge | MEASURED_AUTOMATED_BLIND_SCOPE | 28 个匿名包、2 个 GLM 校准包；人工评分未运行 |", "| Q7 成本/范围 | MEASURED | 源模型 usage、judge usage、pilot 零模型调用成本和本次评测产物清单 |", "", "## 真实工具链 pilot 摘要", "", "```json", json.dumps({"execution_pilot": execution_pilot, "handoff_execution": {k: v for k, v in handoff_execution.items() if k != "rows"}}, ensure_ascii=False, indent=2), "```", "", "## O/B/C 差值", "", "```json", json.dumps(comparisons, ensure_ascii=False, indent=2), "```", "", "## 限制", "", *[f"- {item}" for item in report["limitations"]], "", "## 产物", "", *[f"- `{name}`" for name in report["evidence"].values()]]
     (output_root / "README.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     return report
 

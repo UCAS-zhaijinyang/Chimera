@@ -10,6 +10,8 @@ from run_stage2_complete import (  # noqa: E402
     anonymize_package,
     campaign_metrics,
     parse_judge_response,
+    summarize_execution_pilot,
+    _run_handoff_fixture,
     _load_arm,
     score_business_oracle,
     wilson_interval,
@@ -84,3 +86,22 @@ def test_loader_keeps_all_rows_from_legacy_modified_schedule(tmp_path):
 
 def test_parse_judge_response_accepts_json_fenced_array():
     assert parse_judge_response("```json\n[{\"package_id\": \"pkg-1\"}]\n```") == [{"package_id": "pkg-1"}]
+
+
+def test_summarize_execution_pilot_keeps_normal_and_control_denominators():
+    summary = summarize_execution_pilot(
+        {"status": "PASS", "normal_tasks": 4, "normal_completed": 4, "terminal_counts": {"completed": 6, "failed": 2}},
+        {"status": "PASS", "normal_tasks": 4, "normal_business_passed": 4, "controls_total": 2, "controls_passed": 2},
+    )
+    assert summary["normal"]["business_passed"] == 4
+    assert summary["normal"]["denominator"] == 4
+    assert summary["controls"]["passed"] == 2
+
+
+def test_handoff_fixture_executes_shared_workspace_chain(tmp_path):
+    result = _run_handoff_fixture(tmp_path, chains=1)
+    assert result["status"] == "PASS"
+    assert result["chains"] == 1
+    assert result["passed"] == 1
+    assert result["version_errors"] == 0
+    assert result["acl_errors"] == 0
