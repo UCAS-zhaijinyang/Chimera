@@ -1,0 +1,168 @@
+{
+  "group": "O",
+  "run_id": "b-r01",
+  "member_id": "cda-1",
+  "attack_id": "gen_attack_10",
+  "selected_dates": [
+    "week_1_Tuesday"
+  ],
+  "normal_schedule": [
+    {
+      "Time": "10:00:00",
+      "Activity": "cda-1: Review assigned Clinical Data Annotator priorities and update the work queue",
+      "Workday": 2
+    },
+    {
+      "Time": "12:00:00",
+      "Activity": "cda-1: Perform Clinical Data Annotator analysis and record intermediate evidence",
+      "Workday": 2
+    },
+    {
+      "Time": "14:00:00",
+      "Activity": "cda-1: Coordinate with the team on Clinical Data Annotator deliverables",
+      "Workday": 2
+    },
+    {
+      "Time": "16:00:00",
+      "Activity": "cda-1: Document Clinical Data Annotator progress and prepare the next-day handoff",
+      "Workday": 2
+    }
+  ],
+  "modified_schedule": [
+    {
+      "Time": "10:00:00",
+      "Activity": "cda-1: Review assigned Clinical Data Annotator priorities and update the work queue"
+    },
+    {
+      "Time": "12:00:00",
+      "Activity": "cda-1: Perform Clinical Data Annotator analysis and record intermediate evidence"
+    },
+    {
+      "Time": "14:00:00",
+      "Activity": "cda-1: Coordinate with @sde-1 and @mle-1 via email on Clinical Data Annotator deliverables"
+    },
+    {
+      "Time": "16:00:00",
+      "Activity": "cda-1: Document Clinical Data Annotator progress and prepare the next-day handoff"
+    },
+    {
+      "Time": "19:30:00",
+      "Activity": "After hours: Authenticate to hospital VPN from an external location using retained former-employee credentials to gain quiet access to internal systems (Initial Access - Valid Accounts, T1078)\nCanonical attack requirements:\n[{\"step\": 1, \"description\": \"Used retained or stolen credentials of a former employee to log in during after-hours from an external location.\", \"tactic\": \"Initial Access\", \"technique_id\": [\"T1078\"], \"technique_name\": [\"Valid Accounts\"], \"sub_technique\": \"-\", \"procedure\": \"The masquerader uses accounts from a former employee (still valid or compromised) to authenticate from an external network or at unusual hours, leveraging existing credentials to avoid detection. :contentReference[oaicite:1]{index=1}\", \"observable_evidence\": [\"Login events for a user account after termination or from unusual location/time\", \"Use of valid account credentials by an IP or device not previously associated with account\", \"Remote session initiated using former employee credentials\"], \"detection_data_sources\": [\"Authentication Logs\", \"VPN / Remote Access Logs\", \"Account Activity Logs\"], \"impact\": \"Unauthorized access to internal systems using valid but stale credentials allows data access without raising immediate alarm.\"}]",
+      "Attack": true,
+      "AttackSteps": [
+        1
+      ],
+      "AttackRequirements": [
+        {
+          "step": 1,
+          "description": "Used retained or stolen credentials of a former employee to log in during after-hours from an external location.",
+          "tactic": "Initial Access",
+          "technique_id": [
+            "T1078"
+          ],
+          "technique_name": [
+            "Valid Accounts"
+          ],
+          "sub_technique": "-",
+          "procedure": "The masquerader uses accounts from a former employee (still valid or compromised) to authenticate from an external network or at unusual hours, leveraging existing credentials to avoid detection. :contentReference[oaicite:1]{index=1}",
+          "observable_evidence": [
+            "Login events for a user account after termination or from unusual location/time",
+            "Use of valid account credentials by an IP or device not previously associated with account",
+            "Remote session initiated using former employee credentials"
+          ],
+          "detection_data_sources": [
+            "Authentication Logs",
+            "VPN / Remote Access Logs",
+            "Account Activity Logs"
+          ],
+          "impact": "Unauthorized access to internal systems using valid but stale credentials allows data access without raising immediate alarm."
+        }
+      ]
+    },
+    {
+      "Time": "20:15:00",
+      "Activity": "After hours: Enumerate internal file shares and browse project/source code repository folders outside normal annotation scope to map confidential documents and trade secrets (Discovery - File and Directory Discovery T1083; System Owner/User Discovery T1033)\nCanonical attack requirements:\n[{\"step\": 2, \"description\": \"Accessed internal repositories and browsed project folders containing source code and confidential materials.\", \"tactic\": \"Discovery\", \"technique_id\": [\"T1083\", \"T1033\"], \"technique_name\": [\"File and Directory Discovery\", \"System Owner/User Discovery\"], \"sub_technique\": \"-\", \"procedure\": \"The attacker with legitimate credentials enumerates internal file shares, project repositories or source code directories to locate valuable intellectual property or trade secrets.\", \"observable_evidence\": [\"Directory listing operations in project/source code folders outside the normal scope of the account\", \"Account accessing repositories or folders typically reserved for contractors or privileged users\", \"Use of system owner/user discovery commands to elevate knowledge of environment\"], \"detection_data_sources\": [\"File Operation Logs\", \"Share Access Logs\", \"Directory Listing Logs\"], \"impact\": \"Mapping of valuable IP assets sets the stage for extraction and increases the risk of significant intellectual property loss.\"}]",
+      "Attack": true,
+      "AttackSteps": [
+        2
+      ],
+      "AttackRequirements": [
+        {
+          "step": 2,
+          "description": "Accessed internal repositories and browsed project folders containing source code and confidential materials.",
+          "tactic": "Discovery",
+          "technique_id": [
+            "T1083",
+            "T1033"
+          ],
+          "technique_name": [
+            "File and Directory Discovery",
+            "System Owner/User Discovery"
+          ],
+          "sub_technique": "-",
+          "procedure": "The attacker with legitimate credentials enumerates internal file shares, project repositories or source code directories to locate valuable intellectual property or trade secrets.",
+          "observable_evidence": [
+            "Directory listing operations in project/source code folders outside the normal scope of the account",
+            "Account accessing repositories or folders typically reserved for contractors or privileged users",
+            "Use of system owner/user discovery commands to elevate knowledge of environment"
+          ],
+          "detection_data_sources": [
+            "File Operation Logs",
+            "Share Access Logs",
+            "Directory Listing Logs"
+          ],
+          "impact": "Mapping of valuable IP assets sets the stage for extraction and increases the risk of significant intellectual property loss."
+        }
+      ]
+    },
+    {
+      "Time": "21:00:00",
+      "Activity": "After hours: Compress collected source code and confidential files into archives and upload them to a personal cloud drive over an encrypted external channel, staging repeat transfers (Exfiltration - Exfiltration Over Alternative Protocol T1048; Exfiltration Over C2 Channel T1041)\nCanonical attack requirements:\n[{\"step\": 3, \"description\": \"Copied sensitive files and uploaded them to a personal cloud drive or external server repeatedly over time.\", \"tactic\": \"Exfiltration\", \"technique_id\": [\"T1048\", \"T1041\"], \"technique_name\": [\"Exfiltration Over Alternative Protocol\", \"Exfiltration Over C2 Channel\"], \"sub_technique\": \"-\", \"procedure\": \"The attacker compresses, bundles or packages trade-secret files and sends them via an external connection (e.g., personal cloud, FTP, remote server) over encrypted or non-standard channels to avoid detection.\", \"observable_evidence\": [\"Large file transfer events to non-corporate domains after hours\", \"Outbound connections to external cloud storage or unfamiliar servers\", \"Creation of compressed archives of source code/trade secrets on internal hosts\"], \"detection_data_sources\": [\"Network Traffic Logs\", \"File Operation Logs\", \"Cloud Access Logs\"], \"impact\": \"Repeated stealing of confidential documents/trade secrets results in cumulative loss of competitive advantage and potential legal/regulatory liability.\"}]",
+      "Attack": true,
+      "AttackSteps": [
+        3
+      ],
+      "AttackRequirements": [
+        {
+          "step": 3,
+          "description": "Copied sensitive files and uploaded them to a personal cloud drive or external server repeatedly over time.",
+          "tactic": "Exfiltration",
+          "technique_id": [
+            "T1048",
+            "T1041"
+          ],
+          "technique_name": [
+            "Exfiltration Over Alternative Protocol",
+            "Exfiltration Over C2 Channel"
+          ],
+          "sub_technique": "-",
+          "procedure": "The attacker compresses, bundles or packages trade-secret files and sends them via an external connection (e.g., personal cloud, FTP, remote server) over encrypted or non-standard channels to avoid detection.",
+          "observable_evidence": [
+            "Large file transfer events to non-corporate domains after hours",
+            "Outbound connections to external cloud storage or unfamiliar servers",
+            "Creation of compressed archives of source code/trade secrets on internal hosts"
+          ],
+          "detection_data_sources": [
+            "Network Traffic Logs",
+            "File Operation Logs",
+            "Cloud Access Logs"
+          ],
+          "impact": "Repeated stealing of confidential documents/trade secrets results in cumulative loss of competitive advantage and potential legal/regulatory liability."
+        }
+      ]
+    }
+  ],
+  "normal_sha256": "f8212f39fcaedcbcaab17ab7b79a4c875fbfd9692d1b78dd52dcc401b912ac79",
+  "modified_sha256": "56c5f3569cd90a418ae51a5013bbcb512897ea657cc68ccc2b6d2d0ad10f345d",
+  "attack_steps": [
+    1,
+    2,
+    3
+  ],
+  "provenance": {
+    "repository": "https://github.com/fish98/Chimera",
+    "commit": "d732f4cb427eed9c70e8b7ee062f56eec71007ab",
+    "mode": "fixed_original_revision_legacy_contract_reproduction",
+    "injection": "legacy single-day"
+  }
+}

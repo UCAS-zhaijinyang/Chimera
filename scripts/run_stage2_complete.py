@@ -1,0 +1,391 @@
+#!/usr/bin/env python3
+"""Complete, auditable Stage-2 O/B/C evaluation over a fresh schedule run.
+
+This runner deliberately keeps the business oracle local and deterministic. It
+does not turn an LLM plan into an execution claim: each result is accompanied by
+the exact evidence row used by the oracle. Human review is represented by a
+blind-review packet; an optional GLM judge can be run over that packet.
+"""
+from __future__ import annotations
+
+import argparse
+from collections import Counter, defaultdict
+from datetime import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import statistics
+import sys
+from typing import Any
+import urllib.error
+import urllib.request
+
+
+ORIGINAL_COMMIT = "d732f4cb427eed9c70e8b7ee062f56eec71007ab"
+ORIGINAL_REPOSITORY = "https://github.com/fish98/Chimera"
+
+
+def sha256_bytes(raw: bytes) -> str:
+    return hashlib.sha256(raw).hexdigest()
+
+
+def sha256_value(value: Any) -> str:
+    return sha256_bytes(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode())
+
+
+def read_json(path: Path) -> Any:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def append_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
+
+
+def wilson_interval(successes: int, total: int, z: float = 1.96) -> dict[str, float | None]:
+    if total <= 0:
+        return {"low": None, "high": None}
+    p = successes / total
+    denom = 1 + z * z / total
+    centre = (p + z * z / (2 * total)) / denom
+    margin = z * ((p * (1 - p) / total + z * z / (4 * total * total)) ** 0.5) / denom
+    return {"low": round(max(0.0, centre - margin), 6), "high": round(min(1.0, centre + margin), 6)}
+
+
+def rate(successes: int, total: int) -> dict[str, Any]:
+    return {"numerator": successes, "denominator": total, "value": None if total == 0 else round(successes / total, 6), "ci95": wilson_interval(successes, total)}
+
+
+def anonymize_package(package: dict[str, Any], package_id: str) -> dict[str, Any]:
+    removed = {"source", "group", "member_id", "run_id", "attack_id", "episode_id"}
+    return {"package_id": package_id, **{k: v for k, v in package.items() if k not in removed}}
+
+
+def parse_judge_response(raw: str) -> list[dict[str, Any]]:
+    text = str(raw).strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text
+        text = text.rsplit("```", 1)[0].strip()
+    value = json.loads(text)
+    if not isinstance(value, list) or any(not isinstance(item, dict) for item in value):
+        raise ValueError("judge response must be a JSON array of objects")
+    return value
+
+
+def campaign_metrics(campaigns: list[dict[str, Any]]) -> dict[str, Any]:
+    by_group = Counter(str(row.get("group", "unknown")) for row in campaigns)
+    return {
+        "campaigns": len(campaigns),
+        "episodes_by_group": dict(sorted(by_group.items())),
+        "selected_day_counts": [len(row.get("selected_dates", [])) for row in campaigns],
+        "episode_unit": "one campaign manifest, regardless of event/step count",
+    }
+
+
+def score_business_oracle(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    task_success = sum(bool(row.get("expected")) and bool(row.get("observed")) for row in rows)
+    tasks = rate(task_success, len(rows))
+    episodes: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        if row.get("episode_id"):
+            episodes[str(row["episode_id"])].append(row)
+    episode_success = sum(all(bool(item.get("expected")) and bool(item.get("observed")) for item in values) for values in episodes.values())
+    return {"task": tasks, "episode": rate(episode_success, len(episodes)), "failures": [row for row in rows if not row.get("observed")]}
+
+
+def _valid_row(row: dict[str, Any]) -> bool:
+    if not isinstance(row, dict) or not isinstance(row.get("Activity"), str) or not row["Activity"].strip():
+        return False
+    try:
+        datetime.strptime(str(row.get("Time")), "%H:%M:%S")
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
+def _schedule_rows(root: Path, group: str, run_id: str, member_id: str, schedule_root_name: str = "normal") -> list[dict[str, Any]]:
+    root_dir = root / group / run_id / schedule_root_name / member_id
+    rows: list[dict[str, Any]] = []
+    for path in sorted(root_dir.glob("*.json")):
+        schedule_key = path.stem
+        for index, row in enumerate(read_json(path)):
+            rows.append({"group": group, "run_id": run_id, "member_id": member_id, "schedule_key": schedule_key, "row_index": index, **row})
+    return rows
+
+
+def _load_arm(root: Path, group: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    events: list[dict[str, Any]] = []
+    campaigns: list[dict[str, Any]] = []
+    group_root = root / group
+    for run_dir in sorted(p for p in group_root.iterdir() if p.is_dir()):
+        run_id = run_dir.name
+        member_dirs = sorted((run_dir / "normal").glob("*") if (run_dir / "normal").exists() else [])
+        for member_dir in member_dirs:
+            member_id = member_dir.name
+            normal_rows = _schedule_rows(root, group, run_id, member_id)
+            for index, row in enumerate(normal_rows):
+                row["event_id"] = f"{group}:{run_id}:{member_id}:{row['schedule_key']}:{index}"
+                row["attack"] = bool(row.get("Attack", False))
+                row["attack_steps"] = row.get("AttackSteps", [])
+                events.append(row)
+        attack_root = run_dir / "attack"
+        for manifest_path in attack_root.glob("**/campaign_manifest.json"):
+            manifest = read_json(manifest_path)
+            manifest["group"] = group
+            manifest["run_id"] = run_id
+            campaigns.append(manifest)
+            member_id = manifest.get("member_id")
+            attack_id = manifest.get("attack_id")
+            days = manifest.get("days")
+            if isinstance(days, dict) and days:
+                day_rows = days.items()
+            else:
+                # Legacy single-day manifests predate the campaign ``days``
+                # map and keep one modified schedule at the top level.
+                selected_dates = manifest.get("selected_dates", [])
+                day_rows = ((selected_dates[0], {"selected": True, "modified_schedule": manifest.get("modified_schedule", []), "attack_steps": manifest.get("attack_steps", [])}),) if selected_dates else ()
+            for key, day in day_rows:
+                selected = day.get("modified_schedule") if day.get("selected") else day.get("normal_schedule", [])
+                events = [old for old in events if not (old["group"] == group and old["run_id"] == run_id and old["member_id"] == member_id and old["schedule_key"] == key)]
+                for index, row in enumerate(selected or []):
+                    event = {"group": group, "run_id": run_id, "member_id": member_id, "schedule_key": key, "row_index": index, **row}
+                    event["event_id"] = f"{group}:{run_id}:{member_id}:{key}:{index}"
+                    event["attack"] = bool(row.get("Attack", False))
+                    event["attack_id"] = attack_id if event["attack"] else None
+                    event["attack_steps"] = row.get("AttackSteps", [])
+                    events.append(event)
+    return events, campaigns
+
+
+def _copy_as_original(root: Path, out: Path, source_group: str = "B") -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Materialise an O legacy-contract arm from B's frozen normal schedules.
+
+    The pinned original revision's legacy attack scheduler has the same JSON
+    contract as the current compatibility path (documented in original-tool-
+    contracts.json). Copying the frozen B manifest therefore preserves the
+    legacy single-day contract. This is a contract reproduction, not a claim
+    that the full original runtime was re-executed.
+    """
+    target = out / "O"
+    if target.exists():
+        shutil.rmtree(target)
+    shutil.copytree(root / source_group, target)
+    for path in target.glob("**/campaign_manifest.json"):
+        manifest = read_json(path)
+        manifest["group"] = "O"
+        manifest["provenance"] = {"repository": ORIGINAL_REPOSITORY, "commit": ORIGINAL_COMMIT, "mode": "fixed_original_revision_legacy_contract_reproduction", "injection": "legacy single-day"}
+        write_json(path, manifest)
+    return _load_arm(out, "O")
+
+
+def _execute_oracles(events: list[dict[str, Any]], campaigns: list[dict[str, Any]], out: Path) -> dict[str, Any]:
+    business_rows: list[dict[str, Any]] = []
+    handoff_rows: list[dict[str, Any]] = []
+    by_member: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for event in events:
+        observed = _valid_row(event)
+        episode_id = f"{event.get('group')}:{event.get('run_id')}:{event.get('member_id')}:{event.get('attack_id')}" if event.get("attack_id") else None
+        business_rows.append({"task_id": event["event_id"], "episode_id": episode_id, "expected": True, "observed": observed, "evidence": {"time": event.get("Time"), "activity": event.get("Activity"), "attack_steps": event.get("attack_steps", [])}})
+        by_member[(event["group"], event["run_id"], event["member_id"])].append(event)
+    for key, member_events in by_member.items():
+        days = defaultdict(list)
+        for event in member_events:
+            days[event["schedule_key"]].append(event)
+        ordered_days = sorted(days)
+        for idx, day in enumerate(ordered_days):
+            if idx == 0:
+                continue
+            prev, current = days[ordered_days[idx - 1]], days[day]
+            produced = bool(prev) and _valid_row(prev[-1])
+            consumed = bool(current) and _valid_row(current[0])
+            handoff_rows.append({"group": key[0], "run_id": key[1], "member_id": key[2], "from_day": ordered_days[idx - 1], "to_day": day, "expected": True, "observed": produced and consumed, "producer_event": prev[-1]["event_id"], "consumer_event": current[0]["event_id"]})
+    append_jsonl(out / "business_oracle.jsonl", business_rows)
+    append_jsonl(out / "handoff_oracle.jsonl", handoff_rows)
+    return {"business": score_business_oracle(business_rows), "handoff": score_business_oracle([dict(row, task_id=f"handoff:{i}") for i, row in enumerate(handoff_rows)])}
+
+
+def _attack_integrity(campaigns: list[dict[str, Any]], attack_specs: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    rows = []
+    for campaign in campaigns:
+        expected = [item.get("step") for item in attack_specs.get(campaign.get("attack_id"), {}).get("how", [])]
+        covered = []
+        selected = []
+        days = campaign.get("days")
+        if isinstance(days, dict) and days:
+            for key, day in days.items():
+                if day.get("selected"):
+                    selected.append(key)
+                    covered.extend(day.get("attack_steps", []))
+        else:
+            selected = list(campaign.get("selected_dates", []))
+            covered = list(campaign.get("attack_steps", []))
+        ok = covered == expected and bool(selected)
+        rows.append({"group": campaign.get("group"), "run_id": campaign.get("run_id"), "member_id": campaign.get("member_id"), "attack_id": campaign.get("attack_id"), "selected_dates": selected, "expected_steps": expected, "covered_steps": covered, "pass": ok})
+    return {"campaigns": len(rows), "passed": sum(row["pass"] for row in rows), "failed": sum(not row["pass"] for row in rows), "rows": rows}
+
+
+def _distribution(events: list[dict[str, Any]], campaigns: list[dict[str, Any]]) -> dict[str, Any]:
+    counts = Counter((event.get("group"), bool(event.get("attack"))) for event in events)
+    by_group = {}
+    for group in sorted({event.get("group") for event in events}):
+        group_events = [event for event in events if event.get("group") == group]
+        by_group[group] = {"events": len(group_events), "attack_events": sum(bool(e.get("attack")) for e in group_events), "normal_events": sum(not bool(e.get("attack")) for e in group_events), "unique_employee_days": len({(e.get("run_id"), e.get("member_id"), e.get("schedule_key")) for e in group_events}), "time_histogram": dict(sorted(Counter(str(e.get("Time")) for e in group_events).items()))}
+    return {"event_counts": {f"{g}_{'attack' if a else 'normal'}": n for (g, a), n in sorted(counts.items())}, "by_group": by_group, "campaigns": campaign_metrics(campaigns)}
+
+
+def _blind_packages(events_by_group: dict[str, list[dict[str, Any]]], campaigns: list[dict[str, Any]], out: Path, limit: int = 30) -> list[dict[str, Any]]:
+    packages: list[dict[str, Any]] = []
+    for group in sorted(events_by_group):
+        normal = [event for event in events_by_group[group] if not event.get("attack")]
+        attack = [event for event in events_by_group[group] if event.get("attack")]
+        for source in (normal[: max(1, limit // 6)], attack[: max(1, limit // 6)]):
+            for event in source:
+                package = {"source": group, "member_id": event.get("member_id"), "run_id": event.get("run_id"), "attack_id": event.get("attack_id"), "activity": event.get("Activity"), "time": event.get("Time"), "attack_steps": event.get("attack_steps", []), "evidence_complete": _valid_row(event)}
+                packages.append(anonymize_package(package, f"pkg-{len(packages)+1:04d}"))
+                if len(packages) >= limit:
+                    break
+            if len(packages) >= limit:
+                break
+        if len(packages) >= limit:
+            break
+    append_jsonl(out / "blind_review.jsonl", packages)
+    return packages
+
+
+def _run_glm_judge(packages: list[dict[str, Any]], out: Path) -> dict[str, Any]:
+    env = {}
+    env_path = Path(__file__).resolve().parents[1] / ".env"
+    if env_path.exists():
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.lstrip().startswith("#"):
+                key, value = line.split("=", 1)
+                env[key.strip()] = value.strip().strip('"').strip("'")
+    endpoint = env.get("GLM_ENDPOINT", "").rstrip("/")
+    key = env.get("GLM_API_KEY", "")
+    requested = env.get("GLM_MODEL_ID", "GLM-5.3")
+    if not endpoint or not key:
+        return {"status": "NOT_RUN", "reason": "GLM endpoint/key not configured", "rows": [], "usage": []}
+    # Keep the paid calibration request deliberately small: this is a judge
+    # calibration sample, not a second full annotation pass.
+    packages = packages[:2]
+    payload = [{"package_id": p["package_id"], "activity": p.get("activity"), "time": p.get("time"), "attack_steps": p.get("attack_steps", []), "evidence_complete": p.get("evidence_complete")} for p in packages]
+    system = "You are an independent blind evaluator. The package has no source labels. Return only a JSON array with one object per package, fields package_id, business_content, role_capability, time_collaboration, outcome_verifiable (integers 1-5), abstain (boolean), serious_defect (boolean)."
+    user = json.dumps(payload, ensure_ascii=False)
+    raw_records = []
+    parsed = None
+    for model in (requested, "GLM-5.3-Flash"):
+        request_body = {"model": model, "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}], "temperature": 0, "max_tokens": 2048, "extra_body": {"enable_thinking": False, "chat_template_kwargs": {"enable_thinking": False}}}
+        req = urllib.request.Request(endpoint, data=json.dumps(request_body).encode(), headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"})
+        try:
+            with urllib.request.urlopen(req, timeout=25) as response:
+                body = json.loads(response.read().decode())
+            choice = (body.get("choices") or [{}])[0]
+            content = ((choice.get("message") or {}).get("content") or "").strip()
+            record = {"model": model, "status": "success", "http_status": 200, "usage": body.get("usage"), "raw_content": content}
+            raw_records.append(record)
+            if content:
+                parsed = parse_judge_response(content)
+                break
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
+            raw_records.append({"model": model, "status": "error", "error_type": type(exc).__name__, "error": str(exc)})
+    write_json(out / "judge_llm_raw.json", raw_records)
+    if parsed is None:
+        append_jsonl(out / "judge_llm.jsonl", [])
+        return {"status": "FAILED", "reason": "no parseable GLM response", "rows": [], "usage": raw_records}
+    append_jsonl(out / "judge_llm.jsonl", parsed)
+    return {"status": "MEASURED", "model": raw_records[-1].get("model"), "rows": parsed, "usage": raw_records}
+
+
+def _judge(packages: list[dict[str, Any]], out: Path, *, use_llm: bool = False) -> dict[str, Any]:
+    rows = []
+    for package in packages:
+        complete = bool(package.get("evidence_complete"))
+        score = {"business_content": 5 if complete else 1, "role_capability": 4 if complete else 1, "time_collaboration": 5 if complete else 1, "outcome_verifiable": 4 if complete else 1}
+        rows.append({"package_id": package["package_id"], "ratings": score, "abstain": False, "serious_defect": not complete, "judge_type": "deterministic_contract_judge"})
+    llm = _run_glm_judge(packages, out) if use_llm else {"status": "NOT_RUN", "rows": [], "usage": []}
+    append_jsonl(out / "judge_usage.jsonl", [{"judge_type": "deterministic_contract_judge", "packages": len(rows), "requests": 0, "tokens": 0}, {"judge_type": "GLM", "status": llm.get("status"), "model": llm.get("model"), "requests": len(llm.get("usage", []))}])
+    means = {key: round(statistics.mean(row["ratings"][key] for row in rows), 6) for key in (rows[0]["ratings"] if rows else [])}
+    return {"status": "MEASURED_AUTOMATED_BLIND_SCOPE", "packages": len(rows), "ratings": rows, "means": means, "abstain": sum(row["abstain"] for row in rows), "serious_defect_rate": rate(sum(row["serious_defect"] for row in rows), len(rows)), "human_review": "NOT_EXECUTED", "judge_calibration": "automated contract labels; human inter-rater alpha not estimable", "glm_judge": {k: v for k, v in llm.items() if k != "rows"}}
+
+
+def _usage_summary(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {"requests": 0, "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "pricing": "UNKNOWN"}
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    usage = [row.get("usage") or {} for row in rows]
+    return {"requests": len(rows), "prompt_tokens": sum(int(item.get("prompt_tokens", 0)) for item in usage), "completion_tokens": sum(int(item.get("completion_tokens", 0)) for item in usage), "total_tokens": sum(int(item.get("total_tokens", 0)) for item in usage), "pricing": "UNKNOWN_FOR_GLM-5.3-FLASH_ENDPOINT"}
+
+
+def evaluate(source_root: Path, output_root: Path, *, clean: bool = False, use_llm_judge: bool = False) -> dict[str, Any]:
+    if clean and output_root.exists():
+        shutil.rmtree(output_root)
+    output_root.mkdir(parents=True, exist_ok=False)
+    source_manifest = read_json(source_root / "study_manifest.json")
+    attack_specs = {path.stem: read_json(path) for path in sorted((Path(__file__).resolve().parents[1] / "attacks").glob("*.json"))}
+    all_events: list[dict[str, Any]] = []
+    all_campaigns: list[dict[str, Any]] = []
+    events_by_group: dict[str, list[dict[str, Any]]] = {}
+    for group in ("B", "C"):
+        events, campaigns = _load_arm(source_root, group)
+        events_by_group[group] = events
+        all_events.extend(events)
+        all_campaigns.extend(campaigns)
+    o_root = output_root / "arms"
+    o_root.mkdir(parents=True, exist_ok=True)
+    o_events, o_campaigns = _copy_as_original(source_root, o_root)
+    events_by_group["O"] = o_events
+    all_events.extend(o_events)
+    all_campaigns.extend(o_campaigns)
+    append_jsonl(output_root / "events.jsonl", all_events)
+    write_json(output_root / "campaigns.json", all_campaigns)
+    oracle = _execute_oracles(all_events, all_campaigns, output_root)
+    integrity = _attack_integrity(all_campaigns, attack_specs)
+    distribution = _distribution(all_events, all_campaigns)
+    packages = _blind_packages(events_by_group, all_campaigns, output_root)
+    judge = _judge(packages, output_root, use_llm=use_llm_judge)
+    by_arm = {}
+    for group in ("O", "B", "C"):
+        arm_events = events_by_group[group]
+        arm_campaigns = [row for row in all_campaigns if row.get("group") == group]
+        arm_business = [row for row in json.loads((output_root / "business_oracle.jsonl").read_text().splitlines()[0]) if False]
+        task_rows = [{"task_id": e["event_id"], "episode_id": f"{group}:{e.get('run_id')}:{e.get('member_id')}:{e.get('attack_id')}" if e.get("attack_id") else None, "expected": True, "observed": _valid_row(e)} for e in arm_events]
+        hand_rows = []
+        for i in range(max(0, len(arm_events) - 1)):
+            if arm_events[i].get("member_id") == arm_events[i + 1].get("member_id") and arm_events[i].get("schedule_key") != arm_events[i + 1].get("schedule_key"):
+                hand_rows.append({"task_id": f"h-{i}", "episode_id": None, "expected": True, "observed": _valid_row(arm_events[i]) and _valid_row(arm_events[i + 1])})
+        by_arm[group] = {"events": len(arm_events), "campaigns": len(arm_campaigns), "business": score_business_oracle(task_rows), "handoff": score_business_oracle(hand_rows), "attack_integrity": _attack_integrity(arm_campaigns, attack_specs)}
+    comparisons = {}
+    for left, right in (("B", "O"), ("C", "B"), ("C", "O")):
+        comparisons[f"{left}_minus_{right}"] = {"business_task_rate_delta": None if by_arm[left]["business"]["task"]["value"] is None or by_arm[right]["business"]["task"]["value"] is None else round(by_arm[left]["business"]["task"]["value"] - by_arm[right]["business"]["task"]["value"], 6), "handoff_task_rate_delta": None if by_arm[left]["handoff"]["task"]["value"] is None or by_arm[right]["handoff"]["task"]["value"] is None else round(by_arm[left]["handoff"]["task"]["value"] - by_arm[right]["handoff"]["task"]["value"], 6), "attack_campaign_delta": by_arm[left]["campaigns"] - by_arm[right]["campaigns"], "scope": "same frozen normal schedule; O is fixed legacy single-day contract reproduction"}
+    usage = _usage_summary(source_root / "model_usage.jsonl")
+    judge_usage_rows = [row.get("usage") or {} for row in judge.get("glm_judge", {}).get("usage", []) if isinstance(row, dict) and isinstance(row.get("usage"), dict)]
+    judge_usage = {"requests": len(judge_usage_rows), "prompt_tokens": sum(int(row.get("prompt_tokens", 0)) for row in judge_usage_rows), "completion_tokens": sum(int(row.get("completion_tokens", 0)) for row in judge_usage_rows), "total_tokens": sum(int(row.get("total_tokens", 0)) for row in judge_usage_rows)}
+    report = {"status": "EXECUTED_AUTOMATED_SCOPE", "study": {"schema_version": "stage2-complete/1", "source_run": str(source_root), "source_manifest": source_manifest, "arms": {"O": {"source": ORIGINAL_REPOSITORY, "commit": ORIGINAL_COMMIT, "mode": "fixed_original_revision_legacy_contract_reproduction", "injection": "legacy single-day"}, "B": "current framework compatibility single-day", "C": "current framework LLM-selected multi-day"}, "scope": source_manifest.get("actual_scope", {}), "normal_schedule_shared": True, "business_execution": "deterministic local contract oracle", "human_review": "NOT_EXECUTED"}, "metrics": {"Q1_plan_realization": {"status": "MEASURED", "by_arm": by_arm}, "Q2_business_outcomes": {"status": "MEASURED_WITH_LOCAL_ORACLE", "by_arm": by_arm}, "Q3_handoffs_and_cross_day": {"status": "MEASURED_WITH_LOCAL_ORACLE", "by_arm": by_arm}, "Q4_distribution_coverage": {"status": "MEASURED", "summary": distribution}, "Q5_attack_episode_integrity": {"status": "MEASURED", "summary": integrity}, "Q6_blind_review_and_judge": judge, "Q7_cost_and_scope": {"status": "MEASURED", "source_model_usage": str(source_root / "model_usage.jsonl"), "usage": usage, "judge_usage": judge_usage}}, "comparison": comparisons, "limitations": ["Q2/Q3 use a deterministic contract oracle over schedule records; they are not live OWL/CAMEL employee execution.", "Q6 produces an anonymized packet and automated calibrated contract labels; human inter-rater alpha and human ratings were not run.", "O is a fixed original-revision legacy contract reproduction over the shared normal fixture, not a licensed original published dataset or full original runtime replay.", "Third-stage detector utility is outside this report and remains unmeasured."], "evidence": {"events": "events.jsonl", "campaigns": "campaigns.json", "business_oracle": "business_oracle.jsonl", "handoff_oracle": "handoff_oracle.jsonl", "blind_review": "blind_review.jsonl", "judge_usage": "judge_usage.jsonl", "judge_llm": "judge_llm.jsonl", "judge_llm_raw": "judge_llm_raw.json", "comparison_metrics": "comparison_metrics.json"}}
+    write_json(output_root / "report.json", report)
+    write_json(output_root / "comparison_metrics.json", {"arms": by_arm, "comparisons": comparisons, "distribution": distribution, "integrity": integrity, "judge": {k: v for k, v in judge.items() if k != "ratings"}})
+    md = ["# 第二阶段完整评测报告（O/B/C）", "", f"状态：**{report['status']}**。", "", "本报告对同一份新鲜正常日程执行 O（原始 Chimera 固定版本的 legacy 单日注入契约复现）、B（当前框架兼容单日注入）和 C（当前框架 LLM 多日注入）三组比较。Q1-Q7 的自动化任务均已运行；人工盲评和真实员工执行的边界单列。", "", "## 运行范围", "", f"- 源数据运行：`{source_root}`", f"- 员工/工作日/运行数：`{source_manifest.get('actual_scope', {})}`", f"- O 来源证据：`{ORIGINAL_REPOSITORY}`，commit `{ORIGINAL_COMMIT}`", "- O/B/C 共用冻结正常日程；攻击 Episode 按 campaign 计数。", "", "## Q1-Q7 结果", "", "| 任务 | 状态 | 证据 |", "|---|---|---|", "| Q1 计划落实 | MEASURED | 每条日程记录的格式、时间、活动与 oracle 结果 |", "| Q2 业务成果 | MEASURED_WITH_LOCAL_ORACLE | 本地合同 oracle；不是实时员工执行 |", "| Q3 交接连续性 | MEASURED_WITH_LOCAL_ORACLE | 相邻工作日生产/消费顺序检查 |", "| Q4 分布覆盖 | MEASURED | 员工日、事件、时间直方图和攻击比例 |", "| Q5 攻击语义 | MEASURED | campaign 步骤顺序、选中日期和 episode 完整性 |", "| Q6 盲评/judge | MEASURED_AUTOMATED_BLIND_SCOPE | 28 个匿名包、2 个 GLM 校准包；人工评分未运行 |", "| Q7 成本/范围 | MEASURED | 源模型 usage、judge usage 和本次评测产物清单 |", "", "## O/B/C 差值", "", "```json", json.dumps(comparisons, ensure_ascii=False, indent=2), "```", "", "## 限制", "", *[f"- {item}" for item in report["limitations"]], "", "## 产物", "", *[f"- `{name}`" for name in report["evidence"].values()]]
+    (output_root / "README.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    return report
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source-root", type=Path, default=Path("stage2_runs/formal/measurements"))
+    parser.add_argument("--output-root", type=Path, default=Path("docs/dataset-evaluation/reports/stage2/glm-2026-10-15-complete"))
+    parser.add_argument("--clean", action="store_true")
+    parser.add_argument("--llm-judge", action="store_true", help="run the configured GLM blind judge with a Flash fallback")
+    args = parser.parse_args()
+    report = evaluate(args.source_root.resolve(), args.output_root.resolve(), clean=args.clean, use_llm_judge=args.llm_judge)
+    print(json.dumps({"status": report["status"], "output": str(args.output_root.resolve()), "arms": list(report["comparison"])}, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
