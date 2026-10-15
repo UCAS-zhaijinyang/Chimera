@@ -118,9 +118,9 @@ def _environment(base: Path, scenario: str, *, employees: int, workdays: int, en
         "CHIMERA_OFFLINE_MODE": "1",
         # GLM-5.3-Flash may spend part of the completion budget on reasoning;
         # the default 2048 token agent cap truncates the original meeting.
-        "LLM_AGENT_MAX_TOKENS": os.environ.get("LLM_AGENT_MAX_TOKENS", "8192"),
-        "CHIMERA_PLANNING_AGENT_MAX_TOKENS": os.environ.get("CHIMERA_PLANNING_AGENT_MAX_TOKENS", "8192"),
-        "LLM_MAX_TOKENS": os.environ.get("LLM_MAX_TOKENS", "8192"),
+        "LLM_AGENT_MAX_TOKENS": os.environ.get("LLM_AGENT_MAX_TOKENS", "16384"),
+        "CHIMERA_PLANNING_AGENT_MAX_TOKENS": os.environ.get("CHIMERA_PLANNING_AGENT_MAX_TOKENS", "16384"),
+        "LLM_MAX_TOKENS": os.environ.get("LLM_MAX_TOKENS", "16384"),
     })
     if endpoint:
         env["GLM_ENDPOINT"] = endpoint
