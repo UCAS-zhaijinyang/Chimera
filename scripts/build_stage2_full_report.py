@@ -68,7 +68,51 @@ def _planning_coverage(arm_root: Path, employees: int, workdays: int):
             "status": "MEASURED" if len(files) == expected else "INCOMPLETE"}
 
 
-def build_report(run_root: Path, output: Path):
+def _load_q2_q3_report(value):
+    """Load the bounded Q2/Q3 supplement from a path or an already parsed dict."""
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        return value
+    path = Path(value)
+    if not path.exists():
+        raise FileNotFoundError(f"Q2/Q3 supplement does not exist: {path}")
+    return read(path)
+
+
+def _merge_q2_q3_supplement(report: dict, supplement: dict, output: Path, source) -> None:
+    """Merge only Q2/Q3 evidence while retaining the explicit Q6 boundary."""
+    metrics = supplement.get("metrics", {})
+    for metric in ("Q2", "Q3"):
+        if metric in metrics:
+            report.setdefault("metrics", {})[metric] = metrics[metric]
+    # The supplement cannot accidentally mark blind review as measured.
+    report.setdefault("metrics", {}).setdefault(
+        "Q6", {"status": "NOT_MEASURED", "reason": "human blind panel not run"}
+    )
+    report["q2_q3_supplement"] = {
+        "status": supplement.get("status", "UNKNOWN"),
+        "source": str(Path(source).resolve()) if source is not None and not isinstance(source, dict) else "inline",
+        "evidence": supplement.get("evidence", {}),
+    }
+    evidence = report.setdefault("evidence", {})
+    try:
+        relative = Path(source).resolve().relative_to(Path(output).resolve())
+        evidence["q2_q3_supplement"] = str(relative)
+    except (TypeError, ValueError):
+        evidence["q2_q3_supplement"] = "q2-q3/report.json"
+    evidence.setdefault("q2_q3_business_pilot", "q2-q3/business_pilot/")
+    evidence.setdefault("q2_q3_handoff_pilot", "q2-q3/handoff_pilot/handoff_execution.jsonl")
+    limitations = report.setdefault("limitations", [])
+    limitations[:] = [item for item in limitations if not str(item).startswith(
+        "Q2/Q3 remain unmeasured if OWL execution"
+    )]
+    limitations.append(
+        "Q2/Q3 are measured with bounded real local toolchain and handoff pilots; they do not claim long-horizon GLM employee simulation."
+    )
+
+
+def build_report(run_root: Path, output: Path, q2_q3_report=None):
     manifest = read(run_root / "study_manifest.json", {})
     scope = manifest.get("scope", {})
     employees, workdays = int(scope.get("employees", 0)), int(scope.get("workdays", 0))
@@ -114,6 +158,9 @@ def build_report(run_root: Path, output: Path):
                                   "This run uses one independent generation per arm."]}
         if compatibility_notes:
             report["limitations"].append("Runtime compatibility used: " + "; ".join(compatibility_notes))
+    supplement = _load_q2_q3_report(q2_q3_report)
+    if supplement is not None and report.get("status", "").startswith("COMPLETE"):
+        _merge_q2_q3_supplement(report, supplement, output, q2_q3_report)
     output.mkdir(parents=True, exist_ok=True)
     (output / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     model_scope = scope.get("model_used") or scope.get("model_requested")
@@ -135,8 +182,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--q2-q3-report", type=Path,
+                        help="Q2/Q3 bounded pilot supplement report.json")
     args = parser.parse_args()
-    print(json.dumps(build_report(args.run_root, args.output), ensure_ascii=False, indent=2))
+    print(json.dumps(build_report(args.run_root, args.output, args.q2_q3_report), ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

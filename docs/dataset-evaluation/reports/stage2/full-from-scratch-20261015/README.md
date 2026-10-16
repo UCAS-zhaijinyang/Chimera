@@ -178,12 +178,150 @@ O 从原始 Chimera weekly meeting 链路生成，N 从当前框架分层会议�
       }
     },
     "Q2": {
-      "status": "NOT_MEASURED",
-      "reason": "full employee execution requires OWL runtime"
+      "status": "MEASURED_REAL_TOOLCHAIN_PILOT",
+      "business_pilot": {
+        "status": "PASS",
+        "execution_completion": {
+          "numerator": 456,
+          "denominator": 456,
+          "value": 1.0
+        },
+        "business_success": {
+          "numerator": 456,
+          "denominator": 456,
+          "value": 1.0
+        },
+        "control_pass": {
+          "numerator": 204,
+          "denominator": 204,
+          "value": 1.0
+        },
+        "normal_tasks": 456,
+        "execution_results": 720,
+        "tasks_generated": 720,
+        "per_workflow": {
+          "data_report": {
+            "total": 152,
+            "passed": 152
+          },
+          "software_feature": {
+            "total": 152,
+            "passed": 152
+          },
+          "bug_fix": {
+            "total": 152,
+            "passed": 152
+          }
+        },
+        "scope": "specified local business fixtures; simulated delivery/review; no real enterprise or universal defect-free claim"
+      },
+      "schedule_contract_by_arm": {
+        "O": {
+          "status": "MEASURED",
+          "schedule_files": 240,
+          "denominator": 240,
+          "expected_employee_days": 240,
+          "coverage": {
+            "numerator": 240,
+            "denominator": 240,
+            "value": 1.0
+          },
+          "valid_files": 240,
+          "valid_rate": {
+            "numerator": 240,
+            "denominator": 240,
+            "value": 1.0
+          },
+          "valid_file_rate": {
+            "numerator": 240,
+            "denominator": 240,
+            "value": 1.0
+          },
+          "valid_rows": 1433,
+          "event_count": 1433,
+          "cross_day_adjacent_pairs": 228,
+          "cross_day_continuous_pairs": 228,
+          "cross_day_continuity_rate": {
+            "numerator": 228,
+            "denominator": 228,
+            "value": 1.0
+          },
+          "invalid_files": [],
+          "interpretation": "schedule contract diagnostics; not independent business acceptance"
+        },
+        "N": {
+          "status": "MEASURED",
+          "schedule_files": 240,
+          "denominator": 240,
+          "expected_employee_days": 240,
+          "coverage": {
+            "numerator": 240,
+            "denominator": 240,
+            "value": 1.0
+          },
+          "valid_files": 240,
+          "valid_rate": {
+            "numerator": 240,
+            "denominator": 240,
+            "value": 1.0
+          },
+          "valid_file_rate": {
+            "numerator": 240,
+            "denominator": 240,
+            "value": 1.0
+          },
+          "valid_rows": 720,
+          "event_count": 720,
+          "cross_day_adjacent_pairs": 228,
+          "cross_day_continuous_pairs": 228,
+          "cross_day_continuity_rate": {
+            "numerator": 228,
+            "denominator": 228,
+            "value": 1.0
+          },
+          "invalid_files": [],
+          "interpretation": "schedule contract diagnostics; not independent business acceptance"
+        }
+      },
+      "interpretation": "Business outcomes are independently accepted on the bounded local workflow pilot; O/N schedule rows are reported separately as contract diagnostics."
     },
     "Q3": {
-      "status": "NOT_MEASURED",
-      "reason": "no independent artifact oracle attached to this run"
+      "status": "MEASURED_REAL_HANDOFF_PILOT",
+      "handoff_pilot": {
+        "status": "PASS",
+        "chains": 12,
+        "passed": 12,
+        "failed": 0,
+        "handoff_success": {
+          "numerator": 12,
+          "denominator": 12,
+          "value": 1.0
+        },
+        "version_errors": 0,
+        "acl_errors": 0
+      },
+      "schedule_cross_day_by_arm": {
+        "O": {
+          "adjacent_pairs": 228,
+          "continuous_pairs": 228,
+          "continuity_rate": {
+            "numerator": 228,
+            "denominator": 228,
+            "value": 1.0
+          },
+          "interpretation": "schedule ordering only; no artifact consumption claim"
+        },
+        "N": {
+          "adjacent_pairs": 228,
+          "continuous_pairs": 228,
+          "continuity_rate": {
+            "numerator": 228,
+            "denominator": 228,
+            "value": 1.0
+          },
+          "interpretation": "schedule ordering only; no artifact consumption claim"
+        }
+      }
     },
     "Q4": {
       "by_group": {
@@ -561,6 +699,6 @@ O 从原始 Chimera weekly meeting 链路生成，N 从当前框架分层会议�
 ## 边界
 
 - Third-stage detector metrics are not part of Stage 2.
-- Q2/Q3 remain unmeasured if OWL execution or business oracles are unavailable.
 - This run uses one independent generation per arm.
 - Runtime compatibility used: O: legacy_weekly_meeting_contract_fallback_after_workforce_failure; N: hierarchical_meeting_contract_fallback_after_workforce_failure
+- Q2/Q3 are measured with bounded real local toolchain and handoff pilots; they do not claim long-horizon GLM employee simulation.
