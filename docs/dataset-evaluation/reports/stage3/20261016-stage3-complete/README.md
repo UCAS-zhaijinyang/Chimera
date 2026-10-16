@@ -74,7 +74,8 @@
 ## 7. 成本与可复核产物
 
 - 新增 LLM API 成本：$0.00；本阶段只训练本地检测器。
-- 产物包括 `split_manifest.json`、`scores.jsonl`、`detector_runs.json`、`leakage_audit.json` 和 `runtime_cost.json`；manifest 记录 O/N 输入文件 SHA-256。
+- 产物包括 `split_manifest.json`、`scores.jsonl`、`detector_runs.json`、`leakage_audit.json`、`runtime_cost.json` 和 `validation.json`；manifest 记录 O/N 输入文件 SHA-256。
+- 第三阶段专用测试 3/3 通过；全仓库测试的 64 项失败来自 Python 3.13 与项目锁定的 camel-ai 版本不兼容，详见 `validation.json`。
 
 ## 8. 结论边界
 
