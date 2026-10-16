@@ -47,3 +47,23 @@ def test_semantic_campaign_metrics_marks_execution_as_unmeasured():
     result = semantic_campaign_metrics(campaigns, {"a": {"how": [{"step": 1}, {"step": 2}]}})
     assert result["integrity"]["value"] == 1.0
     assert result["execution_outcome"]["status"] == "NOT_MEASURED"
+
+
+def test_phase_alignment_uses_independent_sidecar_and_reports_mismatch():
+    from evaluation.stage2_metrics import phase_alignment_metrics
+
+    events = [
+        {"event_id": "e1", "member_id": "m1", "schedule_key": "week_1_Monday",
+         "Time": "10:00:00", "Activity": "phase one"},
+        {"event_id": "e2", "member_id": "m1", "schedule_key": "week_2_Tuesday",
+         "Time": "11:00:00", "Activity": "phase two"},
+        {"event_id": "e3", "member_id": "m1", "schedule_key": "week_3_Wednesday",
+         "Time": "12:00:00", "Activity": "misplaced"},
+    ]
+    sidecar = {"source": "meeting.json", "sha256": "abc",
+               "employees": {"m1": {"1": "P1", "2": "P3", "3": "P3"}}}
+    result = phase_alignment_metrics(events, sidecar)
+    assert result["status"] == "MEASURED"
+    assert result["coverage"]["value"] == 1.0
+    assert result["phase_deviation"]["mismatch_rate"]["value"] == 0.333333
+    assert result["phase_deviation"]["mean_absolute"] == 0.333333

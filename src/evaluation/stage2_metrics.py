@@ -165,7 +165,67 @@ def distribution_metrics(events: Sequence[Mapping[str, Any]], *, groups: Sequenc
     return result
 
 
-def plan_alignment_metrics(events: Sequence[Mapping[str, Any]], planned_units: Sequence[Mapping[str, Any]] | None = None) -> dict[str, Any]:
+def _phase_number(value: Any) -> int | None:
+    """Normalize P1/1/week_1 labels to an integer phase number."""
+    match = re.search(r"(?:phase_|P|week_)?([0-9]+)", str(value), re.IGNORECASE)
+    return int(match.group(1)) if match else None
+
+
+def phase_alignment_metrics(events: Sequence[Mapping[str, Any]], phase_sidecar: Mapping[str, Any]) -> dict[str, Any]:
+    """Compare observed schedule weeks with an independently frozen phase plan.
+
+    A schedule record is evidence of *where* an activity was placed.  The
+    sidecar is created from the upstream meeting artifact and is hashed and
+    stored separately from the schedule.  Consequently this check does not
+    treat the generated schedule itself as its own phase ground truth.
+    """
+    plan_rows = phase_sidecar.get("employees", {}) if isinstance(phase_sidecar, Mapping) else {}
+    compared: list[dict[str, Any]] = []
+    for event in events:
+        if str(event.get("Time", "")).count(":") != 2 or not str(event.get("Activity", "")).strip():
+            continue
+        member_id = str(event.get("member_id", ""))
+        match = re.search(r"week_([0-9]+)_", str(event.get("schedule_key", "")))
+        observed = int(match.group(1)) if match else None
+        phases = plan_rows.get(member_id, {})
+        expected = phases.get(str(observed)) if observed is not None else None
+        expected = _phase_number(expected)
+        if observed is None or expected is None:
+            compared.append({"event_id": event.get("event_id"), "member_id": member_id,
+                             "observed_phase": observed, "expected_phase": expected,
+                             "status": "UNKNOWN"})
+            continue
+        deviation = observed - expected
+        compared.append({"event_id": event.get("event_id"), "member_id": member_id,
+                         "schedule_key": event.get("schedule_key"),
+                         "observed_phase": observed, "expected_phase": expected,
+                         "deviation": deviation, "absolute_deviation": abs(deviation),
+                         "status": "PASS" if deviation == 0 else "FAIL"})
+    measured = [row for row in compared if row.get("status") in {"PASS", "FAIL"}]
+    deviations = [int(row["deviation"]) for row in measured]
+    exact = sum(value == 0 for value in deviations)
+    absolute = [abs(value) for value in deviations]
+    return {
+        "status": "MEASURED" if measured else "NOT_MEASURED",
+        "phase_deviation": {
+            "mean": round(sum(deviations) / len(deviations), 6) if deviations else None,
+            "mean_absolute": round(sum(absolute) / len(absolute), 6) if absolute else None,
+            "max_absolute": max(absolute, default=None),
+            "exact_phase_rate": _rate(exact, len(measured)),
+            "mismatch_rate": _rate(len(measured) - exact, len(measured)),
+            "status": "MEASURED" if measured else "NOT_MEASURED",
+        },
+        "coverage": {"measured": len(measured), "unknown": len(compared) - len(measured),
+                     "total_observed": len(compared),
+                     "value": round(len(measured) / len(compared), 6) if compared else None},
+        "sidecar_source": phase_sidecar.get("source"),
+        "sidecar_sha256": phase_sidecar.get("sha256"),
+        "rows": compared,
+    }
+
+
+def plan_alignment_metrics(events: Sequence[Mapping[str, Any]], planned_units: Sequence[Mapping[str, Any]] | None = None,
+                           phase_sidecar: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """Score observable schedule units; default plan is the frozen schedule contract.
 
     The default is deliberately labelled as derived rather than independent:
@@ -176,14 +236,19 @@ def plan_alignment_metrics(events: Sequence[Mapping[str, Any]], planned_units: S
     matched = min(len(observed), len(planned))
     metrics = binary_metrics(matched=matched, observed=len(observed), planned=len(planned))
     metrics.update({"target_completion": _rate(matched, len(planned)),
-                    "phase_deviation": {"mean": 0.0, "mean_absolute": 0.0, "max_absolute": 0.0, "status": "NOT_MEASURED", "reason": "no independent phase plan sidecar"},
+                    "phase_deviation": phase_alignment_metrics(events, phase_sidecar)["phase_deviation"] if phase_sidecar else {"mean": 0.0, "mean_absolute": 0.0, "max_absolute": 0.0, "status": "NOT_MEASURED", "reason": "no independent phase plan sidecar"},
                     "omission_rate": _rate(max(0, len(planned) - matched), len(planned)),
                     "extra_behavior_rate": _rate(max(0, len(observed) - matched), len(observed))})
-    return {"status": metrics["status"], "metrics": {"work_unit": metrics},
-            "independence": "independent_plan_sidecar" if planned_units is not None else "derived_from_schedule_record_contract"}
+    result = {"status": metrics["status"], "metrics": {"work_unit": metrics},
+              "independence": "independent_plan_sidecar" if planned_units is not None else "derived_from_schedule_record_contract"}
+    if phase_sidecar:
+        result["metrics"]["phase_alignment"] = phase_alignment_metrics(events, phase_sidecar)
+        result["independence"] = "independent_phase_plan_sidecar"
+    return result
 
 
-def semantic_campaign_metrics(campaigns: Sequence[Mapping[str, Any]], attack_specs: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
+def semantic_campaign_metrics(campaigns: Sequence[Mapping[str, Any]], attack_specs: Mapping[str, Mapping[str, Any]] | None = None,
+                              side_effects: Mapping[str, Any] | None = None) -> dict[str, Any]:
     rows = []
     for campaign in campaigns:
         attack_id = campaign.get("attack_id")
@@ -204,7 +269,7 @@ def semantic_campaign_metrics(campaigns: Sequence[Mapping[str, Any]], attack_spe
                      "campaign_planning_fallback": bool(campaign.get("campaign_planning_fallback", False)),
                      "semantic_evidence": bool(campaign.get("attack_requirements") or campaign.get("campaign_plan") or expected)})
     n = len(rows)
-    return {
+    result = {
         "integrity": {**_rate(sum(row["integrity"] for row in rows), n), "unit": "campaign"},
         "semantic_evidence_coverage": _rate(sum(row["semantic_evidence"] for row in rows), n),
         "selected_date_legal_rate": _rate(sum(row["legal_dates"] for row in rows), n),
@@ -219,3 +284,11 @@ def semantic_campaign_metrics(campaigns: Sequence[Mapping[str, Any]], attack_spe
         "unknown_rate": {"status": "NOT_MEASURED", "reason": "execution outcome evidence is unavailable"},
         "rows": rows,
     }
+    if side_effects:
+        # The independent side-effect runner is the source of execution truth;
+        # campaign intent alone must never populate these fields.
+        for key in ("execution_outcome", "target_reachability", "unknown_rate", "oracle_coverage", "side_effect_observed_rate"):
+            if key in side_effects:
+                result[key] = side_effects[key]
+        result["execution_evidence"] = side_effects.get("evidence")
+    return result
