@@ -87,8 +87,8 @@ def test_full_report_merges_q2_q3_supplement_without_measuring_q6(tmp_path):
     supplement = tmp_path / "q2-q3.json"
     _write(supplement, {
         "metrics": {
-            "Q2": {"status": "MEASURED_REAL_TOOLCHAIN_PILOT"},
-            "Q3": {"status": "MEASURED_REAL_HANDOFF_PILOT"},
+            "Q2": {"status": "MEASURED_REAL_MODEL_TOOLCHAIN"},
+            "Q3": {"status": "MEASURED_REAL_MODEL_HANDOFF"},
             "Q6": {"status": "NOT_MEASURED"},
         },
         "evidence": {"business_pilot": "business_pilot/"},
@@ -96,6 +96,6 @@ def test_full_report_merges_q2_q3_supplement_without_measuring_q6(tmp_path):
 
     report = build_report(run, tmp_path / "report", q2_q3_report=supplement)
 
-    assert report["metrics"]["Q2"]["status"] == "MEASURED_REAL_TOOLCHAIN_PILOT"
-    assert report["metrics"]["Q3"]["status"] == "MEASURED_REAL_HANDOFF_PILOT"
+    assert report["metrics"]["Q2"]["status"] == "MEASURED_REAL_MODEL_TOOLCHAIN"
+    assert report["metrics"]["Q3"]["status"] == "MEASURED_REAL_MODEL_HANDOFF"
     assert report["metrics"]["Q6"]["status"] == "NOT_MEASURED"

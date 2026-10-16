@@ -4,7 +4,7 @@
 
 **Goal:** Measure Q2 business outcomes and Q3 artifact handoffs for the existing paired O/N from-scratch Stage-2 run, preserve evidence, and merge the results into the Stage-2 report while leaving Q6 human review unmeasured.
 
-**Architecture:** A new evaluator consumes the frozen O/N schedule run and records schedule-contract diagnostics separately from a bounded real `WorkflowToolLoop` business pilot. The business pilot uses the repository's independent acceptance checks for data-report, software-feature, and bug-fix workflows; the handoff pilot uses real filesystem artifacts, hashes, version content, and ACL checks. The report merger injects only Q2/Q3 results and keeps Q6 unchanged.
+**Architecture:** A new evaluator consumes the frozen O/N schedule run and records schedule-contract diagnostics separately from a bounded GLM-driven `WorkflowToolLoop` business simulation. The business simulation uses actual model tool choices plus the repository's independent acceptance checks for data-report, software-feature, and bug-fix workflows; controlled faults are injected after genuine model decisions. The handoff simulation uses actual GLM producer/consumer decisions on real filesystem artifacts, hashes, version content, and ACL checks. The report merger injects only Q2/Q3 results and keeps Q6 unchanged.
 
 **Tech Stack:** Python 3.10, existing `evaluation.campaign`, `evaluation.business`, `WorkflowToolLoop`, JSON/JSONL evidence, pytest.
 
@@ -16,7 +16,7 @@
 - Q2 business acceptance must use independent checks and retain normal-task, control-task, execution, and business denominators.
 - Q3 must verify actual producer/consumer artifact use, version content, ACL isolation, and cross-day schedule continuity; names or recipient lists alone do not count.
 - Q6 remains `NOT_MEASURED`.
-- Scripted model responses are a bounded toolchain pilot, not a claim of long-horizon GLM employee simulation.
+- The GLM execution is a bounded simulation of the business workflows, not a claim of full 20-day employee execution replay.
 - API keys and raw secrets must never enter reports or evidence files.
 
 ## Review Focus

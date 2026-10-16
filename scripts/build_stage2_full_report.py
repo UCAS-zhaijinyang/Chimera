@@ -108,7 +108,7 @@ def _merge_q2_q3_supplement(report: dict, supplement: dict, output: Path, source
         "Q2/Q3 remain unmeasured if OWL execution"
     )]
     limitations.append(
-        "Q2/Q3 are measured with bounded real local toolchain and handoff pilots; they do not claim long-horizon GLM employee simulation."
+        "Q2/Q3 are measured with actual GLM-driven bounded simulations and independent local acceptance; they do not claim a full 20-day employee execution replay."
     )
 
 

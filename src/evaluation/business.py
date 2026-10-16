@@ -148,7 +148,12 @@ def evaluate_business(study_dir):
                 if variant==6 or execution['workflow']=='data_report' else 'test_run')
             failure_matches = any(e['tool_name']==expected_tool
                 and (e['status']=='rejected' if variant==8 else e['status']=='failed') for e in failures)
-            row['status'] = 'CONTROL_PASS' if terminal=='failed' and failure_matches else 'CONTROL_FAIL'
+            # A real model may recover after the injected fault.  The control
+            # metric therefore scores whether the runtime recorded the
+            # expected rejection/failure, while retaining recovery separately.
+            row['control_fault_observed'] = failure_matches
+            row['control_recovered'] = terminal == 'completed'
+            row['status'] = 'CONTROL_PASS' if failure_matches else 'CONTROL_FAIL'
         elif execution['kind'] != 'normal':
             row['status'] = 'EXCLUDED_ATTACK_OBSERVATION'
         elif not execution.get('business_fixture'):

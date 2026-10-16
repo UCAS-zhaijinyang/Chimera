@@ -178,23 +178,23 @@ O 从原始 Chimera weekly meeting 链路生成，N 从当前框架分层会议�
       }
     },
     "Q2": {
-      "status": "MEASURED_REAL_TOOLCHAIN_PILOT",
+      "status": "MEASURED_REAL_MODEL_TOOLCHAIN",
       "business_pilot": {
-        "status": "PASS",
+        "status": "FAIL",
         "execution_completion": {
-          "numerator": 456,
+          "numerator": 444,
           "denominator": 456,
-          "value": 1.0
+          "value": 0.973684
         },
         "business_success": {
-          "numerator": 456,
+          "numerator": 444,
           "denominator": 456,
-          "value": 1.0
+          "value": 0.973684
         },
         "control_pass": {
-          "numerator": 204,
+          "numerator": 202,
           "denominator": 204,
-          "value": 1.0
+          "value": 0.990196
         },
         "normal_tasks": 456,
         "execution_results": 720,
@@ -202,18 +202,59 @@ O 从原始 Chimera weekly meeting 链路生成，N 从当前框架分层会议�
         "per_workflow": {
           "data_report": {
             "total": 152,
-            "passed": 152
+            "passed": 150
           },
           "software_feature": {
             "total": 152,
-            "passed": 152
+            "passed": 147
           },
           "bug_fix": {
             "total": 152,
-            "passed": 152
+            "passed": 147
           }
         },
-        "scope": "specified local business fixtures; simulated delivery/review; no real enterprise or universal defect-free claim"
+        "model_requested": "GLM-5.3",
+        "model_used": "GLM-5.3-Flash",
+        "model_usage": {
+          "requests": 4780,
+          "prompt_tokens": 12256178,
+          "completion_tokens": 963224,
+          "total_tokens": 13219402,
+          "returned_models": [
+            "/data/models/GLM-5.3-Flash"
+          ],
+          "pricing": "UNKNOWN_FOR_PRIVATE_GLM_ENDPOINT",
+          "estimated_cost_usd": null
+        },
+        "scope": "specified local business fixtures; simulated delivery/review; no real enterprise or universal defect-free claim",
+        "normal_failure_task_ids": [
+          "q2-t0089",
+          "q2-t0142",
+          "q2-t0369",
+          "q2-t0384",
+          "q2-t0413",
+          "q2-t0435",
+          "q2-t0448",
+          "q2-t0528",
+          "q2-t0545",
+          "q2-t0587",
+          "q2-t0688",
+          "q2-t0689"
+        ],
+        "business_failure_task_ids": [
+          "q2-t0089",
+          "q2-t0142",
+          "q2-t0369",
+          "q2-t0384",
+          "q2-t0413",
+          "q2-t0435",
+          "q2-t0448",
+          "q2-t0528",
+          "q2-t0545",
+          "q2-t0587",
+          "q2-t0688",
+          "q2-t0689"
+        ]
       },
       "schedule_contract_by_arm": {
         "O": {
@@ -283,10 +324,10 @@ O 从原始 Chimera weekly meeting 链路生成，N 从当前框架分层会议�
           "interpretation": "schedule contract diagnostics; not independent business acceptance"
         }
       },
-      "interpretation": "Business outcomes are independently accepted on the bounded local workflow pilot; O/N schedule rows are reported separately as contract diagnostics."
+      "interpretation": "Business outcomes are independently accepted from actual GLM-driven WorkflowToolLoop executions; O/N schedule rows are reported separately as contract diagnostics."
     },
     "Q3": {
-      "status": "MEASURED_REAL_HANDOFF_PILOT",
+      "status": "MEASURED_REAL_MODEL_HANDOFF",
       "handoff_pilot": {
         "status": "PASS",
         "chains": 12,
@@ -701,4 +742,4 @@ O 从原始 Chimera weekly meeting 链路生成，N 从当前框架分层会议�
 - Third-stage detector metrics are not part of Stage 2.
 - This run uses one independent generation per arm.
 - Runtime compatibility used: O: legacy_weekly_meeting_contract_fallback_after_workforce_failure; N: hierarchical_meeting_contract_fallback_after_workforce_failure
-- Q2/Q3 are measured with bounded real local toolchain and handoff pilots; they do not claim long-horizon GLM employee simulation.
+- Q2/Q3 are measured with actual GLM-driven bounded simulations and independent local acceptance; they do not claim a full 20-day employee execution replay.
