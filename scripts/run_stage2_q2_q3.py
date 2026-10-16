@@ -43,7 +43,7 @@ except ImportError:  # pragma: no cover - optional local runner dependency
 
 
 def _provider_config(endpoint: str | None = None, model: str | None = None,
-                     api_key: str | None = None) -> dict[str, str]:
+                     api_key: str | None = None) -> dict[str, Any]:
     values = dotenv_values(PROJECT_ROOT / ".env") if dotenv_values else {}
     values = values or {}
     endpoint = endpoint or os.environ.get("GLM_ENDPOINT") or values.get("GLM_ENDPOINT")
@@ -68,8 +68,16 @@ def _provider_config(endpoint: str | None = None, model: str | None = None,
         # The actual completion request remains authoritative; preserve the
         # requested model if model discovery is temporarily unavailable.
         pass
+    max_tokens_raw = os.environ.get("GLM_MAX_TOKENS") or values.get("GLM_MAX_TOKENS") or "8192"
+    try:
+        max_tokens = int(max_tokens_raw)
+    except (TypeError, ValueError):
+        raise RuntimeError("GLM_MAX_TOKENS must be an integer between 1024 and 32768") from None
+    if not 1024 <= max_tokens <= 32768:
+        raise RuntimeError("GLM_MAX_TOKENS must be an integer between 1024 and 32768")
     return {"endpoint": str(endpoint), "model": resolved_model,
-            "requested_model": str(requested_model), "api_key": str(api_key)}
+            "requested_model": str(requested_model), "api_key": str(api_key),
+            "max_tokens": max_tokens}
 
 
 class UsageLedger:
@@ -130,14 +138,14 @@ class RealModelEmployee:
 
     supports_images = True
 
-    def __init__(self, case: dict[str, Any], context: dict[str, Any], provider: dict[str, str], ledger: UsageLedger):
+    def __init__(self, case: dict[str, Any], context: dict[str, Any], provider: dict[str, Any], ledger: UsageLedger):
         self.case = dict(case)
         self.context = context
         self.ledger = ledger
         self.model_calls = 0
         self.client = OpenAICompatibleChatClient(
             api_key=provider["api_key"], base_url=provider["endpoint"], model=provider["model"],
-            thinking=False, max_tokens=4096, timeout=180,
+            thinking=False, max_tokens=int(provider.get("max_tokens", 8192)), timeout=180,
         )
         self.model = self.client.model
 
@@ -377,7 +385,7 @@ def assemble_q2_q3_report(source_root: Path, business_pilot: dict[str, Any], han
     }
 
 
-def run_business_pilot(output_root: Path, *, workers: int = 4, provider: dict[str, str] | None = None) -> dict[str, Any]:
+def run_business_pilot(output_root: Path, *, workers: int = 4, provider: dict[str, Any] | None = None) -> dict[str, Any]:
     pilot_root = Path(output_root) / "business_pilot"
     pilot_root.mkdir(parents=True, exist_ok=True)
     provider = provider or _provider_config()
@@ -385,8 +393,11 @@ def run_business_pilot(output_root: Path, *, workers: int = 4, provider: dict[st
     with tempfile.TemporaryDirectory(prefix="chimera-stage2-q2-") as temp:
         study_root = Path(temp) / "pilot"
         factory = lambda case, context: RealModelEmployee(case, context, provider, ledger)
-        study = generate_study(study_root, cases=golden_cases(), pilot=True, workers=workers,
-                               client_factory=factory, business_checks=True, task_prefix="q2-")
+        study = generate_study(
+            study_root, cases=golden_cases(), pilot=True, workers=workers,
+            client_factory=factory, business_checks=True, task_prefix="q2-",
+            workflow_run_options={"max_steps": 32, "max_tool_errors": 4},
+        )
         execution = evaluate_execution(study_root)
         business = evaluate_business(study_root)
         digest = hashlib.sha256()
@@ -404,6 +415,8 @@ def run_business_pilot(output_root: Path, *, workers: int = 4, provider: dict[st
             "raw_fixture_tree_sha256": digest.hexdigest(),
             "model_requested": provider["requested_model"],
             "model_used": provider["model"],
+            "max_tokens": provider["max_tokens"],
+            "workflow_run_options": {"max_steps": 32, "max_tool_errors": 4},
             "model_usage": ledger.summary(),
             "normal_failure_task_ids": [
                 row["task_id"] for row in execution.get("tasks", [])
@@ -422,7 +435,7 @@ def run_business_pilot(output_root: Path, *, workers: int = 4, provider: dict[st
 
 
 def run_handoff_pilot(output_root: Path, *, chains: int = 12,
-                      provider: dict[str, str] | None = None) -> dict[str, Any]:
+                      provider: dict[str, Any] | None = None) -> dict[str, Any]:
     """Run producer/consumer handoffs with the actual model at both boundaries."""
     pilot_root = Path(output_root) / "handoff_pilot"
     pilot_root.mkdir(parents=True, exist_ok=True)
@@ -499,6 +512,7 @@ def run_handoff_pilot(output_root: Path, *, chains: int = 12,
         "acl_errors": sum(not row.get("acl_ok") for row in rows),
         "model_requested": provider["requested_model"],
         "model_used": provider["model"],
+        "max_tokens": provider["max_tokens"],
         "model_usage": ledger.summary(),
         "rows": rows,
     }

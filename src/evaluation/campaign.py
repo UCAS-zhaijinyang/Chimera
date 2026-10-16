@@ -128,7 +128,9 @@ class ScriptedEmployee:
                 "function": {"name": tool, "arguments": json.dumps(args)}}]}
 
 
-def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None, pilot=False, workers=1, task_prefix="", business_checks=False):
+def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None, pilot=False, workers=1,
+                   task_prefix="", business_checks=False, selected_jobs=None,
+                   workflow_run_options=None):
     root = Path(study_dir)
     root.mkdir(parents=True, exist_ok=False)
     cases = cases or golden_cases()
@@ -140,7 +142,9 @@ def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None,
              "tasks": [], "planned_activities": [], "attack_truth": [],
              "execution_results": [], "release_files": []}
     jobs = []
-    if pilot:
+    if selected_jobs is not None:
+        jobs = list(selected_jobs)
+    elif pilot:
         # 3 fixed business scenarios x 2 run replicates x 5 days x 12 members x 2 tasks.
         for scenario in range(3):
             for replica in range(2):
@@ -174,7 +178,7 @@ def generate_study(study_dir, *, cases=None, repetitions=3, client_factory=None,
         client = client_factory(case, context) if client_factory else ScriptedEmployee(case)
         exception, state = None, None
         try:
-            result = loop.run(task_description(case), chat_fn=client)
+            result = loop.run(task_description(case), chat_fn=client, **(workflow_run_options or {}))
             state = result.state
         except Exception as exc:
             exception = type(exc).__name__  # Never archive HTTP response bodies or keys.
